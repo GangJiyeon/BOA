@@ -4,14 +4,14 @@ React(Vite) 프론트엔드 + FastAPI 백엔드 모노레포.
 
 ```
 frontend/   React 19 + Vite 8 + TypeScript   → 로컬에서 직접 실행 (나중에 Vercel 배포)
-backend/    FastAPI + PostgreSQL 17           → Docker로 실행 (나중에 EC2 + RDS 배포)
+backend/    FastAPI + PostgreSQL 17           → API는 Docker, DB는 각자 PC에 설치 (나중에 EC2 + RDS 배포)
 ```
 
 | 항목 | 버전 |
 |---|---|
 | Node / pnpm | 24 LTS / 10 |
 | Python | 3.12 (Docker 이미지) |
-| PostgreSQL | 17 (Docker 이미지) |
+| PostgreSQL | 17 (각자 PC에 설치) |
 
 ## 처음 한 번 설치
 
@@ -29,10 +29,22 @@ backend/    FastAPI + PostgreSQL 17           → Docker로 실행 (나중에 EC
    - PowerShell 프로필에 `fnm env --use-on-cd | Out-String | Invoke-Expression` 추가
 6. Git 줄바꿈 설정은 저장소의 `.gitattributes`가 처리하므로 따로 할 필요 없음
 
+7. PostgreSQL 17 설치: [EDB 설치 프로그램](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)로 설치 (포트 `5432`, 설치 중 정한 `postgres` 비밀번호는 기억해둘 것)
+
 ### Mac
 ```sh
 brew install fnm && fnm install 24
+brew install postgresql@17 && brew services start postgresql@17
 ```
+
+### DB 만들기 (Mac/Windows 공통, 처음 한 번)
+```sh
+# Mac은 비밀번호 없이, Windows는 설치 때 정한 postgres 비밀번호 입력
+psql -h localhost -U postgres -d postgres -c "CREATE ROLE boa LOGIN PASSWORD 'boa';"   # Mac: -U postgres 빼기
+psql -h localhost -U postgres -d postgres -c "CREATE DATABASE boa OWNER boa;"          # Mac: -U postgres 빼기
+```
+그 다음 DBeaver 등에서 `boa` DB에 접속해 팀 스키마 SQL을 실행한다.
+- `psql`을 못 찾으면 Mac은 `/opt/homebrew/opt/postgresql@17/bin/psql`, Windows는 `C:\Program Files\PostgreSQL\17\bin\psql.exe`로 실행
 
 ## 실행
 
@@ -42,6 +54,7 @@ cd backend
 cp .env.example .env        # 처음 한 번 (Windows: copy .env.example .env)
 docker compose up --build
 ```
+- PostgreSQL이 먼저 켜져 있어야 한다 (Mac: `brew services start postgresql@17`, Windows: 설치 시 자동 실행)
 - API 문서: http://localhost:8000/api/docs
 - 컨테이너가 시작될 때 DB 마이그레이션(`alembic upgrade head`)이 자동으로 실행됨
 - 코드를 수정하면 서버가 자동으로 재시작됨
@@ -80,12 +93,11 @@ docker compose exec api alembic upgrade head
 | 하려는 것 | 명령 (`backend/`에서) |
 |---|---|
 | 서버 끄기 | `docker compose down` |
-| DB까지 초기화 | `docker compose down -v` |
 | 의존성 추가 후 재빌드 | `uv add <패키지>` → `docker compose up --build` |
-| DB 직접 접속 | `docker compose exec db psql -U boa` |
+| DB 직접 접속 | `psql -h localhost -U boa -d boa` |
 | 로그 보기 | `docker compose logs -f api` |
 
-DB GUI(DBeaver, DataGrip 등)로 접속할 때: `localhost:5433` / 사용자 `boa` / 비밀번호 `boa` / DB `boa`
+DB GUI(DBeaver, DataGrip 등)로 접속할 때: `localhost:5432` / 사용자 `boa` / 비밀번호 `boa` / DB `boa`
 
 ## 이미지 업로드 (S3)
 
@@ -100,7 +112,8 @@ Python은 컨테이너 안에서만 돌기 때문에 VS Code에서 import에 빨
 
 ## 문제 해결
 
-- **`port is already allocated`**: 5433 / 8000 / 5173 포트를 다른 프로그램이 쓰고 있음
+- **`port is already allocated`**: 8000 / 5173 포트를 다른 프로그램이 쓰고 있음
+- **API가 DB에 연결 못 함 (`connection refused`)**: PostgreSQL이 켜져 있는지 확인 (Mac: `brew services list`)
 - **`/bin/sh^M: not found`**: 스크립트 줄바꿈이 CRLF로 바뀐 것. VS Code 우측 하단의 `CRLF`를 눌러 `LF`로 바꾸고 저장한 뒤 `docker compose up --build`
 - **코드 수정이 반영 안 됨**: `docker compose logs api`에 "WatchFiles detected changes"가 찍히는지 확인
 - **import 경로 대소문자**: Windows에서는 `./button`과 `./Button`이 둘 다 되지만 배포 서버(Linux)에서는 빌드가 실패한다. 파일명과 정확히 맞출 것
