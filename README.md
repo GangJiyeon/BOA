@@ -56,7 +56,6 @@ docker compose up --build
 ```
 - PostgreSQL이 먼저 켜져 있어야 한다 (Mac: `brew services start postgresql@17`, Windows: 설치 시 자동 실행)
 - API 문서: http://localhost:8000/api/docs
-- 컨테이너가 시작될 때 DB 마이그레이션(`alembic upgrade head`)이 자동으로 실행됨
 - 코드를 수정하면 서버가 자동으로 재시작됨
 
 ### 프론트엔드 (터미널 2)
@@ -68,9 +67,15 @@ pnpm dev
 - http://localhost:5173 — 화면에 API/DB 상태가 나오면 연결 성공
 - 프론트에서는 항상 `/api/...` 경로로 호출 (Vite가 `localhost:8000`으로 전달)
 
-## DB 스키마 변경 (Alembic)
+## DB 스키마 변경
 
-모든 명령은 `backend/`에서 **컨테이너 안으로** 실행한다 (Mac/Windows 동일).
+로컬에서는 Alembic을 쓰지 않는다. 스키마는 팀 스키마 SQL을 각자 로컬 DB에 직접 실행해서 맞춘다.
+- 스키마가 바뀌면 바뀐 SQL을 공유하고, 각자 DBeaver 등에서 실행한다.
+- 로컬에서 `alembic revision --autogenerate`는 실행하지 않는다. 모델에 없는 SQL 테이블을 지우는 마이그레이션이 만들어질 수 있다.
+
+### Alembic (서버 배포 이후 도입 예정)
+
+아래는 서버 배포 후 Alembic을 도입했을 때의 절차다. 모든 명령은 `backend/`에서 **컨테이너 안으로** 실행한다 (Mac/Windows 동일).
 
 ```sh
 # 1. app/models/ 에서 모델 수정 (새 모델 파일이면 app/models/__init__.py 에 import 추가)
@@ -81,7 +86,7 @@ docker compose exec api alembic upgrade head
 # 4. 모델 변경 + 마이그레이션 파일을 같이 커밋
 ```
 
-팀원이 올린 마이그레이션을 pull 받았으면 `docker compose up`을 다시 하거나 `docker compose exec api alembic upgrade head`.
+팀원이 올린 마이그레이션을 pull 받았으면 `docker compose exec api alembic upgrade head`.
 
 **규칙**
 - main에 머지된 마이그레이션 파일은 수정하지 않는다. 고칠 게 있으면 새 마이그레이션을 만든다.
