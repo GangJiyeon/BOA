@@ -14,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -216,3 +216,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node
+node_modules/
+
+# 환경변수: .env 변형(.env.local, .env.production 등)도 전부 제외, 템플릿만 커밋
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor (팀원마다 설정이 다르므로 제외, 공유할 확장 추천만 허용)
+.idea/
+.vscode/*
+!.vscode/extensions.json

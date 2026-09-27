@@ -1,0 +1,39 @@
+# 로컬 개발용: FastAPI + PostgreSQL
+# 실행: docker compose up --build
+services:
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      # 컨테이너 안에서는 DB 호스트가 localhost가 아니라 서비스 이름(db)이다
+      DATABASE_URL: postgresql+psycopg://boa:boa@db:5432/boa
+      # Windows에서 마운트한 폴더는 파일 변경 이벤트가 전달되지 않아 polling으로 감지한다
+      WATCHFILES_FORCE_POLLING: "true"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: boa
+      POSTGRES_PASSWORD: boa
+      POSTGRES_DB: boa
+    ports:
+      # 호스트에 이미 Postgres가 깔려 있어도 충돌하지 않도록 5433 사용
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U boa -d boa"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  pgdata:

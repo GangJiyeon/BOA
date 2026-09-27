@@ -1,0 +1,11 @@
+# Windows(CRLF) / Mac(LF) 혼용 대비: 저장소에는 항상 LF로 저장
+* text=auto eol=lf
+
+# 컨테이너에서 실행되는 스크립트가 CRLF면 "/bin/sh^M: not found"로 죽는다
+*.sh text eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
