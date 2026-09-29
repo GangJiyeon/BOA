@@ -233,3 +233,6 @@ desktop.ini
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Local cosmetic dataset
+backend/data/*.db
