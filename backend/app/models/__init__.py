@@ -14,7 +14,7 @@ __all__ = [
     "SkinMetricCategory",
     "SkinScore",
     "Brand",
-        "Product",
-        "Ingredient",
-        "ProductIngredient"
+    "Product",
+    "Ingredient",
+    "ProductIngredient"
 ]
