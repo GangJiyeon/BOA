@@ -10,6 +10,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH="/opt/venv/bin:$PATH"
 
+# OpenCV 런타임 의존 라이브러리.
+# mediapipe가 headless가 아닌 opencv를 함께 설치해서 libGL을 찾는다.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # 의존성 먼저 설치 (코드만 바뀌면 이 레이어는 캐시 재사용)

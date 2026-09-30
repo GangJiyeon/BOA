@@ -6,8 +6,11 @@ dependencies = [
     "alembic>=1.20.0",
     "boto3>=1.43.103",
     "fastapi>=0.141.1",
+    "mediapipe==0.10.18",
+    "opencv-python-headless==4.10.0.84",
     "psycopg[binary]>=3.3.6",
     "pydantic-settings>=2.15.0",
+    "python-multipart>=0.0.32",
     "sqlalchemy>=2.0,<2.1",
     "uvicorn[standard]>=0.54.0",
 ]
