@@ -1,12 +1,24 @@
 """피부 지표 점수 산출.
 
-사진에서 4개 지표(홍조·밝기·트러블·균일도)를, 센서값에서 수분 지표를 각각
-0~100 점수로 만든다. 현재 사진 분석은 더미 구현이며, MediaPipe/OpenCV로
-교체할 때는 analyze_image() 안쪽만 바꾸면 된다(호출부는 그대로).
+사진에서 4개 지표(홍조·밝기·트러블·균일도)를, 센서값에서 수분 지표를
+각각 0~100 점수로 만든다.
+
+사진 분석 흐름
+  1) 디코딩 → 긴 변 기준 축소 (연산량 고정)
+  2) MediaPipe FaceMesh로 랜드마크 추출
+  3) 얼굴 윤곽에서 눈·눈썹·입을 제외한 피부 마스크 생성
+  4) 그레이월드 화이트밸런스로 조명 색상 보정 후 Lab 색공간 변환
+  5) 지표별 원시값 계산 → 0~100 정규화
+
+주의: 아래 임계값 상수는 샘플 사진으로 맞춰야 하는 잠정값이다.
 """
 
 import hashlib
 from collections.abc import Mapping
+from functools import lru_cache
+
+import cv2
+import numpy as np
 
 # 사진에서 산출하는 지표 (수분은 센서/직접입력이므로 제외)
 PHOTO_METRIC_CODES = ("redness", "brightness", "trouble", "uniformity")
@@ -15,6 +27,25 @@ PHOTO_METRIC_CODES = ("redness", "brightness", "trouble", "uniformity")
 # 실측 캘리브레이션 전까지의 임시값이므로, 측정 후 이 두 값을 조정한다.
 MOISTURE_RAW_MIN = 0
 MOISTURE_RAW_MAX = 1023
+
+# 분석 해상도. 크면 느려지고 작으면 트러블 탐지가 둔해진다.
+MAX_IMAGE_SIDE = 1024
+
+# ── 지표별 정규화 구간 (원시값 lo → 0점, hi → 100점) ──────────────────
+# 전부 샘플 사진으로 조정해야 하는 잠정값이다.
+BRIGHTNESS_RANGE = (90.0, 200.0)    # 피부 영역 L 채널 평균 (0~255)
+REDNESS_RANGE = (3.0, 22.0)         # 볼·이마의 a* 평균 (중립=0)
+TROUBLE_RANGE = (0.0, 0.05)         # 반점으로 탐지된 픽셀 비율
+UNIFORMITY_STD_RANGE = (3.0, 18.0)  # 피부 영역 L 채널 표준편차 (낮을수록 균일)
+
+# 주변보다 이만큼 붉으면 트러블로 본다 (a* 기준, 국소 중앙값 대비)
+TROUBLE_A_THRESHOLD = 6.0
+
+# 볼·이마에서 떼어내는 패치 반지름 (얼굴 너비 대비 비율)
+PATCH_RADIUS_RATIO = 0.06
+# 볼 중앙 / 이마 중앙에 해당하는 FaceMesh 랜드마크 번호
+CHEEK_LANDMARKS = (50, 280)
+FOREHEAD_LANDMARK = 151
 
 
 class AnalysisError(ValueError):
@@ -25,29 +56,186 @@ def _clamp(value: int) -> int:
     return max(0, min(100, value))
 
 
-def analyze_image(
-    image_bytes: bytes | None = None, *, seed_key: str | None = None
-) -> Mapping[str, int]:
-    """사진에서 지표 점수 4개를 산출한다.
+def _linear_score(value: float, lo: float, hi: float) -> int:
+    """원시값을 0~100으로 선형 변환한다. lo 이하는 0, hi 이상은 100."""
+    if hi <= lo:
+        raise AnalysisError(f"정규화 구간이 잘못되었습니다: ({lo}, {hi})")
+    return _clamp(round((value - lo) / (hi - lo) * 100))
 
-    TODO(CV): 현재는 더미 구현이다. 실제 구현 시 아래 순서로 교체한다.
-      1) MediaPipe FaceMesh로 landmark 추출 → 볼·이마 ROI 마스크 생성
-      2) 흰자위(또는 이마 기준 영역)를 화이트밸런스 기준점으로 잡아 조명 보정
-      3) 지표별 계산 — 홍조: Lab a* 편차 / 밝기: Lab L 평균
-         / 트러블: 색상 threshold + blob detection / 균일도: 톤 표준편차의 역수
-      4) 각 원시값을 0~100으로 정규화
 
-    같은 사진이면 같은 점수가 나오도록 해시 기반으로 값을 만든다.
-    (요청마다 점수가 흔들리면 프론트·추천 쪽에서 재현이 안 되기 때문)
+# ── 이미지 준비 ─────────────────────────────────────────────────────
+
+
+def _decode(image_bytes: bytes) -> np.ndarray:
+    """바이트를 BGR 이미지로 디코딩하고 긴 변을 MAX_IMAGE_SIDE로 맞춘다."""
+    if not image_bytes:
+        raise AnalysisError("이미지 데이터가 비어 있습니다")
+
+    buffer = np.frombuffer(image_bytes, dtype=np.uint8)
+    image = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+    if image is None:
+        raise AnalysisError("이미지를 읽을 수 없습니다 (지원하지 않는 형식이거나 손상된 파일)")
+
+    height, width = image.shape[:2]
+    longest = max(height, width)
+    if longest > MAX_IMAGE_SIDE:
+        scale = MAX_IMAGE_SIDE / longest
+        image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    return image
+
+
+@lru_cache
+def _landmark_groups():
+    """FaceMesh의 부위별 랜드마크 번호 묶음. import 비용이 커서 한 번만 만든다."""
+    from mediapipe.python.solutions import face_mesh_connections as conn
+
+    def indices(connections) -> list[int]:
+        return sorted({index for pair in connections for index in pair})
+
+    return {
+        "oval": indices(conn.FACEMESH_FACE_OVAL),
+        "exclude": [
+            indices(conn.FACEMESH_LEFT_EYE),
+            indices(conn.FACEMESH_RIGHT_EYE),
+            indices(conn.FACEMESH_LEFT_EYEBROW),
+            indices(conn.FACEMESH_RIGHT_EYEBROW),
+            indices(conn.FACEMESH_LIPS),
+        ],
+    }
+
+
+def _detect_landmarks(image: np.ndarray) -> np.ndarray:
+    """얼굴 랜드마크를 픽셀 좌표 배열로 반환한다. (468, 2)"""
+    from mediapipe.python.solutions import face_mesh as mp_face_mesh
+
+    height, width = image.shape[:2]
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # FaceMesh 인스턴스는 스레드 안전하지 않아 요청마다 새로 만든다.
+    with mp_face_mesh.FaceMesh(
+        static_image_mode=True, max_num_faces=1, refine_landmarks=False
+    ) as mesh:
+        result = mesh.process(rgb)
+
+    if not result.multi_face_landmarks:
+        raise AnalysisError("사진에서 얼굴을 찾을 수 없습니다 (정면 얼굴 사진을 사용하세요)")
+
+    points = result.multi_face_landmarks[0].landmark
+    return np.array([(p.x * width, p.y * height) for p in points], dtype=np.float32)
+
+
+def _skin_mask(image: np.ndarray, landmarks: np.ndarray) -> np.ndarray:
+    """얼굴 윤곽 안쪽에서 눈·눈썹·입을 제외한 피부 영역 마스크."""
+    groups = _landmark_groups()
+    mask = np.zeros(image.shape[:2], dtype=np.uint8)
+
+    outline = cv2.convexHull(landmarks[groups["oval"]].astype(np.int32))
+    cv2.fillConvexPoly(mask, outline, 255)
+
+    # 눈·눈썹·입은 피부색 통계를 왜곡하므로 제외한다
+    for part in groups["exclude"]:
+        hull = cv2.convexHull(landmarks[part].astype(np.int32))
+        cv2.fillConvexPoly(mask, hull, 0)
+
+    if int(np.count_nonzero(mask)) < 500:
+        raise AnalysisError("피부 영역이 너무 작습니다 (얼굴이 더 크게 나온 사진을 사용하세요)")
+    return mask
+
+
+def _patch_mask(image: np.ndarray, landmarks: np.ndarray) -> np.ndarray:
+    """볼 2곳과 이마 1곳의 원형 패치 마스크. 홍조 측정에 쓴다."""
+    mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    face_width = float(np.ptp(landmarks[:, 0]))
+    radius = max(3, int(face_width * PATCH_RADIUS_RATIO))
+
+    for index in (*CHEEK_LANDMARKS, FOREHEAD_LANDMARK):
+        center = tuple(landmarks[index].astype(int))
+        cv2.circle(mask, center, radius, 255, thickness=-1)
+    return mask
+
+
+def _white_balanced_lab(image: np.ndarray, skin: np.ndarray) -> np.ndarray:
+    """피부 영역 기준 그레이월드 보정 후 Lab으로 변환한다.
+
+    조명 색이 달라도 지표가 흔들리지 않게 하기 위한 보정이다.
+    절대 밝기까지 맞추지는 않으므로, 촬영 가이드(조명 조건)는 여전히 필요하다.
     """
-    # 더미 단계에서는 S3에서 파일을 내려받지 않고 seed_key(s3_key)만으로 점수를 만든다.
-    # 실제 CV 구현 후에는 image_bytes가 반드시 필요하다.
-    if not image_bytes and not seed_key:
-        raise AnalysisError("image_bytes 또는 seed_key 중 하나는 있어야 합니다")
+    means = cv2.mean(image, mask=skin)[:3]  # B, G, R
+    target = float(np.mean(means))
 
-    digest = hashlib.sha256(seed_key.encode() if seed_key else image_bytes).digest()
-    # 지표마다 다른 바이트를 쓰고, 0~255를 0~100으로 환산한다.
-    # (그냥 자르면 100 초과 값이 전부 100으로 몰려 점수가 한쪽으로 쏠린다)
+    balanced = image.astype(np.float32)
+    for channel, mean in enumerate(means):
+        if mean > 1.0:
+            balanced[:, :, channel] *= target / mean
+
+    balanced = np.clip(balanced, 0, 255).astype(np.uint8)
+    return cv2.cvtColor(balanced, cv2.COLOR_BGR2LAB)
+
+
+# ── 지표별 계산 ─────────────────────────────────────────────────────
+
+
+def _brightness(lab: np.ndarray, skin: np.ndarray) -> int:
+    mean_l = cv2.mean(lab[:, :, 0], mask=skin)[0]
+    return _linear_score(mean_l, *BRIGHTNESS_RANGE)
+
+
+def _redness(lab: np.ndarray, patches: np.ndarray) -> int:
+    # OpenCV Lab에서 a 채널은 128이 중립이다
+    mean_a = cv2.mean(lab[:, :, 1], mask=patches)[0] - 128.0
+    return _linear_score(mean_a, *REDNESS_RANGE)
+
+
+def _trouble(lab: np.ndarray, skin: np.ndarray, face_width: float) -> int:
+    """국소 중앙값보다 유독 붉은 픽셀의 비율로 트러블을 추정한다."""
+    a_channel = lab[:, :, 1]
+
+    # 얼굴 크기에 비례한 홀수 커널 (작은 반점만 남기고 넓은 홍조는 상쇄)
+    kernel = max(3, int(face_width * 0.03) | 1)
+    local_median = cv2.medianBlur(a_channel, kernel)
+
+    deviation = a_channel.astype(np.int16) - local_median.astype(np.int16)
+    blemish = (deviation > TROUBLE_A_THRESHOLD) & (skin > 0)
+
+    ratio = float(np.count_nonzero(blemish)) / float(np.count_nonzero(skin))
+    return _linear_score(ratio, *TROUBLE_RANGE)
+
+
+def _uniformity(lab: np.ndarray, skin: np.ndarray) -> int:
+    """피부 톤 표준편차의 역방향 점수. 고를수록 높다."""
+    _, std = cv2.meanStdDev(lab[:, :, 0], mask=skin)
+    unevenness = _linear_score(float(std[0][0]), *UNIFORMITY_STD_RANGE)
+    return _clamp(100 - unevenness)
+
+
+# ── 공개 함수 ───────────────────────────────────────────────────────
+
+
+def analyze_image(image_bytes: bytes) -> dict[str, int]:
+    """사진에서 지표 점수 4개를 산출한다."""
+    image = _decode(image_bytes)
+    landmarks = _detect_landmarks(image)
+
+    skin = _skin_mask(image, landmarks)
+    patches = _patch_mask(image, landmarks)
+    lab = _white_balanced_lab(image, skin)
+    face_width = float(np.ptp(landmarks[:, 0]))
+
+    return {
+        "redness": _redness(lab, patches),
+        "brightness": _brightness(lab, skin),
+        "trouble": _trouble(lab, skin, face_width),
+        "uniformity": _uniformity(lab, skin),
+    }
+
+
+def analyze_image_dummy(seed_key: str) -> Mapping[str, int]:
+    """사진 없이 쓰는 임시 점수.
+
+    S3가 아직 준비되지 않은 환경에서 파이프라인을 돌려보기 위한 것이다.
+    같은 seed_key면 같은 점수가 나오도록 해시를 쓴다.
+    """
+    digest = hashlib.sha256(seed_key.encode()).digest()
     return {
         code: _clamp(round(digest[i * 4] / 255 * 100))
         for i, code in enumerate(PHOTO_METRIC_CODES)
@@ -67,22 +255,21 @@ def moisture_score_from_raw(raw: int) -> int:
     return _clamp(round((raw - MOISTURE_RAW_MIN) / span * 100))
 
 
-def build_scores(
-    image_bytes: bytes | None = None,
+def with_moisture(
+    photo_scores: Mapping[str, int],
     *,
-    seed_key: str | None = None,
     moisture_source: str,
     moisture_raw: int | None = None,
     moisture_score: int | None = None,
 ) -> dict[str, int]:
-    """사진 점수 4개와 수분 점수를 합쳐 라벨링 서비스에 넘길 형태로 만든다.
+    """사진 점수 4개에 수분 점수를 합쳐 라벨링 서비스에 넘길 형태로 만든다.
 
     moisture_source별 입력:
       sensor — moisture_raw (ADC 원시값)
       manual — moisture_score (0~100, 디버깅·센서 장애 시 대체 입력)
       none   — 없음 (사진 기반 4개 지표만 사용)
     """
-    scores = dict(analyze_image(image_bytes, seed_key=seed_key))
+    scores = dict(photo_scores)
 
     if moisture_source == "sensor":
         if moisture_raw is None:
