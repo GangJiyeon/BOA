@@ -6,14 +6,29 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.db.session import get_db
-from app.models import Image, SkinAnalysis
+from app.models import Image, SkinAnalysis, SkinScore
 from app.schemas.skin import AnalysisCreate, AnalysisRead, ScoreRead
 from app.services import skin_analysis, skin_scoring
 
 router = APIRouter(prefix="/skin", tags=["skin"])
+
+
+def _get_with_scores(db: Session, analysis_id: int) -> SkinAnalysis | None:
+    """점수·지표·구간을 한 번에 읽어온다.
+
+    지연 로딩에 맡기면 지표 수만큼 추가 쿼리가 나가므로 selectinload로 묶는다.
+    """
+    return db.scalar(
+        select(SkinAnalysis)
+        .where(SkinAnalysis.id == analysis_id)
+        .options(
+            selectinload(SkinAnalysis.scores).selectinload(SkinScore.metric),
+            selectinload(SkinAnalysis.scores).selectinload(SkinScore.category),
+        )
+    )
 
 
 def to_read(analysis: SkinAnalysis) -> AnalysisRead:
@@ -70,13 +85,12 @@ def create_analysis(body: AnalysisCreate, db: Session = Depends(get_db)) -> Anal
         raise HTTPException(400, str(e)) from e
 
     db.commit()
-    db.refresh(analysis)
-    return to_read(analysis)
+    return to_read(_get_with_scores(db, analysis.id))
 
 
 @router.get("/analyses/{analysis_id}")
 def get_analysis(analysis_id: int, db: Session = Depends(get_db)) -> AnalysisRead:
-    analysis = db.scalar(select(SkinAnalysis).where(SkinAnalysis.id == analysis_id))
+    analysis = _get_with_scores(db, analysis_id)
     if analysis is None:
         raise HTTPException(404, f"분석 결과를 찾을 수 없습니다: {analysis_id}")
     return to_read(analysis)

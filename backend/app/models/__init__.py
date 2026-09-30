@@ -7,6 +7,7 @@ from app.models.cosmetic import (
     Ingredient,
     ProductIngredient,
 )
+
 __all__ = [
     "Image",
     "SkinAnalysis",
@@ -16,5 +17,5 @@ __all__ = [
     "Brand",
     "Product",
     "Ingredient",
-    "ProductIngredient"
+    "ProductIngredient",
 ]
