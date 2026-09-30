@@ -1,4 +1,20 @@
 # Alembic autogenerate가 테이블을 인식하려면 모든 모델을 여기서 import 해야 한다
 from app.models.image import Image
-
-__all__ = ["Image"]
+from app.models.skin import SkinAnalysis, SkinMetric, SkinMetricCategory, SkinScore
+from app.models.cosmetic import (
+    Brand,
+    Product,
+    Ingredient,
+    ProductIngredient,
+)
+__all__ = [
+    "Image",
+    "SkinAnalysis",
+    "SkinMetric",
+    "SkinMetricCategory",
+    "SkinScore",
+    "Brand",
+    "Product",
+    "Ingredient",
+    "ProductIngredient"
+]

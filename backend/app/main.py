@@ -1,7 +1,7 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, images
+from app.api.routes import health, images, skin
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -20,4 +20,5 @@ app.add_middleware(
 api = APIRouter(prefix="/api")
 api.include_router(health.router)
 api.include_router(images.router)
+api.include_router(skin.router)
 app.include_router(api)
