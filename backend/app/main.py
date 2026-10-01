@@ -1,7 +1,7 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health, images, skin
+from app.api.routes import actor, guest, health, images, skin, terms
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -21,4 +21,7 @@ api = APIRouter(prefix="/api")
 api.include_router(health.router)
 api.include_router(images.router)
 api.include_router(skin.router)
+api.include_router(actor.router)
+api.include_router(terms.router)
+api.include_router(guest.router)
 app.include_router(api)

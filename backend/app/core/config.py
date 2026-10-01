@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
 
+    # 비회원 IP는 원문 대신 이 키로 만든 HMAC만 저장한다. 배포 시 반드시 바꿀 것
+    ip_hash_secret: str = "dev-ip-hash-secret"
+    # 로컬 false, 배포 true(Safari는 http에서 Secure 쿠키 막음)
+    cookie_secure: bool = False
+    guest_session_days: int = 7
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
