@@ -13,7 +13,13 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.models import Image, SkinAnalysis, SkinScore
-from app.schemas.skin import AnalysisCreate, AnalysisRead, MoistureSource, ScoreRead
+from app.schemas.skin import (
+    AnalysisCreate,
+    AnalysisRead,
+    DebugAnalysisRead,
+    MoistureSource,
+    ScoreRead,
+)
 from app.services import s3, skin_analysis, skin_scoring
 
 router = APIRouter(prefix="/skin", tags=["skin"])
@@ -141,11 +147,11 @@ def create_analysis_debug(
     moisture_raw: int | None = Form(None),
     moisture_score: int | None = Form(None),
     db: Session = Depends(get_db),
-) -> AnalysisRead:
+) -> DebugAnalysisRead:
     """사진을 직접 올려 분석한다 (S3를 거치지 않음).
 
     CV 임계값을 맞출 때 쓰는 개발용 경로다. 원본은 저장하지 않으므로
-    image_id는 항상 null이 된다.
+    image_id는 항상 null이 된다. 응답에는 정규화 전 원시값(raw)이 함께 담긴다.
     """
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
@@ -153,11 +159,11 @@ def create_analysis_debug(
         )
 
     try:
-        photo_scores = skin_analysis.analyze_image(file.file.read())
+        photo_scores, raw = skin_analysis.analyze_image_detail(file.file.read())
     except skin_analysis.AnalysisError as e:
         raise HTTPException(400, str(e)) from e
 
-    return _save(
+    saved = _save(
         db,
         photo_scores=photo_scores,
         logic_version=skin_scoring.LOGIC_VERSION,
@@ -165,6 +171,7 @@ def create_analysis_debug(
         moisture_raw=moisture_raw,
         moisture_score=moisture_score,
     )
+    return DebugAnalysisRead(**saved.model_dump(), raw=raw)
 
 
 @router.get("/analyses/{analysis_id}")

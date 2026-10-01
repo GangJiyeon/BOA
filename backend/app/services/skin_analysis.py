@@ -33,13 +33,17 @@ MAX_IMAGE_SIDE = 1024
 
 # ── 지표별 정규화 구간 (원시값 lo → 0점, hi → 100점) ──────────────────
 # 전부 샘플 사진으로 조정해야 하는 잠정값이다.
-BRIGHTNESS_RANGE = (90.0, 200.0)    # 피부 영역 L 채널 평균 (0~255)
-REDNESS_RANGE = (3.0, 22.0)         # 볼·이마의 a* 평균 (중립=0)
-TROUBLE_RANGE = (0.0, 0.05)         # 반점으로 탐지된 픽셀 비율
-UNIFORMITY_STD_RANGE = (3.0, 18.0)  # 피부 영역 L 채널 표준편차 (낮을수록 균일)
+BRIGHTNESS_RANGE = (100.0, 210.0)    # 피부 영역 L 채널 평균 (0~255)
+REDNESS_RANGE = (2.0, 15.0)          # 볼·이마의 a* 평균 (중립=0)
+TROUBLE_RANGE = (0.0, 0.02)          # 반점으로 탐지된 픽셀 비율
+UNIFORMITY_STD_RANGE = (10.0, 35.0)  # 피부 영역 L 채널 표준편차 (낮을수록 균일)
 
 # 주변보다 이만큼 붉으면 트러블로 본다 (a* 기준, 국소 중앙값 대비)
-TROUBLE_A_THRESHOLD = 6.0
+TROUBLE_A_THRESHOLD = 3.0
+
+# 피부 마스크 정제 강도. 중앙값에서 이 배수(MAD 기준)를 벗어난 픽셀은 버린다.
+# 머리카락·그림자·안경처럼 피부가 아닌 것이 마스크에 섞이면 통계가 망가진다.
+SKIN_MAD_FACTOR = 2.5
 
 # 볼·이마에서 떼어내는 패치 반지름 (얼굴 너비 대비 비율)
 PATCH_RADIUS_RATIO = 0.06
@@ -142,6 +146,32 @@ def _skin_mask(image: np.ndarray, landmarks: np.ndarray) -> np.ndarray:
     return mask
 
 
+def _refine_skin(lab: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    """윤곽 안에 섞여 들어온 비피부 픽셀을 걷어낸다.
+
+    얼굴 윤곽을 볼록껍질로 잡으면 머리카락선, 턱 그늘, 안경테 같은 것이
+    함께 들어온다. 이들은 밝기 분포에서 멀리 떨어진 값이므로,
+    중앙값 기준 MAD(중앙값 절대편차)로 바깥쪽을 잘라낸다.
+    """
+    values = lab[:, :, 0][mask > 0]
+    if values.size == 0:
+        raise AnalysisError("피부 영역을 찾을 수 없습니다")
+
+    median = float(np.median(values))
+    mad = float(np.median(np.abs(values.astype(np.float32) - median)))
+    spread = max(mad * SKIN_MAD_FACTOR, 8.0)  # MAD가 0에 가까울 때를 대비한 하한
+
+    inlier = (np.abs(lab[:, :, 0].astype(np.float32) - median) <= spread).astype(np.uint8) * 255
+    refined = cv2.bitwise_and(mask, inlier)
+
+    # 경계 한 겹은 머리카락·배경과 섞이기 쉬워 깎아낸다
+    refined = cv2.erode(refined, np.ones((3, 3), np.uint8), iterations=1)
+
+    if int(np.count_nonzero(refined)) < 500:
+        raise AnalysisError("분석 가능한 피부 영역이 너무 작습니다")
+    return refined
+
+
 def _patch_mask(image: np.ndarray, landmarks: np.ndarray) -> np.ndarray:
     """볼 2곳과 이마 1곳의 원형 패치 마스크. 홍조 측정에 쓴다."""
     mask = np.zeros(image.shape[:2], dtype=np.uint8)
@@ -154,13 +184,14 @@ def _patch_mask(image: np.ndarray, landmarks: np.ndarray) -> np.ndarray:
     return mask
 
 
-def _white_balanced_lab(image: np.ndarray, skin: np.ndarray) -> np.ndarray:
-    """피부 영역 기준 그레이월드 보정 후 Lab으로 변환한다.
+def _white_balanced_lab(image: np.ndarray) -> np.ndarray:
+    """이미지 전체 기준 그레이월드 보정 후 Lab으로 변환한다.
 
-    조명 색이 달라도 지표가 흔들리지 않게 하기 위한 보정이다.
+    기준을 피부 영역으로 잡으면 피부 평균색이 회색으로 강제되어
+    홍조 신호가 통째로 사라진다. 그래서 화면 전체를 기준으로 삼는다.
     절대 밝기까지 맞추지는 않으므로, 촬영 가이드(조명 조건)는 여전히 필요하다.
     """
-    means = cv2.mean(image, mask=skin)[:3]  # B, G, R
+    means = cv2.mean(image)[:3]  # B, G, R
     target = float(np.mean(means))
 
     balanced = image.astype(np.float32)
@@ -175,58 +206,89 @@ def _white_balanced_lab(image: np.ndarray, skin: np.ndarray) -> np.ndarray:
 # ── 지표별 계산 ─────────────────────────────────────────────────────
 
 
-def _brightness(lab: np.ndarray, skin: np.ndarray) -> int:
+def _brightness(lab: np.ndarray, skin: np.ndarray) -> tuple[int, float]:
     mean_l = cv2.mean(lab[:, :, 0], mask=skin)[0]
-    return _linear_score(mean_l, *BRIGHTNESS_RANGE)
+    return _linear_score(mean_l, *BRIGHTNESS_RANGE), mean_l
 
 
-def _redness(lab: np.ndarray, patches: np.ndarray) -> int:
+def _redness(lab: np.ndarray, patches: np.ndarray) -> tuple[int, float]:
     # OpenCV Lab에서 a 채널은 128이 중립이다
     mean_a = cv2.mean(lab[:, :, 1], mask=patches)[0] - 128.0
-    return _linear_score(mean_a, *REDNESS_RANGE)
+    return _linear_score(mean_a, *REDNESS_RANGE), mean_a
 
 
-def _trouble(lab: np.ndarray, skin: np.ndarray, face_width: float) -> int:
+def _trouble(lab: np.ndarray, skin: np.ndarray, face_width: float) -> tuple[int, float]:
     """국소 중앙값보다 유독 붉은 픽셀의 비율로 트러블을 추정한다."""
     a_channel = lab[:, :, 1]
 
     # 얼굴 크기에 비례한 홀수 커널 (작은 반점만 남기고 넓은 홍조는 상쇄)
-    kernel = max(3, int(face_width * 0.03) | 1)
+    kernel = max(3, int(face_width * 0.05) | 1)
     local_median = cv2.medianBlur(a_channel, kernel)
 
     deviation = a_channel.astype(np.int16) - local_median.astype(np.int16)
     blemish = (deviation > TROUBLE_A_THRESHOLD) & (skin > 0)
 
     ratio = float(np.count_nonzero(blemish)) / float(np.count_nonzero(skin))
-    return _linear_score(ratio, *TROUBLE_RANGE)
+    return _linear_score(ratio, *TROUBLE_RANGE), ratio
 
 
-def _uniformity(lab: np.ndarray, skin: np.ndarray) -> int:
+def _uniformity(lab: np.ndarray, skin: np.ndarray) -> tuple[int, float]:
     """피부 톤 표준편차의 역방향 점수. 고를수록 높다."""
     _, std = cv2.meanStdDev(lab[:, :, 0], mask=skin)
-    unevenness = _linear_score(float(std[0][0]), *UNIFORMITY_STD_RANGE)
-    return _clamp(100 - unevenness)
+    std_l = float(std[0][0])
+    unevenness = _linear_score(std_l, *UNIFORMITY_STD_RANGE)
+    return _clamp(100 - unevenness), std_l
 
 
 # ── 공개 함수 ───────────────────────────────────────────────────────
 
 
-def analyze_image(image_bytes: bytes) -> dict[str, int]:
-    """사진에서 지표 점수 4개를 산출한다."""
+def analyze_image_detail(image_bytes: bytes) -> tuple[dict[str, int], dict[str, float]]:
+    """지표 점수 4개와, 정규화 전 원시값을 함께 돌려준다.
+
+    원시값은 정규화 구간(BRIGHTNESS_RANGE 등)을 샘플 사진에 맞춰
+    조정할 때 쓰며, 디버그 엔드포인트에서만 노출한다.
+    """
     image = _decode(image_bytes)
     landmarks = _detect_landmarks(image)
 
-    skin = _skin_mask(image, landmarks)
-    patches = _patch_mask(image, landmarks)
-    lab = _white_balanced_lab(image, skin)
+    lab = _white_balanced_lab(image)
     face_width = float(np.ptp(landmarks[:, 0]))
 
-    return {
-        "redness": _redness(lab, patches),
-        "brightness": _brightness(lab, skin),
-        "trouble": _trouble(lab, skin, face_width),
-        "uniformity": _uniformity(lab, skin),
+    # 윤곽 마스크 → 비피부 픽셀 제거
+    skin = _refine_skin(lab, _skin_mask(image, landmarks))
+    # 볼·이마 패치도 정제된 피부 영역 안쪽만 쓴다
+    patches = cv2.bitwise_and(_patch_mask(image, landmarks), skin)
+    if int(np.count_nonzero(patches)) < 100:
+        patches = skin  # 패치가 가려졌으면 피부 전체로 대체
+
+    redness, mean_a = _redness(lab, patches)
+    brightness, mean_l = _brightness(lab, skin)
+    trouble, blemish_ratio = _trouble(lab, skin, face_width)
+    uniformity, std_l = _uniformity(lab, skin)
+
+    scores = {
+        "redness": redness,
+        "brightness": brightness,
+        "trouble": trouble,
+        "uniformity": uniformity,
     }
+    raw = {
+        "mean_a_patch": round(mean_a, 2),      # REDNESS_RANGE 기준
+        "mean_l_skin": round(mean_l, 2),       # BRIGHTNESS_RANGE 기준
+        "blemish_ratio": round(blemish_ratio, 5),  # TROUBLE_RANGE 기준
+        "std_l_skin": round(std_l, 2),         # UNIFORMITY_STD_RANGE 기준
+        "face_width_px": round(face_width, 1),
+        "skin_px": int(np.count_nonzero(skin)),
+        "patch_px": int(np.count_nonzero(patches)),
+    }
+    return scores, raw
+
+
+def analyze_image(image_bytes: bytes) -> dict[str, int]:
+    """사진에서 지표 점수 4개를 산출한다."""
+    scores, _ = analyze_image_detail(image_bytes)
+    return scores
 
 
 def analyze_image_dummy(seed_key: str) -> Mapping[str, int]:
