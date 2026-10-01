@@ -17,11 +17,18 @@ class Settings(BaseSettings):
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
 
-    # 비회원 IP는 원문 대신 이 키로 만든 HMAC만 저장한다. 배포 시 반드시 바꿀 것
+    # 비회원 IP HMAC 키, 배포 시 변경 필수
     ip_hash_secret: str = "dev-ip-hash-secret"
     # 로컬 false, 배포 true(Safari는 http에서 Secure 쿠키 막음)
     cookie_secure: bool = False
     guest_session_days: int = 7
+
+    # JWT 서명 키, 배포 시 변경 필수 (HS256은 32바이트 이상 권장)
+    jwt_secret: str = "dev-jwt-secret-change-me-in-production"
+    access_token_minutes: int = 15
+    refresh_token_days: int = 30
+    # 개발용 로그인 API(POST /api/auth/dev-login), 배포에서는 false
+    dev_login: bool = False
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -33,10 +33,10 @@ def start_session(
     kiosk_id: int | None = None,
     existing: GuestSession | None = None,
 ) -> tuple[GuestSession, str]:
-    """세션을 만들거나(existing이 없을 때) 기존 세션을 이어 쓰고, 새 QR 토큰 원문을 돌려준다.
+    """세션 생성(existing 없을 때) 또는 기존 세션 재사용, 새 QR 토큰 원문 반환
 
-    DB에는 QR 토큰 해시만 있어서 예전 원문을 다시 줄 수 없으므로, 재사용할 때도
-    새 토큰을 발급해 해시를 덮어쓴다 (예전 QR은 무효가 된다). 만료 시각은 연장하지 않는다.
+    DB에는 해시만 있어 예전 원문 재발급 불가 → 재사용 시에도 새 토큰으로 덮어씀 (예전 QR 무효)
+    만료 시각은 연장 안 함
     """
     session = existing
     if session is None:
