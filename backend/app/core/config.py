@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-jwt-secret-change-me-in-production"
     access_token_minutes: int = 15
     refresh_token_days: int = 30
+    signup_token_minutes: int = 10
+    # 이메일 인증 코드
+    email_code_minutes: int = 10
+    email_max_attempts: int = 5
+    email_resend_seconds: int = 60
     # 개발용 로그인 API(POST /api/auth/dev-login), 배포에서는 false
     dev_login: bool = False
 

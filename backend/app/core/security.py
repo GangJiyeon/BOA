@@ -16,29 +16,55 @@ from app.core.config import get_settings
 
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_TYPE = "access"
+SIGNUP_TOKEN_TYPE = "signup"
 
 
-def create_access_token(user_id: int) -> str:
-    settings = get_settings()
+def _encode(token_type: str, sub: str, minutes: int) -> str:
     now = datetime.now(UTC)
     payload = {
-        "sub": str(user_id),  # PyJWT는 sub 문자열만 허용
-        "type": ACCESS_TOKEN_TYPE,  # 가입 토큰과 구분용
+        "sub": sub,  # PyJWT는 sub 문자열만 허용
+        "type": token_type,  # 액세스·가입 토큰 구분용
         "iat": now,
-        "exp": now + timedelta(minutes=settings.access_token_minutes),
+        "exp": now + timedelta(minutes=minutes),
     }
-    return jwt.encode(payload, settings.jwt_secret, algorithm=JWT_ALGORITHM)
+    return jwt.encode(payload, get_settings().jwt_secret, algorithm=JWT_ALGORITHM)
 
 
-def decode_access_token(token: str) -> int | None:
-    """유효하면 user_id, 만료·위조면 None"""
+def _decode(token: str, token_type: str) -> str | None:
+    """유효하면 sub, 만료·위조·종류 불일치면 None"""
     try:
         payload = jwt.decode(token, get_settings().jwt_secret, algorithms=[JWT_ALGORITHM])
     except jwt.InvalidTokenError:
         return None
-    if payload.get("type") != ACCESS_TOKEN_TYPE:
+    if payload.get("type") != token_type:
         return None
-    return int(payload["sub"])
+    return payload["sub"]
+
+
+def create_access_token(user_id: int) -> str:
+    return _encode(ACCESS_TOKEN_TYPE, str(user_id), get_settings().access_token_minutes)
+
+
+def decode_access_token(token: str) -> int | None:
+    """유효하면 user_id, 만료·위조면 None"""
+    sub = _decode(token, ACCESS_TOKEN_TYPE)
+    return int(sub) if sub is not None else None
+
+
+def create_signup_token(email: str) -> str:
+    """이메일 인증 완료 표시, 가입 API에서 사용 (응답 본문으로 전달)"""
+    return _encode(SIGNUP_TOKEN_TYPE, email, get_settings().signup_token_minutes)
+
+
+def decode_signup_token(token: str) -> str | None:
+    """유효하면 email, 만료·위조면 None"""
+    return _decode(token, SIGNUP_TOKEN_TYPE)
+
+
+def hash_email_code(email: str, code: str) -> str:
+    """6자리 코드는 경우의 수가 적어 HMAC 사용 (DB 유출 시 대입 방지), 이메일에 묶음"""
+    key = get_settings().jwt_secret.encode()
+    return hmac.new(key, f"{email}:{code}".encode(), hashlib.sha256).hexdigest()
 
 
 def new_token() -> str:

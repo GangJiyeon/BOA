@@ -44,3 +44,29 @@ class DevLoginRequest(BaseModel):
 class DevLoginRead(BaseModel):
     user_id: int
     email: str
+
+
+# 이메일 형식만 간단히 확인 (실제 존재 여부는 코드 수신으로 확인)
+EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+
+
+class EmailSendRequest(BaseModel):
+    email: str = Field(pattern=EMAIL_PATTERN, max_length=255)
+
+
+class EmailSendRead(BaseModel):
+    resend_seconds: int = Field(description="재발송 버튼 비활성화 시간")
+    dev_code: str | None = Field(default=None, description="DEV_LOGIN=true일 때만 포함")
+
+
+class EmailVerifyRequest(BaseModel):
+    email: str = Field(pattern=EMAIL_PATTERN, max_length=255)
+    code: str = Field(pattern=r"^\d{6}$")
+
+
+class EmailVerifyRead(BaseModel):
+    """기존 회원이면 로그인(쿠키 발급), 처음이면 가입 토큰 반환"""
+
+    signup_required: bool
+    signup_token: str | None = Field(default=None, description="가입 API에 전달, 10분 유효")
+    language: str | None = Field(default=None, description="로그인 시 저장된 언어")

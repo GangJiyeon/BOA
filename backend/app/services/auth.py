@@ -15,6 +15,15 @@ from app.core.security import create_access_token, hash_token, new_token
 from app.models import RefreshToken, User
 
 
+def normalize_email(email: str) -> str:
+    """모든 로그인·가입에서 사용 (Jiyeon@gmail.com = jiyeon@gmail.com)"""
+    return email.strip().lower()
+
+
+def find_user_by_email(db: Session, email: str) -> User | None:
+    return db.scalar(select(User).where(User.email == email))
+
+
 def issue_tokens(db: Session, response: Response, user_id: int) -> None:
     """액세스 토큰(JWT) + 새 리프레시 토큰 쿠키 발급, DB에는 리프레시 토큰 해시만 저장"""
     refresh_token = new_token()
