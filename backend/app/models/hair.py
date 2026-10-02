@@ -74,6 +74,7 @@ class HairStyleCatalog(Base):
 
     style_id: Mapped[str] = mapped_column(String(50), primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
+    # 한 스타일당 길이/질감 하나씩만 가진다 (예: "허쉬컷 숏" / "허쉬컷 미디움"처럼 조합별로 다른 행으로 등록)
     length: Mapped[str] = mapped_column(String(30))
     texture: Mapped[str] = mapped_column(String(30))
     # 예: {"둥근형": 0.9, "계란형": 0.7, ...}
@@ -132,8 +133,9 @@ class HairRecommendation(Base):
     style_id: Mapped[str] = mapped_column(ForeignKey("hair_style_catalog.style_id"))
 
     face_fit: Mapped[float] = mapped_column(Numeric(5, 4))
-    texture_fit: Mapped[float] = mapped_column(Numeric(5, 4))
-    length_fit: Mapped[float] = mapped_column(Numeric(5, 4))
+    # 선호 미선택 시 null (가중치 재정규화 대상)
+    texture_fit: Mapped[float | None] = mapped_column(Numeric(5, 4))
+    length_fit: Mapped[float | None] = mapped_column(Numeric(5, 4))
     # 0.5*face_fit + 0.25*texture_fit + 0.25*length_fit
     score: Mapped[float] = mapped_column(Numeric(5, 4))
 
