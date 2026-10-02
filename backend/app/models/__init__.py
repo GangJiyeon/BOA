@@ -7,6 +7,13 @@ from app.models.cosmetic import (
     Ingredient,
     ProductIngredient,
 )
+from app.models.hair import (
+    FaceAnalysis,
+    UserHairPreferences,
+    HairStyleCatalog,
+    HairRecRun,
+    HairRecommendation,
+)
 
 __all__ = [
     "Image",
@@ -18,4 +25,9 @@ __all__ = [
     "Product",
     "Ingredient",
     "ProductIngredient",
+    "FaceAnalysis",
+    "UserHairPreferences",
+    "HairStyleCatalog",
+    "HairRecRun",
+    "HairRecommendation",
 ]
