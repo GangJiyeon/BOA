@@ -1,13 +1,14 @@
-"""비회원 세션 생성·조회"""
+"""비회원 세션 생성·조회·이관"""
 
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.security import hash_token, new_token
-from app.models import GuestSession
+from app.models import GuestSession, SkinAnalysis
 
 
 def find_active_session(db: Session, guest_id: UUID | None) -> GuestSession | None:
@@ -53,3 +54,19 @@ def start_session(
     session.qr_token_hash = hash_token(qr_token)
     db.flush()
     return session, qr_token
+
+
+def transfer_to_user(db: Session, session: GuestSession, user_id: int) -> None:
+    """비회원 세션·분석 결과를 회원에게 이관 (가입, QR 저장 공통)
+
+    QR·만료 시각 비움 → 예전 QR로 회원 결과 조회 불가, 만료 배치 대상 제외
+    """
+    session.user_id = user_id
+    session.qr_token_hash = None
+    session.expires_at = None
+    # 분석 결과 테이블 (얼굴형·헤어 테이블 생기면 추가)
+    db.execute(
+        update(SkinAnalysis)
+        .where(SkinAnalysis.guest_id == session.id)
+        .values(user_id=user_id, expires_at=None)
+    )

@@ -1,18 +1,22 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.api.deps import Actor, get_actor
 from app.core.config import get_settings
-from app.core.cookies import REFRESH_COOKIE, clear_auth_cookies
-from app.core.security import create_signup_token
+from app.core.cookies import REFRESH_COOKIE, clear_auth_cookies, clear_guest_cookie
+from app.core.security import create_signup_token, decode_signup_token
 from app.db.session import get_db
 from app.schemas.account import (
     EmailSendRead,
     EmailSendRequest,
     EmailVerifyRead,
     EmailVerifyRequest,
+    SignupRead,
+    SignupRequest,
 )
-from app.services import auth, email_auth, mail
+from app.services import auth, email_auth, guest, mail, signup
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -52,6 +56,55 @@ def verify_email_code(
     auth.login(db, response, user)
     db.commit()
     return EmailVerifyRead(signup_required=False, language=user.language)
+
+
+@router.post(
+    "/signup",
+    status_code=201,
+    responses={401: {"description": "가입 토큰 만료"}, 409: {"description": "이미 가입된 이메일"}},
+)
+def signup_user(
+    body: SignupRequest,
+    response: Response,
+    actor: Actor = Depends(get_actor),
+    db: Session = Depends(get_db),
+) -> SignupRead:
+    """가입 완료: 회원·동의 이력 생성, 비회원 결과 이관, 로그인 (한 트랜잭션)"""
+    if actor.kind == "member":
+        raise HTTPException(400, "이미 로그인되어 있습니다")
+    email = decode_signup_token(body.signup_token)
+    if email is None:
+        raise HTTPException(401, "인증이 만료되었습니다. 이메일 인증을 다시 해 주세요")
+    if auth.find_user_by_email(db, email) is not None:
+        raise HTTPException(409, "이미 가입된 이메일입니다")
+    try:
+        agreed_terms = signup.validate_terms(db, body.agreed_terms_ids)
+    except signup.SignupError as e:
+        raise HTTPException(400, str(e)) from None
+
+    try:
+        user = signup.create_user(
+            db,
+            email=email,
+            language=body.language,
+            nationality=body.nationality,
+            resides_in_korea=body.resides_in_korea,
+            agreed_terms=agreed_terms,
+        )
+    except IntegrityError:
+        # 위 확인과 생성 사이에 같은 이메일로 동시 가입
+        db.rollback()
+        raise HTTPException(409, "이미 가입된 이메일입니다") from None
+
+    session = guest.find_active_session(db, actor.guest_id)
+    if session is not None:
+        guest.transfer_to_user(db, session, user.id)
+    auth.login(db, response, user)
+    db.commit()
+
+    if session is not None:
+        clear_guest_cookie(response)  # 세션이 회원 소유가 돼서 불필요
+    return SignupRead(user_id=user.id, language=user.language)
 
 
 @router.post("/refresh", status_code=204, responses={401: {"description": "다시 로그인 필요"}})

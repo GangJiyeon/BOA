@@ -70,3 +70,19 @@ class EmailVerifyRead(BaseModel):
     signup_required: bool
     signup_token: str | None = Field(default=None, description="가입 API에 전달, 10분 유효")
     language: str | None = Field(default=None, description="로그인 시 저장된 언어")
+
+
+Language = Literal["ko", "en", "zh", "ja"]
+
+
+class SignupRequest(BaseModel):
+    signup_token: str = Field(description="POST /api/auth/email/verify 응답의 signup_token")
+    language: Language
+    nationality: str = Field(pattern=r"^[A-Z]{2}$", description="ISO 3166-1 alpha-2 (예: KR, US)")
+    resides_in_korea: bool
+    agreed_terms_ids: list[int] = Field(description="체크한 약관 id, 필수 4종 포함")
+
+
+class SignupRead(BaseModel):
+    user_id: int
+    language: str
