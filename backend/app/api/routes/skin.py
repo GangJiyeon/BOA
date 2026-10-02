@@ -21,6 +21,7 @@ from app.schemas.skin import (
     ScoreRead,
 )
 from app.services import s3, skin_analysis, skin_scoring
+from app.services.errors import ErrorCode
 
 router = APIRouter(prefix="/skin", tags=["skin"])
 
@@ -28,6 +29,15 @@ router = APIRouter(prefix="/skin", tags=["skin"])
 DUMMY_LOGIC_VERSION = f"{skin_scoring.LOGIC_VERSION}-dummy"
 
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+def _error(status: int, code: str, message: str, detail: dict | None = None) -> HTTPException:
+    """프론트가 코드로 분기할 수 있는 형태로 에러를 만든다.
+
+    응답 본문: {"detail": {"code": ..., "message": ..., "detail": {...}}}
+    메시지 문구는 바뀔 수 있으므로 프론트는 code로 분기해야 한다.
+    """
+    return HTTPException(status, {"code": code, "message": message, "detail": detail or {}})
 
 
 def _get_with_scores(db: Session, analysis_id: int) -> SkinAnalysis | None:
@@ -76,7 +86,10 @@ def _photo_scores(image: Image | None, seed: str) -> tuple[dict[str, int], str]:
     """
     if image is not None and get_settings().s3_enabled:
         return (
-            skin_analysis.analyze_image(s3.download_bytes(image.s3_key)),
+            skin_analysis.analyze_image(
+                s3.download_bytes(image.s3_key),
+                min_face_width=get_settings().min_face_width_px,
+            ),
             skin_scoring.LOGIC_VERSION,
         )
     return dict(skin_analysis.analyze_image_dummy(seed)), DUMMY_LOGIC_VERSION
@@ -110,7 +123,7 @@ def _save(
             image_id=image_id,
         )
     except (skin_analysis.AnalysisError, skin_scoring.ScoringError) as e:
-        raise HTTPException(400, str(e)) from e
+        raise _error(400, e.code, str(e), e.detail) from e
 
     db.commit()
     return to_read(_get_with_scores(db, analysis.id))
@@ -123,7 +136,12 @@ def create_analysis(body: AnalysisCreate, db: Session = Depends(get_db)) -> Anal
     if body.image_id is not None:
         image = db.get(Image, body.image_id)
         if image is None:
-            raise HTTPException(404, f"이미지를 찾을 수 없습니다: {body.image_id}")
+            raise _error(
+                404,
+                ErrorCode.IMAGE_NOT_FOUND,
+                f"이미지를 찾을 수 없습니다: {body.image_id}",
+                {"image_id": body.image_id},
+            )
 
     seed = image.s3_key if image else str(body.guest_id or body.image_id or "dev")
     photo_scores, logic_version = _photo_scores(image, seed)
@@ -154,14 +172,19 @@ def create_analysis_debug(
     image_id는 항상 null이 된다. 응답에는 정규화 전 원시값(raw)이 함께 담긴다.
     """
     if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(
-            400, f"지원하지 않는 형식입니다: {file.content_type} (jpeg/png/webp만 가능)"
+        raise _error(
+            400,
+            ErrorCode.UNSUPPORTED_MEDIA_TYPE,
+            f"지원하지 않는 형식입니다: {file.content_type} (jpeg/png/webp만 가능)",
+            {"content_type": file.content_type, "allowed": sorted(ALLOWED_CONTENT_TYPES)},
         )
 
     try:
-        photo_scores, raw = skin_analysis.analyze_image_detail(file.file.read())
+        photo_scores, raw = skin_analysis.analyze_image_detail(
+            file.file.read(), min_face_width=get_settings().min_face_width_px
+        )
     except skin_analysis.AnalysisError as e:
-        raise HTTPException(400, str(e)) from e
+        raise _error(400, e.code, str(e), e.detail) from e
 
     saved = _save(
         db,
@@ -178,5 +201,10 @@ def create_analysis_debug(
 def get_analysis(analysis_id: int, db: Session = Depends(get_db)) -> AnalysisRead:
     analysis = _get_with_scores(db, analysis_id)
     if analysis is None:
-        raise HTTPException(404, f"분석 결과를 찾을 수 없습니다: {analysis_id}")
+        raise _error(
+            404,
+            ErrorCode.ANALYSIS_NOT_FOUND,
+            f"분석 결과를 찾을 수 없습니다: {analysis_id}",
+            {"analysis_id": analysis_id},
+        )
     return to_read(analysis)
