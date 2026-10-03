@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,11 +18,26 @@ from app.api.routes import (
     terms,
 )
 from app.core.config import get_settings
+from app.services import cleanup
 
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # 매일 새벽 4시(KST) 만료 데이터 정리
+    scheduler = BackgroundScheduler(timezone=cleanup.KST)
+    job = scheduler.add_job(cleanup.run_cleanup, "cron", hour=cleanup.RUN_HOUR, id="cleanup_expired")
+    scheduler.start()
+    cleanup.logger.info("[정리] 다음 실행: %s", job.next_run_time)
+    yield
+    scheduler.shutdown(wait=False)
+
+
 # 모든 API는 /api 아래에 둔다 (Vite 프록시, Vercel rewrites와 경로를 맞추기 위함)
-app = FastAPI(title="BOA API", docs_url="/api/docs", openapi_url="/api/openapi.json")
+app = FastAPI(
+    title="BOA API", docs_url="/api/docs", openapi_url="/api/openapi.json", lifespan=lifespan
+)
 
 app.add_middleware(
     CORSMiddleware,
