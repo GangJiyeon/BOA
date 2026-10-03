@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     guest_daily_limit_skin: int = 3
     guest_daily_limit_hair: int = 3
     ip_daily_limit: int = 30
+    # 키오스크 등록·해제용 관리자 코드 (비우면 등록 503), 기기 쿠키 수명(브라우저 최대 400일)
+    admin_code: str = ""
+    kiosk_token_days: int = 400
 
     # JWT 서명 키, 배포 시 변경 필수 (HS256은 32바이트 이상 권장)
     jwt_secret: str = "dev-jwt-secret-change-me-in-production"

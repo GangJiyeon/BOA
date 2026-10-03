@@ -114,3 +114,21 @@ class QrResultRead(BaseModel):
 
 class QrClaimRead(BaseModel):
     skin_count: int = Field(description="내 계정으로 옮긴 피부 분석 수")
+
+
+class KioskRegisterRequest(BaseModel):
+    admin_code: str
+
+
+class KioskRevokeRequest(BaseModel):
+    admin_code: str
+    kiosk_id: int = Field(description="GET /api/kiosk/me로 기기에서 확인")
+
+
+class KioskRead(BaseModel):
+    kiosk_id: int
+    registered_at: datetime
+
+
+class KioskStatusRead(KioskRead):
+    session_active: bool = Field(description="지금 사용 중인 사람(세션)이 있는지")

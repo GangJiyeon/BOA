@@ -10,6 +10,7 @@ from app.core.config import get_settings
 GUEST_COOKIE = "guest_id"
 ACCESS_COOKIE = "access_token"
 REFRESH_COOKIE = "refresh_token"
+KIOSK_COOKIE = "kiosk_token"
 # 리프레시 토큰은 갱신·로그아웃 요청에만 전송
 REFRESH_PATH = "/api/auth"
 
@@ -45,3 +46,13 @@ def set_auth_cookies(
 def clear_auth_cookies(response: Response) -> None:
     response.delete_cookie(ACCESS_COOKIE, **_options())
     response.delete_cookie(REFRESH_COOKIE, **_options(REFRESH_PATH))
+
+
+def set_kiosk_cookie(response: Response, kiosk_token: str) -> None:
+    # 해제 전까지 유지 (브라우저 최대 400일)
+    max_age = get_settings().kiosk_token_days * 24 * 60 * 60
+    response.set_cookie(KIOSK_COOKIE, kiosk_token, max_age=max_age, **_options())
+
+
+def clear_kiosk_cookie(response: Response) -> None:
+    response.delete_cookie(KIOSK_COOKIE, **_options())

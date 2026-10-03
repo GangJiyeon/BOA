@@ -30,6 +30,8 @@ def create_guest_session(
     """
     if actor.kind == "member":
         raise HTTPException(400, "회원은 비회원 세션이 필요하지 않습니다")
+    if actor.kind == "kiosk":
+        raise HTTPException(400, "키오스크는 POST /api/kiosk/session을 사용합니다")
 
     face_terms = terms.current_terms_of(db, terms.FACE_IMAGE)
     if face_terms is None or face_terms.id != body.face_terms_id:
