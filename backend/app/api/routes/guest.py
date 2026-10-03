@@ -5,8 +5,13 @@ from app.api.deps import Actor, get_actor
 from app.core.cookies import set_guest_cookie
 from app.core.security import client_ip, hash_ip
 from app.db.session import get_db
-from app.schemas.account import GuestSessionCreate, GuestSessionRead
-from app.services import guest, terms
+from app.schemas.account import (
+    GuestSessionCreate,
+    GuestSessionRead,
+    QuotaItem,
+    QuotaRead,
+)
+from app.services import guest, quota, terms
 
 router = APIRouter(prefix="/guest", tags=["guest"])
 
@@ -40,3 +45,14 @@ def create_guest_session(
 
     set_guest_cookie(response, session.id, session.expires_at)
     return GuestSessionRead(qr_token=qr_token, expires_at=session.expires_at)
+
+
+@router.get("/quota")
+def read_quota(actor: Actor = Depends(get_actor), db: Session = Depends(get_db)) -> QuotaRead:
+    """오늘 남은 분석 횟수 (비회원만 제한, 화면의 "오늘 N회 남음" 표시용)"""
+
+    def item(kind: quota.QuotaKind) -> QuotaItem:
+        usage = quota.get_usage(db, actor, kind)
+        return QuotaItem(limit=usage.limit, used=usage.used, remaining=usage.remaining)
+
+    return QuotaRead(skin=item("skin"), hair=item("hair"))

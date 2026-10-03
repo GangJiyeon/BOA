@@ -90,3 +90,14 @@ class SignupRead(BaseModel):
 
 class GoogleLoginRequest(BaseModel):
     code: str = Field(description="구글이 프론트로 돌려준 인가 코드")
+
+
+class QuotaItem(BaseModel):
+    limit: int | None = Field(description="하루 한도, null이면 제한 없음 (회원·키오스크)")
+    used: int
+    remaining: int | None
+
+
+class QuotaRead(BaseModel):
+    skin: QuotaItem
+    hair: QuotaItem

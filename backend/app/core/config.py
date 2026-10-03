@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # 로컬 false, 배포 true(Safari는 http에서 Secure 쿠키 막음)
     cookie_secure: bool = False
     guest_session_days: int = 7
+    # 비회원 하루 횟수 (0이면 제한 없음), IP는 기능별로 세션 합산
+    guest_daily_limit_skin: int = 3
+    guest_daily_limit_hair: int = 3
+    ip_daily_limit: int = 30
 
     # JWT 서명 키, 배포 시 변경 필수 (HS256은 32바이트 이상 권장)
     jwt_secret: str = "dev-jwt-secret-change-me-in-production"
