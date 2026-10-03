@@ -9,6 +9,7 @@ from app.api.routes import (
     health,
     images,
     kiosk,
+    me,
     qr,
     skin,
     terms,
@@ -38,6 +39,7 @@ api.include_router(guest.router)
 api.include_router(auth.router)
 api.include_router(qr.router)
 api.include_router(kiosk.router)
+api.include_router(me.router)
 # 개발용 로그인은 DEV_LOGIN=true일 때만 노출한다
 if settings.dev_login:
     api.include_router(dev.router)

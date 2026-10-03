@@ -132,3 +132,30 @@ class KioskRead(BaseModel):
 
 class KioskStatusRead(KioskRead):
     session_active: bool = Field(description="지금 사용 중인 사람(세션)이 있는지")
+
+
+class MeRead(BaseModel):
+    email: str
+    language: str
+    nationality: str | None
+    resides_in_korea: bool | None
+    google_linked: bool
+
+
+class MeUpdate(BaseModel):
+    """명세상 수정 가능한 건 언어뿐"""
+
+    language: Language
+
+
+class ConsentStatusRead(BaseModel):
+    type: str
+    required: bool
+    agreed: bool
+    version: str | None = Field(description="마지막으로 동의·철회한 약관 버전, 기록 없으면 null")
+    updated_at: datetime | None
+
+
+class ConsentChangeRequest(BaseModel):
+    type: str = Field(description="선택 약관만 (PHOTO_STORAGE, MARKETING)")
+    action: Literal["AGREE", "WITHDRAW"]
