@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     email_code_minutes: int = 10
     email_max_attempts: int = 5
     email_resend_seconds: int = 60
+    # 구글 OAuth (비우면 구글 로그인 503)
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    # 프론트가 인가 코드를 받은 redirect_uri와 같아야 함 (GIS 팝업 방식은 postmessage)
+    google_redirect_uri: str = "postmessage"
     # 개발용 로그인 API(POST /api/auth/dev-login), 배포에서는 false
     dev_login: bool = False
 

@@ -24,6 +24,28 @@ def find_user_by_email(db: Session, email: str) -> User | None:
     return db.scalar(select(User).where(User.email == email))
 
 
+class GoogleAccountConflict(Exception):
+    pass
+
+
+def find_or_link_google_user(db: Session, google_sub: str, email: str) -> User | None:
+    """google_sub로 회원 조회, 없으면 같은 이메일 회원에 구글 연결, 둘 다 없으면 None
+
+    이메일 연결은 구글이 email_verified를 보장한 경우만 (google.verify_id_token에서 확인)
+    """
+    user = db.scalar(select(User).where(User.google_sub == google_sub))
+    if user is not None:
+        return user
+    user = find_user_by_email(db, email)
+    if user is None:
+        return None
+    if user.google_sub is not None:
+        # 같은 이메일이 다른 구글 계정과 이미 연결됨
+        raise GoogleAccountConflict
+    user.google_sub = google_sub
+    return user
+
+
 def issue_tokens(db: Session, response: Response, user_id: int) -> None:
     """액세스 토큰(JWT) + 새 리프레시 토큰 쿠키 발급, DB에는 리프레시 토큰 해시만 저장"""
     refresh_token = new_token()

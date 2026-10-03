@@ -64,8 +64,8 @@ class EmailVerifyRequest(BaseModel):
     code: str = Field(pattern=r"^\d{6}$")
 
 
-class EmailVerifyRead(BaseModel):
-    """기존 회원이면 로그인(쿠키 발급), 처음이면 가입 토큰 반환"""
+class LoginResultRead(BaseModel):
+    """이메일·구글 로그인 공통: 기존 회원이면 로그인(쿠키 발급), 처음이면 가입 토큰 반환"""
 
     signup_required: bool
     signup_token: str | None = Field(default=None, description="가입 API에 전달, 10분 유효")
@@ -76,7 +76,7 @@ Language = Literal["ko", "en", "zh", "ja"]
 
 
 class SignupRequest(BaseModel):
-    signup_token: str = Field(description="POST /api/auth/email/verify 응답의 signup_token")
+    signup_token: str = Field(description="email/verify 또는 google 응답의 signup_token")
     language: Language
     nationality: str = Field(pattern=r"^[A-Z]{2}$", description="ISO 3166-1 alpha-2 (예: KR, US)")
     resides_in_korea: bool
@@ -86,3 +86,7 @@ class SignupRequest(BaseModel):
 class SignupRead(BaseModel):
     user_id: int
     language: str
+
+
+class GoogleLoginRequest(BaseModel):
+    code: str = Field(description="구글이 프론트로 돌려준 인가 코드")

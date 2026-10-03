@@ -30,10 +30,12 @@ def create_user(
     nationality: str,
     resides_in_korea: bool,
     agreed_terms: list[Terms],
+    google_sub: str | None = None,
 ) -> User:
-    """회원 생성 + 동의 이력(AGREE), 이메일 중복이면 flush에서 IntegrityError"""
+    """회원 생성 + 동의 이력(AGREE), 이메일·구글 계정 중복이면 flush에서 IntegrityError"""
     user = User(
         email=email,
+        google_sub=google_sub,
         language=language,
         nationality=nationality,
         resides_in_korea=resides_in_korea,
