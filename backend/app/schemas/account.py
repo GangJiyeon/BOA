@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.deps import ActorKind
+from app.schemas.skin import AnalysisRead
 
 
 class TermsRead(BaseModel):
@@ -101,3 +102,15 @@ class QuotaItem(BaseModel):
 class QuotaRead(BaseModel):
     skin: QuotaItem
     hair: QuotaItem
+
+
+class QrResultRead(BaseModel):
+    """QR 결과, 얼굴 사진·사진 id는 포함 안 함"""
+
+    expires_at: datetime
+    skin: list[AnalysisRead]
+    hair: list[dict] = Field(default_factory=list, description="헤어 파트 머지 후 추가")
+
+
+class QrClaimRead(BaseModel):
+    skin_count: int = Field(description="내 계정으로 옮긴 피부 분석 수")

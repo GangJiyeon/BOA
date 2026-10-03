@@ -3,7 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -24,6 +24,12 @@ def find_active_session(db: Session, guest_id: UUID | None) -> GuestSession | No
     if session.expires_at <= datetime.now(UTC):
         return None
     return session
+
+
+def find_by_qr_token(db: Session, qr_token: str) -> GuestSession | None:
+    """QR 토큰으로 비회원 세션 조회, 없거나 만료·이관된 세션이면 None"""
+    session = db.scalar(select(GuestSession).where(GuestSession.qr_token_hash == hash_token(qr_token)))
+    return find_active_session(db, session.id) if session is not None else None
 
 
 def start_session(

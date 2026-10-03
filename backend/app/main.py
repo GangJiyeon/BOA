@@ -1,7 +1,7 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import actor, auth, dev, guest, health, images, skin, terms
+from app.api.routes import actor, auth, dev, guest, health, images, qr, skin, terms
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -25,6 +25,7 @@ api.include_router(actor.router)
 api.include_router(terms.router)
 api.include_router(guest.router)
 api.include_router(auth.router)
+api.include_router(qr.router)
 # 개발용 로그인은 DEV_LOGIN=true일 때만 노출한다
 if settings.dev_login:
     api.include_router(dev.router)
