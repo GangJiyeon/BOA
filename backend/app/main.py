@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes import (
     actor,
     auth,
+    cosmetics,
     dev,
     guest,
     hair,
@@ -53,6 +54,8 @@ api = APIRouter(prefix="/api")
 api.include_router(health.router)
 api.include_router(images.router)
 api.include_router(skin.router)
+api.include_router(cosmetics.router)
+api.include_router(hair.router)
 api.include_router(actor.router)
 api.include_router(terms.router)
 api.include_router(guest.router)
@@ -64,6 +67,5 @@ api.include_router(me.router)
 if settings.dev_login:
     api.include_router(dev.router)
 app.include_router(api)
-api.include_router(hair.router) 
 
 app.mount("/static", StaticFiles(directory="static"), name="static")

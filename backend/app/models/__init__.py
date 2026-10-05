@@ -47,3 +47,7 @@ __all__ = [
     "HairRecRun",
     "HairRecommendation",
 ]
+from app.models.cosmetic_rule import CategoryIngredient, CosmeticRuleEvidence, CosmeticRuleSet
+__all__ += ["CategoryIngredient", "CosmeticRuleEvidence", "CosmeticRuleSet"]
+from app.models.cosmetic_observation import CosmeticObservationBatch, ProductIngredientObservation
+__all__ += ["CosmeticObservationBatch", "ProductIngredientObservation"]

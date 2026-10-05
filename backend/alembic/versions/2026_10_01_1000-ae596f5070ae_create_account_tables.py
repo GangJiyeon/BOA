@@ -5,7 +5,7 @@
 >> 참고: user, terms, guest_session 등 단수형(이전 스키마) 테이블은 삭제(있다면)
 
 Revision ID: ae596f5070ae
-Revises: cc6b285ae356
+Revises: e0710a1b2c3d
 Create Date: 2026-10-01 10:00:00.000000
 
 """
@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "ae596f5070ae"
-down_revision: Union[str, Sequence[str], None] = "cc6b285ae356"
+down_revision: Union[str, Sequence[str], None] = "e0710a1b2c3d"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

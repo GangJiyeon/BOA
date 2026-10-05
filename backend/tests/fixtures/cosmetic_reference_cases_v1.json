@@ -1,0 +1,23 @@
+{
+  "source_sha256": "7096c10e71cde631c9083e8eb351fcb75cd700c542fef23a716e6b7adabb0216",
+  "rule_fingerprint": "d14439693f8ff6f1cecc33a1fbf695b11d94dc2a71c5a0aaba26123d9966d41c",
+  "engine_version": "cosmetic-preview-v3.3",
+  "purpose": "실제 원본 제품의 코드 동작 검수. 포함 기대는 효능·안전성 승인 또는 임상 정답이 아니다.",
+  "cases": [
+    {"id":"hydration_candidate","product":"A000000141662","scenario":"moisture_only","metrics":["moisture"],"groups":1,"ingredients":["글리세린"],"blocked_by":null,"reason":"페이스&바디 겸용 표기와 글리세린 함유로 수분 후보. 제조사 사용법 검증과 구분."},
+    {"id":"eye_scope_hold","product":"A000000200168","scenario":"moisture_only","metrics":[],"groups":0,"ingredients":[],"blocked_by":"excluded_by_usage","reason":"수분 매칭 성분이 있어도 눈가용 표기를 먼저 보류."},
+    {"id":"wash_off_hold","product":"A000000234010","scenario":"trouble_only","metrics":[],"groups":0,"ingredients":[],"blocked_by":"excluded_by_usage","reason":"살리실산 함량 표기가 있어도 워시오프 제품은 후보 범위 밖."},
+    {"id":"body_scope_hold","product":"A000000246674","scenario":"moisture_only","metrics":[],"groups":0,"ingredients":[],"blocked_by":"excluded_by_usage","reason":"바디용 범위 필터 확인. 이 제품은 활성 성분도 없어 이전 엔진에서 실제 추천됐다는 증거는 아님."},
+    {"id":"urea_no_independent_bonus","product":"A000000147109","scenario":"moisture_only","metrics":["moisture"],"groups":1,"ingredients":["글리세린"],"blocked_by":null,"reason":"현재 v1에서 우레아 가점은 보류. 수분 매칭 이유는 글리세린만."},
+    {"id":"redness_exclusion_overrides_hydration","product":"A000000147109","scenario":"moisture_redness","metrics":[],"groups":0,"ingredients":[],"blocked_by":"excluded_by_ingredient","reason":"조건부 우레아·락틱애씨드 배제가 수분 매칭보다 우선."},
+    {"id":"shared_pigmentation_evidence","product":"A000000117997","scenario":"brightness_uniformity","metrics":["brightness","uniformity"],"groups":1,"ingredients":["나이아신아마이드"],"blocked_by":null,"reason":"현재 가정 아래 두 지표 매칭이지만 한 고민 그룹. 독립 효능 두 개로 해석 금지."},
+    {"id":"low_reported_amount_is_not_efficacy","product":"A000000117997","scenario":"trouble_only","metrics":["trouble"],"groups":1,"ingredients":["살리실릭애씨드"],"blocked_by":null,"reason":"원문 100 ppm은 현재 매칭 점수에 영향 없음. 여드름 치료 효과를 입증한 사례가 아님."},
+    {"id":"unreported_amount_same_matching_rule","product":"A000000156040","scenario":"trouble_only","metrics":["trouble"],"groups":1,"ingredients":["살리실릭애씨드"],"blocked_by":null,"reason":"함량 미표기여도 함유 후보 매칭. 농도 누락을 0으로 취급하지 않음."},
+    {"id":"redness_rule_gap","product":"A000000156040","scenario":"redness_only","metrics":[],"groups":0,"ingredients":[],"blocked_by":"no_matching_metric","reason":"판테놀·병풀 함유를 근거로 붉은기 가점을 만들어내지 않음."},
+    {"id":"user_exclusion_overrides_match","product":"A000000117997","scenario":"brightness_uniformity","request_overrides":{"excluded_ingredients":["나이아신아마이드"],"avoid_redness_triggers":false},"metrics":[],"groups":0,"ingredients":[],"blocked_by":"excluded_by_ingredient","reason":"자동 배제 옵션을 꺼도 사용자 지정 배제 적용."},
+    {"id":"brand_name_not_body_scope","product":"A000000206409","scenario":"moisture_only","metrics":["moisture"],"groups":1,"ingredients":["글리세린"],"blocked_by":null,"reason":"더바디샵이라는 브랜드를 바디 전용으로 오인하지 않음."},
+    {"id":"ethanol_conditional_exclusion","product":"A000000206409","scenario":"moisture_redness","metrics":[],"groups":0,"ingredients":[],"blocked_by":"excluded_by_ingredient","reason":"붉은기 조건에서는 에탄올·변성알코올 규칙으로 배제."},
+    {"id":"explicit_face_scope","product":"A000000180559","scenario":"moisture_only","metrics":["moisture"],"groups":1,"ingredients":["글리세린","판테놀","하이알루로닉애씨드"],"blocked_by":null,"reason":"포 페이스 표기는 추정 후보 허용. 여러 수분 성분이 있어도 지표는 1점."},
+    {"id":"missing_moisture_no_dryness_assumption","product":"A000000141662","scenario":"all_good","request_overrides":{"scores":{"moisture":null,"redness":10,"brightness":80,"trouble":10,"uniformity":80}},"metrics":[],"groups":0,"ingredients":[],"blocked_by":"no_matching_metric","reason":"수분 미측정을 건조함으로 추정하지 않음."}
+  ]
+}
