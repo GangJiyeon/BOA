@@ -38,14 +38,43 @@ MAX_IMAGE_SIDE = 1024
 DEFAULT_MIN_FACE_WIDTH = 250
 
 # ── 지표별 정규화 구간 (원시값 lo → 0점, hi → 100점) ──────────────────
-# 전부 샘플 사진으로 조정해야 하는 잠정값이다.
+# 절대적인 임상 기준이 없으므로, 같은 조명에서 촬영한 표본 5장의 분포에서
+# 33/67 분위수가 판정 구간 경계(33점/67점)에 오도록 역산한 값이다.
+# 즉 "이 점수는 표본 분포상의 상대 위치"라는 의미이며, 표본이 늘어나면
+# 분위수를 다시 계산해 갱신해야 한다.
 BRIGHTNESS_RANGE = (100.0, 210.0)    # 피부 영역 L 채널 평균 (0~255)
-REDNESS_RANGE = (2.0, 15.0)          # 볼·이마의 a* 평균 (중립=0)
-TROUBLE_RANGE = (0.0, 0.02)          # 반점으로 탐지된 픽셀 비율
-UNIFORMITY_STD_RANGE = (10.0, 35.0)  # 피부 영역 L 채널 표준편차 (낮을수록 균일)
+REDNESS_RANGE = (6.0, 14.0)          # 볼·이마의 홍조 지수 (R/G 로그비)
+TROUBLE_RANGE = (0.0, 0.028)         # 반점으로 탐지된 픽셀 비율
+UNIFORMITY_STD_RANGE = (14.0, 27.0)  # 피부 영역 L 채널 표준편차 (낮을수록 균일)
 
-# 주변보다 이만큼 붉으면 트러블로 본다 (a* 기준, 국소 중앙값 대비)
-TROUBLE_A_THRESHOLD = 3.0
+# 트러블 판정 임계값은 사진마다 다르게 잡는다.
+# 그 사진 피부의 평소 질감 변동폭(로버스트 표준편차)의 몇 배를 넘어야
+# 트러블로 볼 것인가. 고정 임계값을 쓰면 밝게 찍힌 사진일수록 미세한
+# 요철까지 또렷해져 점수가 부풀려진다.
+# 홍조 지수를 uint8로 옮길 때 쓰는 배율.
+# 지수 1단위를 16단계로 쪼개므로 변동폭(MAD) 계산의 양자화 오차가 작다.
+# 담는 기준점은 그 사진 피부의 중앙값으로 잡아, 전체적으로 붉은 피부에서도
+# 표현 범위(중앙값 ±8 지수)가 밀리지 않게 한다.
+TROUBLE_INDEX_GAIN = 16.0
+
+TROUBLE_SIGMA_FACTOR = 3.0
+# 질감이 지나치게 평탄한 사진에서 임계값이 0에 수렴하지 않도록 둔 하한 (지수 단위)
+TROUBLE_MIN_THRESHOLD = 0.8
+
+# 트러블로 인정할 최소 덩어리 지름 (얼굴 너비 대비 비율).
+# 실제 병변은 덩어리로 뭉쳐 있고 센서 노이즈는 흩어진 점이다.
+# 이 필터가 없으면 밝게 찍힌 사진일수록 노이즈가 더 많이 잡혀 점수가 부풀려진다.
+TROUBLE_MIN_BLOB_RATIO = 0.01
+
+# 노출이 극단적인 사진은 어떤 보정으로도 정보를 복원할 수 없어 거부한다.
+# 피부 영역 L 채널 평균 기준.
+EXPOSURE_L_RANGE = (80.0, 235.0)
+
+# 밝기 평균은 정상이어도 일부 영역만 날아가는(채널 포화) 사진이 있다.
+# 포화된 곳은 색 정보가 사라져 트러블·홍조가 실제보다 낮게 나오므로,
+# 피부 픽셀 중 이 비율을 넘게 포화되면 거부한다.
+SATURATED_CHANNEL_LEVEL = 250
+MAX_SATURATED_SKIN_RATIO = 0.05
 
 # 피부 마스크 정제 강도. 중앙값에서 이 배수(MAD 기준)를 벗어난 픽셀은 버린다.
 # 머리카락·그림자·안경처럼 피부가 아닌 것이 마스크에 섞이면 통계가 망가진다.
@@ -197,8 +226,8 @@ def _region_masks(image: np.ndarray, landmarks: np.ndarray) -> dict[str, np.ndar
     return masks
 
 
-def _white_balanced_lab(image: np.ndarray) -> np.ndarray:
-    """이미지 전체 기준 그레이월드 보정 후 Lab으로 변환한다.
+def _white_balance(image: np.ndarray) -> np.ndarray:
+    """이미지 전체 기준 그레이월드 보정을 적용한 BGR 이미지를 돌려준다.
 
     기준을 피부 영역으로 잡으면 피부 평균색이 회색으로 강제되어
     홍조 신호가 통째로 사라진다. 그래서 화면 전체를 기준으로 삼는다.
@@ -212,11 +241,23 @@ def _white_balanced_lab(image: np.ndarray) -> np.ndarray:
         if mean > 1.0:
             balanced[:, :, channel] *= target / mean
 
-    balanced = np.clip(balanced, 0, 255).astype(np.uint8)
-    return cv2.cvtColor(balanced, cv2.COLOR_BGR2LAB)
+    return np.clip(balanced, 0, 255).astype(np.uint8)
 
 
 # ── 지표별 계산 ─────────────────────────────────────────────────────
+
+
+def _redness_index(image: np.ndarray) -> np.ndarray:
+    """홍조 지수 맵. 100 * log10(R / G).
+
+    a* 같은 절대 색차는 노출에 따라 압축되거나 벌어진다. 어두운 사진에서는
+    붉은기가 있어도 값이 작게 나온다. 반면 R과 G의 비율은 노출이 바뀌어도
+    함께 변하므로 거의 유지된다. 피부과에서 쓰는 Erythema Index와 같은 원리다.
+    """
+    blue_green_red = image.astype(np.float32) + 1.0  # log(0) 방지
+    green = blue_green_red[:, :, 1]
+    red = blue_green_red[:, :, 2]
+    return 100.0 * np.log10(red / green)
 
 
 def _brightness(lab: np.ndarray, skin: np.ndarray) -> tuple[int, float]:
@@ -224,25 +265,56 @@ def _brightness(lab: np.ndarray, skin: np.ndarray) -> tuple[int, float]:
     return _linear_score(mean_l, *BRIGHTNESS_RANGE), mean_l
 
 
-def _redness(lab: np.ndarray, patches: np.ndarray) -> tuple[int, float]:
-    # OpenCV Lab에서 a 채널은 128이 중립이다
-    mean_a = cv2.mean(lab[:, :, 1], mask=patches)[0] - 128.0
-    return _linear_score(mean_a, *REDNESS_RANGE), mean_a
+def _redness(index_map: np.ndarray, patches: np.ndarray) -> tuple[int, float]:
+    mean_index = cv2.mean(index_map, mask=patches)[0]
+    return _linear_score(mean_index, *REDNESS_RANGE), mean_index
 
 
-def _trouble(lab: np.ndarray, skin: np.ndarray, face_width: float) -> tuple[int, float]:
-    """국소 중앙값보다 유독 붉은 픽셀의 비율로 트러블을 추정한다."""
-    a_channel = lab[:, :, 1]
+def _trouble(
+    index_map: np.ndarray, skin: np.ndarray, face_width: float
+) -> tuple[int, float, float]:
+    """평소 질감보다 유독 붉은 '덩어리'의 면적 비율로 트러블을 추정한다.
+
+    임계값을 그 사진의 질감 변동폭에 맞춰 잡으므로, 촬영 밝기에 따라
+    같은 피부가 다르게 판정되는 문제를 줄인다.
+    """
+    # 픽셀 단위 센서 노이즈 완화 (실수 상태에서 먼저 처리한다)
+    smooth = cv2.GaussianBlur(index_map.astype(np.float32), (3, 3), 0)
+
+    # 이 사진 피부의 지수 중앙값을 기준점으로 삼아 uint8 격자에 담는다.
+    # medianBlur가 uint8만 받기 때문이며, 배경 추정용으로만 쓴다.
+    center = float(np.median(smooth[skin > 0]))
+    fine = (smooth - center) * TROUBLE_INDEX_GAIN
+    scaled = np.clip(fine + 128.0, 0, 255).astype(np.uint8)
 
     # 얼굴 크기에 비례한 홀수 커널 (작은 반점만 남기고 넓은 홍조는 상쇄)
     kernel = max(3, int(face_width * 0.05) | 1)
-    local_median = cv2.medianBlur(a_channel, kernel)
+    local_median = cv2.medianBlur(scaled, kernel).astype(np.float32) - 128.0
 
-    deviation = a_channel.astype(np.int16) - local_median.astype(np.int16)
-    blemish = (deviation > TROUBLE_A_THRESHOLD) & (skin > 0)
+    # 주변 피부 대비 얼마나 붉은지 (양자화되지 않은 실수값으로 계산)
+    deviation = fine - local_median
 
-    ratio = float(np.count_nonzero(blemish)) / float(np.count_nonzero(skin))
-    return _linear_score(ratio, *TROUBLE_RANGE), ratio
+    # 이 사진 피부의 평소 변동폭 (MAD 기반 로버스트 표준편차)
+    spread = 1.4826 * float(np.median(np.abs(deviation[skin > 0])))
+    threshold = max(
+        TROUBLE_MIN_THRESHOLD * TROUBLE_INDEX_GAIN, TROUBLE_SIGMA_FACTOR * spread
+    )
+
+    candidate = ((deviation > threshold) & (skin > 0)).astype(np.uint8)
+
+    # 지름이 기준 미만인 조각은 노이즈로 보고 버린다
+    min_diameter = max(2.0, face_width * TROUBLE_MIN_BLOB_RATIO)
+    min_area = max(4, int(np.pi / 4 * min_diameter**2))
+
+    count, _, stats, _ = cv2.connectedComponentsWithStats(candidate, connectivity=8)
+    blemish_px = sum(
+        int(stats[i, cv2.CC_STAT_AREA])
+        for i in range(1, count)  # 0번은 배경
+        if stats[i, cv2.CC_STAT_AREA] >= min_area
+    )
+
+    ratio = blemish_px / float(np.count_nonzero(skin))
+    return _linear_score(ratio, *TROUBLE_RANGE), ratio, threshold / TROUBLE_INDEX_GAIN
 
 
 def _uniformity(lab: np.ndarray, skin: np.ndarray) -> tuple[int, float]:
@@ -266,7 +338,8 @@ def analyze_image_detail(
     """
     image = _decode(image_bytes)
     landmarks = _detect_landmarks(image)
-    lab = _white_balanced_lab(image)
+    balanced = _white_balance(image)
+    lab = cv2.cvtColor(balanced, cv2.COLOR_BGR2LAB)
     face_width = float(np.ptp(landmarks[:, 0]))
 
     # 얼굴이 너무 작으면 트러블 탐지가 둔해져 점수를 신뢰할 수 없다
@@ -301,9 +374,45 @@ def analyze_image_detail(
     if int(np.count_nonzero(red_mask)) < 100:
         red_mask = skin  # 볼·이마가 모두 가려졌으면 전체로 대체
 
-    redness, mean_a = _redness(lab, red_mask)
     brightness, mean_l = _brightness(lab, skin)
-    trouble, blemish_ratio = _trouble(lab, skin, face_width)
+
+    # 노출이 극단적이면 어떤 보정으로도 피부 정보가 남아 있지 않다
+    low, high = EXPOSURE_L_RANGE
+    if mean_l < low:
+        raise AnalysisError(
+            f"사진이 너무 어둡습니다 (피부 밝기 {mean_l:.0f}, 최소 {low:.0f}). "
+            "조명이 있는 곳에서 다시 촬영해주세요.",
+            code=ErrorCode.IMAGE_TOO_DARK,
+            detail={"mean_l": round(mean_l, 1), "required_min": low},
+        )
+    if mean_l > high:
+        raise AnalysisError(
+            f"사진이 너무 밝습니다 (피부 밝기 {mean_l:.0f}, 최대 {high:.0f}). "
+            "직사광이나 강한 조명을 피해 다시 촬영해주세요.",
+            code=ErrorCode.IMAGE_TOO_BRIGHT,
+            detail={"mean_l": round(mean_l, 1), "required_max": high},
+        )
+
+    # 평균은 괜찮아도 하이라이트가 날아간 사진은 색 정보가 없어 거부한다
+    skin_pixels = image[skin > 0]  # 보정 전 원본 기준으로 포화 여부를 본다
+    saturated_ratio = float(
+        np.mean(skin_pixels.max(axis=1) >= SATURATED_CHANNEL_LEVEL)
+    )
+    if saturated_ratio > MAX_SATURATED_SKIN_RATIO:
+        raise AnalysisError(
+            f"사진 일부가 하얗게 날아갔습니다 (포화 {saturated_ratio * 100:.0f}%, "
+            f"최대 {MAX_SATURATED_SKIN_RATIO * 100:.0f}%). "
+            "직사광이나 플래시 반사를 피해 다시 촬영해주세요.",
+            code=ErrorCode.IMAGE_TOO_BRIGHT,
+            detail={
+                "saturated_ratio": round(saturated_ratio, 3),
+                "required_max": MAX_SATURATED_SKIN_RATIO,
+            },
+        )
+
+    index_map = _redness_index(balanced)
+    redness, mean_index = _redness(index_map, red_mask)
+    trouble, blemish_ratio, trouble_threshold = _trouble(index_map, skin, face_width)
     uniformity, std_l = _uniformity(lab, skin)
 
     scores = {
@@ -313,16 +422,18 @@ def analyze_image_detail(
         "uniformity": uniformity,
     }
     raw = {
-        "mean_a_patch": round(mean_a, 2),          # REDNESS_RANGE 기준
+        "redness_index": round(mean_index, 2),     # REDNESS_RANGE 기준
         "mean_l_skin": round(mean_l, 2),           # BRIGHTNESS_RANGE 기준
+        "saturated_ratio": round(saturated_ratio, 3),
         "blemish_ratio": round(blemish_ratio, 5),  # TROUBLE_RANGE 기준
+        "trouble_threshold": round(trouble_threshold, 2),  # 이 사진에 적용된 임계값
         "std_l_skin": round(std_l, 2),             # UNIFORMITY_STD_RANGE 기준
         "face_width_px": round(face_width, 1),
         "skin_px": int(np.count_nonzero(skin)),
     }
     # 부위별 측정치 (어느 부위가 붉은지/어두운지 확인용)
     for name, mask in regions.items():
-        raw[f"{name}_a"] = round(cv2.mean(lab[:, :, 1], mask=mask)[0] - 128.0, 2)
+        raw[f"{name}_idx"] = round(cv2.mean(index_map, mask=mask)[0], 2)
         raw[f"{name}_l"] = round(cv2.mean(lab[:, :, 0], mask=mask)[0], 2)
 
     return scores, raw
