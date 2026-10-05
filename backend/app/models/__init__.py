@@ -1,4 +1,13 @@
 # Alembic autogenerate가 테이블을 인식하려면 모든 모델을 여기서 import 해야 한다
+from app.models.account import (
+    ConsentHistory,
+    EmailVerification,
+    GuestSession,
+    Kiosk,
+    RefreshToken,
+    Terms,
+    User,
+)
 from app.models.image import Image
 from app.models.skin import SkinAnalysis, SkinMetric, SkinMetricCategory, SkinScore
 from app.models.cosmetic import (
@@ -16,6 +25,13 @@ from app.models.hair import (
 )
 
 __all__ = [
+    "ConsentHistory",
+    "EmailVerification",
+    "GuestSession",
+    "Kiosk",
+    "RefreshToken",
+    "Terms",
+    "User",
     "Image",
     "SkinAnalysis",
     "SkinMetric",
