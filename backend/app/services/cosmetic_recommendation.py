@@ -52,7 +52,7 @@ def assess_scores(request: CosmeticPreviewRequest, definitions: list[MetricDefin
     if len(by_code) != len(definitions):
         raise RecommendationConfigurationError("중복된 지표 코드가 있습니다.")
     assessments = []
-    for code, score in request.scores.model_dump().items():
+    for code, score in request.normalized_scores.model_dump().items():
         if score is None:
             continue
         definition = by_code.get(code)
@@ -68,6 +68,12 @@ def assess_scores(request: CosmeticPreviewRequest, definitions: list[MetricDefin
                 or (not definition.higher_is_better and (concern_high != 100 or concern_low == 0))):
             raise RecommendationConfigurationError(f"{code} 개선 필요 구간이 점수 방향과 맞지 않습니다.")
         category = next(name for name, low, high in ranges if low <= score <= high)
+        if isinstance(request.scores, list):
+            supplied = next(s for s in request.scores if s.metric_code == code)
+            if supplied.higher_is_better != definition.higher_is_better:
+                raise RecommendationInputError(f"{code} 점수 방향이 현재 지표 정의와 다릅니다.")
+            if supplied.category_name != category:
+                raise RecommendationInputError(f"{code} 상태 라벨이 현재 판정 기준과 다릅니다. 분석 기준을 확인해 주세요.")
         assessments.append(MetricAssessment(
             code=code, name=definition.name, score=score, category=category,
             needs_improvement=category == "개선 필요",
@@ -107,6 +113,11 @@ def recommend(
     active = [r for r in sorted(rule_bundle.rules, key=lambda r: r.code) if r.status == "active"
               and r.metric in targets and r.category == targets[r.metric].category
               and (r.condition == "always" or request.avoid_redness_triggers)]
+    if request.score_semantics == "photo_v1":
+        # 평균 명도/명도 편차/붉은 반점 비율은 색소침착·면포 검출값이 아니다.
+        unsupported = {"brightness", "uniformity", "trouble"}
+        active = [r for r in active if r.metric not in unsupported]
+        notices.append("사진의 밝기·명도 균일도·붉은 반점 점수는 색소침착·모공 막힘을 확인하지 않아 해당 성분 매칭을 보류합니다.")
     matching_rules = [r for r in active if r.effect == "match"]
     deferred = sorted(set(targets) - {r.metric for r in matching_rules})
     scorable = frozenset(set(targets) - set(deferred))
@@ -185,12 +196,13 @@ def recommend(
     if request.priority_metric is not None and ranked and not any(r.priority_matched for r in ordered):
         notices.append("지정한 우선 고민에 매칭되는 후보가 없어 나머지 고민 그룹 기준으로 정렬했습니다.")
     return CosmeticPreviewResponse(
+        score_semantics=request.score_semantics,
         tie_groups=tie_groups, snapshot_token=snapshot_token,
         engine_version=ENGINE_VERSION, rule_version=rule_bundle.version, target_count=len(targets), assessments=assessments,
         ranking_policy=request.ranking_policy, ranking_policy_version=POLICY_VERSION,
         ranking_basis=RANKING_BASES[request.ranking_policy], priority_metric=request.priority_metric,
         scorable_target_count=len(targets) - len(deferred), deferred_metrics=deferred,
-        missing_metrics=["moisture"] if request.scores.moisture is None else [],
+        missing_metrics=["moisture"] if request.normalized_scores.moisture is None else [],
         exclusion_details=[explain(r) for r in automatic_exclusions],
         applied_exclusions=sorted(exclusion_names), recommendations=results, stats=stats,
         notices=notices,

@@ -39,7 +39,7 @@ def definitions():
 
 
 def request(**changes):
-    body = {"scores": {"moisture": 20, "redness": 80, "brightness": 20, "trouble": 80, "uniformity": 20}}
+    body = {"score_semantics": "development_assumption", "scores": {"moisture": 20, "redness": 80, "brightness": 20, "trouble": 80, "uniformity": 20}}
     body.update(changes)
     return CosmeticPreviewRequest.model_validate(body)
 
