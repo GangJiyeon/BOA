@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -8,6 +8,7 @@ from app.models.hair import (
     HairRecommendation,
     HairRecRun,
     HairStyleCatalog,
+    Sex,
 )
 from app.schemas.hair import (
     FaceAnalysisRequest,
@@ -20,6 +21,7 @@ from app.schemas.hair import (
 )
 from app.services.face_shape_analysis import analyze_face_shape
 from app.services.hair_recommend import recommend_hairstyles
+from app.services.landmark_extraction import extract_landmarks_from_bytes
 
 router = APIRouter(prefix="/hair", tags=["hair"])
 
@@ -46,6 +48,7 @@ def create_face_analysis(body: FaceAnalysisRequest, db: Session = Depends(get_db
         user_id=body.user_id,
         guest_id=body.guest_id,
         image_id=body.image_id,
+        sex=body.sex,
         face_shape=result["face_shape"],
         top2=result["top2"],
         confidence=result["confidence"],
@@ -57,6 +60,68 @@ def create_face_analysis(body: FaceAnalysisRequest, db: Session = Depends(get_db
 
     return FaceAnalysisResult(
         id=analysis.id,
+        sex=analysis.sex,
+        face_shape=analysis.face_shape,
+        top2=analysis.top2,
+        confidence=analysis.confidence,
+        source=source,
+        ratios=analysis.ratios,
+        updated_at=analysis.updated_at,
+    )
+
+
+@router.post("/face-analysis/photos", status_code=201)
+async def create_face_analysis_from_photos(
+    photos: list[UploadFile] = File(..., description="1장(빠른 분석) 또는 3장(정밀 분석)"),
+    sex: Sex = Form(..., description="사용자가 직접 선택한 성별"),
+    user_id: int | None = Form(None),
+    guest_id: str | None = Form(None),
+    image_id: int | None = Form(None),
+    db: Session = Depends(get_db),
+) -> FaceAnalysisResult:
+    """
+    사진 파일을 직접 받아 서버에서 MediaPipe로 좌표를 추출하고 얼굴형을 분석한다.
+    프론트엔드가 좌표를 계산할 필요 없이 사진만 올리면 되는, 실제 서비스용 엔드포인트.
+    (/face-analysis 는 좌표를 이미 가진 테스트/디버깅용으로 남겨둔다.)
+
+    sex는 추천 시 헤어스타일 카탈로그를 성별로 필터링하는 데 쓰인다.
+    (남자 얼굴에 여자 헤어스타일이 추천되는 것을 막기 위함)
+    """
+    if not 1 <= len(photos) <= 3:
+        raise HTTPException(422, "사진은 1장 또는 3장만 업로드할 수 있습니다.")
+
+    landmark_sets = []
+    for photo in photos:
+        content = await photo.read()
+        try:
+            landmark_sets.append(extract_landmarks_from_bytes(content))
+        except ValueError as e:
+            raise HTTPException(422, f"'{photo.filename}' 처리 실패: {e}")
+
+    source = "single" if len(landmark_sets) == 1 else "triple"
+
+    try:
+        result = analyze_face_shape(landmark_sets, source=source)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+    analysis = FaceAnalysis(
+        user_id=user_id,
+        guest_id=guest_id,
+        image_id=image_id,
+        sex=sex,
+        face_shape=result["face_shape"],
+        top2=result["top2"],
+        confidence=result["confidence"],
+        ratios=result["ratios"],
+    )
+    db.add(analysis)
+    db.commit()
+    db.refresh(analysis)
+
+    return FaceAnalysisResult(
+        id=analysis.id,
+        sex=analysis.sex,
         face_shape=analysis.face_shape,
         top2=analysis.top2,
         confidence=analysis.confidence,
@@ -73,6 +138,7 @@ def get_face_analysis(analysis_id: int, db: Session = Depends(get_db)) -> FaceAn
         raise HTTPException(404, "얼굴형 분석 결과를 찾을 수 없습니다.")
     return FaceAnalysisResult(
         id=analysis.id,
+        sex=analysis.sex,
         face_shape=analysis.face_shape,
         top2=analysis.top2,
         confidence=analysis.confidence,
@@ -112,7 +178,12 @@ def create_recommendation(body: HairRecommendRequest, db: Session = Depends(get_
     if face_analysis is None:
         raise HTTPException(404, "참조한 얼굴형 분석 결과를 찾을 수 없습니다.")
 
-    styles = db.scalars(select(HairStyleCatalog)).all()
+    # face_analysis.sex와 같은 성별이거나 unisex인 스타일만 후보로 삼는다.
+    styles = db.scalars(
+        select(HairStyleCatalog).where(
+            HairStyleCatalog.sex.in_([face_analysis.sex, Sex.UNISEX])
+        )
+    ).all()
     style_dicts = [
         {
             "style_id": s.style_id,

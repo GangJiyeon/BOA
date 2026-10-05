@@ -4,11 +4,13 @@
 → 추천 실행 1건(hair_rec_runs) → 추천 결과 N개(hair_recommendations) 순으로 이어진다.
 """
 
+import enum
 from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import (
     DateTime,
+    Enum,
     ForeignKey,
     Numeric,
     SmallInteger,
@@ -22,6 +24,29 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
+class Sex(str, enum.Enum):
+    """성별. 남녀 헤어스타일 추천을 구분하기 위해 사용한다.
+
+    - FaceAnalysis.sex: 사진 업로드 시 사용자가 직접 선택한 값
+    - HairStyleCatalog.sex: 그 스타일이 어떤 성별에 해당하는지
+      (둘 다 어울리는 스타일은 UNISEX로 등록해 남녀 양쪽 추천에 모두 후보로 포함시킨다)
+    """
+
+    MALE = "male"
+    FEMALE = "female"
+    UNISEX = "unisex"
+
+
+# 두 테이블이 같은 enum 이름을 공유하도록 미리 만들어 둔다.
+# (SQLAlchemy가 같은 Enum(Sex, name=...)을 여러 컬럼에 쓸 때 DB에는
+#  "sex_enum" 타입 하나만 생성되고 각 컬럼이 이를 재사용한다)
+sex_enum = Enum(
+    Sex,
+    name="sex_enum",
+    values_callable=lambda obj: [e.value for e in obj],
+)
+
+
 class FaceAnalysis(Base):
     """얼굴형 분석 1건. 사진 3장의 랜드마크 비율을 중앙값으로 취합한 결과를 담는다."""
 
@@ -33,6 +58,9 @@ class FaceAnalysis(Base):
     # 해당 테이블이 머지되면 FK 추가 마이그레이션을 별도로 만든다.
     user_id: Mapped[int | None] = mapped_column(index=True)
     guest_id: Mapped[UUID | None] = mapped_column(index=True)
+
+    # 사진 업로드 시 사용자가 직접 선택한 성별. 추천 시 스타일 카탈로그를 이 값으로 필터링한다.
+    sex: Mapped[Sex] = mapped_column(sex_enum)
 
     # 분석에 사용한 원본 사진 (S3 업로드 후 저장된 images 레코드)
     image_id: Mapped[int | None] = mapped_column(ForeignKey("images.id", ondelete="SET NULL"))
@@ -74,6 +102,8 @@ class HairStyleCatalog(Base):
 
     style_id: Mapped[str] = mapped_column(String(50), primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
+    # 이 스타일이 대상으로 하는 성별. unisex면 male/female 추천 양쪽에 모두 후보로 포함된다.
+    sex: Mapped[Sex] = mapped_column(sex_enum)
     # 한 스타일당 길이/질감 하나씩만 가진다 (예: "허쉬컷 숏" / "허쉬컷 미디움"처럼 조합별로 다른 행으로 등록)
     length: Mapped[str] = mapped_column(String(30))
     texture: Mapped[str] = mapped_column(String(30))
@@ -81,6 +111,9 @@ class HairStyleCatalog(Base):
     face_fit: Mapped[dict] = mapped_column(JSONB)
     asset_id: Mapped[str | None] = mapped_column(String(100))
     image: Mapped[str | None] = mapped_column(String(500))
+    # 이미지 출처 표기 (예: "Photo by 홍길동 on Pixabay"). 무료 스톡 이미지 API
+    # 라이선스 요건상, 사용자 화면에 이 값을 함께 노출해야 한다.
+    image_credit: Mapped[str | None] = mapped_column(String(255))
     # 시술 시간, 유지 관리 주기 등 상담 가이드 텍스트
     guide: Mapped[str | None] = mapped_column(String(1000))
 

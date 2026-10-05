@@ -39,3 +39,9 @@ def presigned_download_url(key: str) -> str:
         Params={"Bucket": get_settings().s3_bucket, "Key": key},
         ExpiresIn=URL_EXPIRES_SECONDS,
     )
+
+
+def download_bytes(key: str) -> bytes:
+    """S3에 저장된 파일을 메모리로 읽어온다. 사진 분석 입력으로 쓴다."""
+    obj = _client().get_object(Bucket=get_settings().s3_bucket, Key=key)
+    return obj["Body"].read()
