@@ -21,6 +21,36 @@ class Settings(BaseSettings):
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
 
+    # 비회원 IP HMAC 키, 배포 시 변경 필수
+    ip_hash_secret: str = "dev-ip-hash-secret"
+    # 로컬 false, 배포 true(Safari는 http에서 Secure 쿠키 막음)
+    cookie_secure: bool = False
+    guest_session_days: int = 7
+    # 비회원 하루 횟수 (0이면 제한 없음), IP는 기능별로 세션 합산
+    guest_daily_limit_skin: int = 3
+    guest_daily_limit_hair: int = 3
+    ip_daily_limit: int = 30
+    # 키오스크 등록·해제용 관리자 코드 (비우면 등록 503), 기기 쿠키 수명(브라우저 최대 400일)
+    admin_code: str = ""
+    kiosk_token_days: int = 400
+
+    # JWT 서명 키, 배포 시 변경 필수 (HS256은 32바이트 이상 권장)
+    jwt_secret: str = "dev-jwt-secret-change-me-in-production"
+    access_token_minutes: int = 15
+    refresh_token_days: int = 30
+    signup_token_minutes: int = 10
+    # 이메일 인증 코드
+    email_code_minutes: int = 10
+    email_max_attempts: int = 5
+    email_resend_seconds: int = 60
+    # 구글 OAuth (비우면 구글 로그인 503)
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    # 프론트가 인가 코드를 받은 redirect_uri와 같아야 함 (GIS 팝업 방식은 postmessage)
+    google_redirect_uri: str = "postmessage"
+    # 개발용 로그인 API(POST /api/auth/dev-login), 배포에서는 false
+    dev_login: bool = False
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
