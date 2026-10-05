@@ -1,5 +1,7 @@
 # BOA
 
+화장품 추천 미리보기: [입력·추천 규칙·실행 방법](docs/cosmetic-recommendation-preview.md)
+
 React(Vite) 프론트엔드 + FastAPI 백엔드 모노레포.
 
 ```

@@ -14,7 +14,11 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const body = await res.json().catch(() => null)
-    throw new ApiError(res.status, body?.detail ?? res.statusText)
+    const detail: unknown = body?.detail
+    const message = typeof detail === 'string' ? detail
+      : Array.isArray(detail) ? detail.map((item) => `${item.loc?.join('.') ?? '입력'}: ${item.msg ?? '확인 필요'}`).join(' / ')
+      : res.statusText
+    throw new ApiError(res.status, message)
   }
   return res.json() as Promise<T>
 }
