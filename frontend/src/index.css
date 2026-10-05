@@ -82,3 +82,7 @@ details p { margin: 8px 0; }
   .product-image { width: 70px; height: 110px; }
   .rank-badge { left: 8px; top: 8px; }
 }
+.tie-group { margin-block: 24px; }
+.tie-group-summary { font-weight: 600; }
+.tie-more-button { display: block; margin: 16px auto; padding: 12px 24px; border: 1px solid #b7c7bd; border-radius: 8px; background: white; color: #244b38; cursor: pointer; }
+.tie-more-button:disabled { opacity: .55; cursor: default; }

@@ -8,6 +8,9 @@ export type PreviewRequest = {
   category: ProductCategory | null
   avoid_redness_triggers: boolean
   excluded_ingredients: string[]
+  tie_group?: string
+  tie_offset?: number
+  snapshot_token?: string
 }
 
 export type RuleExplanation = {
@@ -21,6 +24,8 @@ export type RuleExplanation = {
 }
 
 export type PreviewResponse = {
+  snapshot_token: string
+  tie_groups: { key: string; total: number; next_offset: number | null }[]
   engine_version: string
   rule_version: string
   explanation_version?: string
@@ -42,6 +47,7 @@ export type PreviewResponse = {
     source_url: string | null
     match_count: number
     ranking_tie_count: number
+    ranking_group: string
     matches: {
       metric_code: MetricCode
       metric_name: string

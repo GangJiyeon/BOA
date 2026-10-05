@@ -29,6 +29,9 @@ class CosmeticPreviewRequest(BaseModel):
     category: ProductCategory | None = None
     ranking_policy: RankingMode = "metric_count"
     priority_metric: MetricCode | None = None
+    tie_group: Annotated[str, Field(pattern=r"^g-[1-9][0-9]*$", max_length=32)] | None = None
+    tie_offset: Annotated[int, Field(strict=True, ge=0)] = 0
+    snapshot_token: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")] | None = None
     # 높은 홍조 점수에서 적용하는 보수적인 프로젝트 필터. 질환 진단이 아님.
     avoid_redness_triggers: bool = True
     excluded_ingredients: list[Annotated[str, Field(min_length=1, max_length=255)]] = Field(
@@ -37,6 +40,8 @@ class CosmeticPreviewRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_priority_policy(self):
+        if (self.tie_group is None) != (self.snapshot_token is None) or (self.tie_group is None and self.tie_offset):
+            raise ValueError("더보기에는 그룹과 결과 토큰이 함께 필요합니다.")
         if (self.ranking_policy == "explicit_priority") != (self.priority_metric is not None):
             raise ValueError("explicit_priority 정책에서만 우선 고민을 반드시 지정해야 합니다.")
         return self
@@ -96,6 +101,7 @@ class CosmeticRecommendationItem(BaseModel):
     priority_matched: bool = False
     # 전체 후보 중 선택한 정책의 정렬 키(ID 제외)가 같은 수. 본인 포함, 품질 동등성 아님.
     ranking_tie_count: int = Field(default=1, ge=1)
+    ranking_group: str = ""
     matches: list[IngredientMatch]
     shared_evidence_groups: list[SharedEvidenceGroup] = Field(default_factory=list)
     recommendation_reason: str
@@ -114,7 +120,15 @@ class RecommendationStats(BaseModel):
     eligible_products: int = 0
 
 
+class RankingTieGroup(BaseModel):
+    key: str
+    total: int
+    next_offset: int | None
+
+
 class CosmeticPreviewResponse(BaseModel):
+    snapshot_token: str = ""
+    tie_groups: list[RankingTieGroup] = Field(default_factory=list)
     engine_version: str
     rule_version: str
     ranking_policy: RankingMode = "metric_count"

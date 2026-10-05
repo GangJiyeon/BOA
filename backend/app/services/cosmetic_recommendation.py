@@ -1,6 +1,6 @@
 """DB와 독립적인 추천 엔진: 검증 → 후보 필터 → 지표별 1점 → 최대 5개."""
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import re
 from urllib.parse import urlparse
 
@@ -14,6 +14,7 @@ from app.services.cosmetic_rule_types import RuleBundle
 from app.services.cosmetic_usage import classify_usage
 from app.services.cosmetic_explanations import explain_match, shared_evidence
 from app.services.cosmetic_ranking import rank_candidates, POLICY_VERSION, RANKING_BASES
+from app.services.cosmetic_pagination import paginate_ties
 
 
 class RecommendationConfigurationError(ValueError):
@@ -176,13 +177,15 @@ def recommend(
     ordered = rank_candidates(ranked, request.ranking_policy,
                               priority=request.priority_metric, scorable_metrics=scorable)
     stats.eligible_products = len(ranked)
-    results = [row.product.model_copy(update={
-        "rank": row.rank, "ranking_tie_count": row.tie_count,
-        "matched_group_count": row.group_count, "priority_matched": row.priority_matched,
-    }) for row in ordered[:5]]
+    results, tie_groups, snapshot_token = paginate_ties(request, ordered, {
+        "engine": ENGINE_VERSION, "policy": POLICY_VERSION,
+        "rules": rule_bundle.model_dump(mode="json"), "definitions": [asdict(d) for d in definitions],
+        "stats": stats.model_dump(),
+    })
     if request.priority_metric is not None and ranked and not any(r.priority_matched for r in ordered):
         notices.append("지정한 우선 고민에 매칭되는 후보가 없어 나머지 고민 그룹 기준으로 정렬했습니다.")
     return CosmeticPreviewResponse(
+        tie_groups=tie_groups, snapshot_token=snapshot_token,
         engine_version=ENGINE_VERSION, rule_version=rule_bundle.version, target_count=len(targets), assessments=assessments,
         ranking_policy=request.ranking_policy, ranking_policy_version=POLICY_VERSION,
         ranking_basis=RANKING_BASES[request.ranking_policy], priority_metric=request.priority_metric,

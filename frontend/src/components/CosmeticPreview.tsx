@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { getCosmeticPreview, type MetricCode, type PreviewResponse, type ProductCategory } from '../api/cosmetics'
+import { getCosmeticPreview, type MetricCode, type PreviewRequest, type PreviewResponse, type ProductCategory } from '../api/cosmetics'
+import { ApiError } from '../api/client'
 import CosmeticMatchDetails from './CosmeticMatchDetails'
 
 const metrics: { code: MetricCode; name: string; direction: string }[] = [
@@ -29,9 +30,47 @@ export default function CosmeticPreview() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const activeRequest = useRef<AbortController | null>(null)
+  const submittedRequest = useRef<PreviewRequest | null>(null)
+  const moreRequest = useRef<AbortController | null>(null)
+  const [loadingGroup, setLoadingGroup] = useState<string | null>(null)
+  const [stale, setStale] = useState(false)
   useEffect(() => () => activeRequest.current?.abort(), [])
+  useEffect(() => () => moreRequest.current?.abort(), [])
 
-  function clearResult() { setResult(null); setError('') }
+  function clearResult() {
+    moreRequest.current?.abort()
+    moreRequest.current = null
+    submittedRequest.current = null
+    setLoadingGroup(null); setStale(false); setResult(null); setError('')
+  }
+
+  async function loadMore(group: PreviewResponse['tie_groups'][number]) {
+    if (!result || !submittedRequest.current || moreRequest.current || stale || group.next_offset === null) return
+    const controller = new AbortController()
+    moreRequest.current = controller
+    setLoadingGroup(group.key); setError('')
+    try {
+      const page = await getCosmeticPreview({ ...submittedRequest.current,
+        tie_group: group.key, tie_offset: group.next_offset, snapshot_token: result.snapshot_token,
+      }, controller.signal)
+      if (controller.signal.aborted) return
+      setResult(previous => {
+        if (!previous || previous.snapshot_token !== page.snapshot_token) return previous
+        const ids = new Set(previous.recommendations.map(p => p.product_id))
+        return { ...previous,
+          recommendations: [...previous.recommendations, ...page.recommendations.filter(p => !ids.has(p.product_id))],
+          tie_groups: previous.tie_groups.map(g => page.tie_groups.find(next => next.key === g.key) ?? g),
+        }
+      })
+    } catch (err) {
+      if (!controller.signal.aborted) {
+        setError(err instanceof Error ? err.message : '추가 제품 조회에 실패했습니다.')
+        if (err instanceof ApiError && err.status === 409) setStale(true)
+      }
+    } finally {
+      if (moreRequest.current === controller) { moreRequest.current = null; setLoadingGroup(null) }
+    }
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -41,12 +80,13 @@ export default function CosmeticPreview() {
     setLoading(true)
     clearResult()
     try {
-      const data = await getCosmeticPreview({
+      const body: PreviewRequest = {
         scores: { ...scores, moisture: hasMoisture ? scores.moisture : null },
         category: category || null, avoid_redness_triggers: avoidTriggers,
         excluded_ingredients: excluded.split(',').map(s => s.trim()).filter(Boolean),
-      }, controller.signal)
-      if (!controller.signal.aborted) setResult(data)
+      }
+      const data = await getCosmeticPreview(body, controller.signal)
+      if (!controller.signal.aborted) { submittedRequest.current = body; setResult(data) }
     } catch (err) {
       if (!controller.signal.aborted) setError(err instanceof Error ? err.message : '추천 조회에 실패했습니다.')
     } finally {
@@ -93,18 +133,17 @@ export default function CosmeticPreview() {
           <div className="results-heading"><h3 id="results-title">추천 결과</h3><span>{result.recommendations.length}개 제품 · 개선 대상 {result.target_count}개 지표</span></div>
           <div className="assessment-list">{result.assessments.map(a => <span key={a.code} className={a.needs_improvement ? 'assessment needs-care' : 'assessment'}>{a.name} {a.score} · {a.category}</span>)}{result.missing_metrics.includes('moisture') && <span className="assessment">수분 미측정</span>}</div>
           <p className="result-explanation">성분 매칭은 효과의 크기나 확률이 아닙니다. 개선 대상 {result.target_count}개 중 현재 규칙으로 매칭 가능한 지표는 {result.scorable_target_count}개입니다. 같은 지표에 여러 성분이 있어도 1점입니다.</p>
-          <p>매칭 지표 수 → 기획·세트 의심 후순위 → 제품 ID 순입니다. 같은 정렬 조건의 제품 사이에서 효능 우열을 판단하지 않습니다.</p>
+          <p>매칭 지표 수를 우선하며 기획·세트 의심 제품은 후순위로 표시합니다. 같은 정렬 조건 안의 표시 순서는 효과의 우열을 뜻하지 않습니다.</p>
           {result.deferred_metrics.includes('redness') && <p>홍조 가점은 근거 검토 중으로 보류합니다. 홍조는 조건부 배제에만 사용합니다.</p>}
           {result.applied_exclusions.length > 0 && <p className="exclusion-summary">제외 적용: {result.applied_exclusions.join(', ')}</p>}
           {result.exclusion_details.length > 0 && <details><summary>자동 배제 근거와 적용 한계</summary>{result.exclusion_details.map(rule => <p key={rule.rule_code}><strong>{rule.ingredient}</strong> · {rule.rationale}<br />{rule.limitations}{' '}<a href={rule.evidence_url} target="_blank" rel="noopener noreferrer">근거 ↗</a></p>)}</details>}
           {result.empty_reason && <p className="empty-box">{result.empty_reason}</p>}
-          <ol className="product-list">{result.recommendations.map(product => <li className="product-card" key={product.product_id}>
-            <span className="rank-badge">{product.rank}</span>
+          {result.tie_groups.map(group => <section className="tie-group" key={group.key} aria-label="같은 정렬 조건의 제품">
+          <p className="tie-group-summary">같은 정렬 조건의 제품 {group.total}개 중 {result.recommendations.filter(p => p.ranking_group === group.key).length}개 표시</p>
+          <ul className="product-list">{result.recommendations.filter(p => p.ranking_group === group.key).map(product => <li className="product-card" key={product.product_id}>
             <ProductImage key={`${product.product_id}-${product.image_url}`} url={product.image_url} name={product.product_name} />
             <div className="product-content"><p className="brand-name">{product.brand_name} · {categoryNames[product.category]}</p><h4>{product.product_name}</h4>
               <p className="match-score">{product.match_count}<span> / {result.scorable_target_count}개 평가 가능 지표에 성분 매칭</span></p>
-              <p>동일 정렬 조건 {product.ranking_tie_count}개 후보 중 ID 순으로 표시</p>
-              <p>{product.usage_basis}</p>
               <p className="recommendation-reason">성분표 매칭: {product.recommendation_reason}</p>
               <p>성분 함유 후보이며, 이 제품의 효과가 검증됐다는 뜻은 아닙니다.</p>
               {(product.shared_evidence_groups ?? []).map(group => <p key={group.evidence_url}>
@@ -113,8 +152,11 @@ export default function CosmeticPreview() {
               <div className="product-actions">{product.source_url && <a href={product.source_url} target="_blank" rel="noopener noreferrer">제품 정보 보기 ↗</a>}{product.bundle_suspected && <span>기획·세트 가능성</span>}</div>
               <CosmeticMatchDetails matches={product.matches} />
             </div>
-          </li>)}</ol>
-          <details className="method-details"><summary>추천 범위와 제한 확인</summary><p>전체 {result.stats.total_products.toLocaleString()}개 중 조건을 충족한 제품은 {result.stats.eligible_products.toLocaleString()}개입니다.</p><ul><li>종류 조건 제외: {result.stats.unsupported_category}</li><li>전성분 확인 미완료: {result.stats.incomplete_ingredients}</li><li>사용 방식 조건 제외: {result.stats.excluded_by_usage}</li><li>제외 성분 포함: {result.stats.excluded_by_ingredient}</li><li>개선 지표 매칭 없음: {result.stats.no_matching_metric}</li></ul>{result.notices.map(note => <p key={note}>{note}</p>)}<small>{result.rule_version}</small></details>
+          </li>)}</ul>
+          {group.next_offset !== null && <button className="tie-more-button" type="button" disabled={loadingGroup !== null || stale}
+            onClick={() => loadMore(group)}>{loadingGroup === group.key ? '제품을 불러오는 중…' : `같은 조건 제품 ${Math.min(5, group.total - group.next_offset)}개 더보기`}</button>}
+          </section>)}
+          <details className="method-details"><summary>추천 범위와 제한 확인</summary><p>전체 {result.stats.total_products.toLocaleString()}개 중 조건을 충족한 제품은 {result.stats.eligible_products.toLocaleString()}개입니다.</p><ul><li>종류 조건 제외: {result.stats.unsupported_category}</li><li>전성분 확인 미완료: {result.stats.incomplete_ingredients}</li><li>사용 방식 조건 제외: {result.stats.excluded_by_usage}</li><li>제외 성분 포함: {result.stats.excluded_by_ingredient}</li><li>개선 지표 매칭 없음: {result.stats.no_matching_metric}</li></ul>{result.notices.filter(note => !note.startsWith('정렬 기준:') && !note.startsWith('제품명·종류로')).map(note => <p key={note}>{note}</p>)}<small>{result.rule_version}</small></details>
         </section>}
       </div>
     </section>
