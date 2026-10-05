@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import SkinAnalysis, SkinMetric, SkinMetricCategory, SkinScore
+from app.services.errors import ErrorCode
 from app.models.skin import MOISTURE_SOURCES
 
 # 판정 기준 버전. 구간 경계값이나 점수 산출 방식을 바꾸면 이 값을 올린다.
@@ -25,38 +26,67 @@ REQUIRED_METRIC_CODES = ("redness", "brightness", "trouble", "uniformity")
 
 
 class ScoringError(ValueError):
-    """입력 점수나 기준 데이터가 잘못된 경우. 라우터에서 400으로 변환한다."""
+    """입력 점수나 기준 데이터가 잘못된 경우. 라우터에서 400으로 변환한다.
+
+    code는 프론트엔드가 분기에 쓰는 식별자다.
+    """
+
+    def __init__(
+        self, message: str, *, code: str = ErrorCode.INVALID_SCORE, detail: dict | None = None
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.detail = detail or {}
 
 
 def _validate_scores(scores: Mapping[str, int], moisture_source: str) -> None:
     """저장 전에 입력값을 검증한다. DB를 건드리기 전에 모두 걸러낸다."""
     if moisture_source not in MOISTURE_SOURCES:
         raise ScoringError(
-            f"moisture_source는 {MOISTURE_SOURCES} 중 하나여야 합니다: {moisture_source}"
+            f"moisture_source는 {MOISTURE_SOURCES} 중 하나여야 합니다: {moisture_source}",
+            code=ErrorCode.INVALID_MOISTURE_INPUT,
         )
 
     known_codes = {MOISTURE_CODE, *REQUIRED_METRIC_CODES}
     unknown = set(scores) - known_codes
     if unknown:
-        raise ScoringError(f"알 수 없는 지표 코드입니다: {sorted(unknown)}")
+        raise ScoringError(
+            f"알 수 없는 지표 코드입니다: {sorted(unknown)}",
+            code=ErrorCode.UNKNOWN_METRIC,
+            detail={"unknown": sorted(unknown)},
+        )
 
     missing = [code for code in REQUIRED_METRIC_CODES if code not in scores]
     if missing:
-        raise ScoringError(f"필수 지표 점수가 없습니다: {missing}")
+        raise ScoringError(
+            f"필수 지표 점수가 없습니다: {missing}",
+            code=ErrorCode.MISSING_METRIC,
+            detail={"missing": missing},
+        )
 
     # 수분값 유무와 moisture_source가 어긋나면 데이터 신뢰도가 깨지므로 막는다.
     has_moisture = MOISTURE_CODE in scores
     if moisture_source == "none" and has_moisture:
-        raise ScoringError("moisture_source가 none인데 수분 점수가 들어왔습니다")
+        raise ScoringError(
+            "moisture_source가 none인데 수분 점수가 들어왔습니다",
+            code=ErrorCode.INVALID_MOISTURE_INPUT,
+        )
     if moisture_source != "none" and not has_moisture:
-        raise ScoringError(f"moisture_source가 {moisture_source}인데 수분 점수가 없습니다")
+        raise ScoringError(
+            f"moisture_source가 {moisture_source}인데 수분 점수가 없습니다",
+            code=ErrorCode.INVALID_MOISTURE_INPUT,
+        )
 
     for code, score in scores.items():
         # bool은 int의 하위 타입이라 별도로 걸러낸다
         if isinstance(score, bool) or not isinstance(score, int):
-            raise ScoringError(f"{code} 점수는 정수여야 합니다: {score!r}")
+            raise ScoringError(
+                f"{code} 점수는 정수여야 합니다: {score!r}", code=ErrorCode.INVALID_SCORE
+            )
         if not 0 <= score <= 100:
-            raise ScoringError(f"{code} 점수는 0~100 범위여야 합니다: {score}")
+            raise ScoringError(
+                f"{code} 점수는 0~100 범위여야 합니다: {score}", code=ErrorCode.INVALID_SCORE
+            )
 
 
 def _load_metrics(db: Session, codes: set[str]) -> dict[str, SkinMetric]:
@@ -68,7 +98,9 @@ def _load_metrics(db: Session, codes: set[str]) -> dict[str, SkinMetric]:
     if missing:
         raise ScoringError(
             f"지표 기준 데이터가 없습니다: {sorted(missing)} "
-            "(scripts/seed_skin_metrics.py 실행 필요)"
+            "(scripts/seed_skin_metrics.py 실행 필요)",
+            code=ErrorCode.SEED_MISSING,
+            detail={"missing": sorted(missing)},
         )
     return by_code
 
@@ -91,7 +123,9 @@ def find_category(categories: list[SkinMetricCategory], score: int) -> SkinMetri
         if category.min_score <= score <= category.max_score:
             return category
     raise ScoringError(
-        f"{score}점에 해당하는 판정 구간이 없습니다 (구간 경계값 설정을 확인하세요)"
+        f"{score}점에 해당하는 판정 구간이 없습니다 (구간 경계값 설정을 확인하세요)",
+        code=ErrorCode.CATEGORY_NOT_FOUND,
+        detail={"score": score},
     )
 
 
@@ -131,7 +165,9 @@ def label_and_save(
         if not categories:
             raise ScoringError(
                 f"'{metric.name}' 지표의 판정 구간이 없습니다 "
-                "(scripts/seed_skin_metrics.py 실행 필요)"
+                "(scripts/seed_skin_metrics.py 실행 필요)",
+                code=ErrorCode.SEED_MISSING,
+                detail={"metric": metric.code},
             )
 
         # 점수와 함께 category_id도 저장해 둔다.
