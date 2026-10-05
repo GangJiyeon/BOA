@@ -9,20 +9,18 @@ from datetime import datetime, time, timedelta, timezone
 from typing import Literal
 
 from fastapi import HTTPException
-from sqlalchemy import column, func, inspect, select, table
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import Actor
 from app.core.config import get_settings
-from app.models import GuestSession, SkinAnalysis
+from app.models import GuestSession, HairRecRun, SkinAnalysis
 
 QuotaKind = Literal["skin", "hair"]
 KST = timezone(timedelta(hours=9))
 
-# 헤어 테이블은 헤어 파트 머지 전이라 통합 ERD 이름 사용 (바뀌면 여기만 수정)
-HAIR_TABLE = "hair_rec_run"
-_hair = table(HAIR_TABLE, column("guest_id"), column("created_at"))
 _skin = SkinAnalysis.__table__
+_hair = HairRecRun.__table__  # 헤어 요청 1번(사진 3장) = 1행
 _sessions = GuestSession.__table__
 
 # 기능별 (guest_id 칼럼, 생성 시각 칼럼)
@@ -51,11 +49,6 @@ def _limit(kind: QuotaKind) -> int:
     return settings.guest_daily_limit_skin if kind == "skin" else settings.guest_daily_limit_hair
 
 
-def _available(db: Session, kind: QuotaKind) -> bool:
-    """헤어 테이블이 없는 DB(헤어 파트 머지 전)에서는 세지 않음"""
-    return kind == "skin" or inspect(db.get_bind()).has_table(HAIR_TABLE)
-
-
 def _count(db: Session, kind: QuotaKind, *, guest_id=None, ip_hash: str | None = None) -> int:
     """오늘 생긴 행 수, guest_id 또는 같은 ip_hash 세션 전체 기준"""
     guest_col, created_col = SOURCES[kind]
@@ -69,7 +62,7 @@ def _count(db: Session, kind: QuotaKind, *, guest_id=None, ip_hash: str | None =
 
 def get_usage(db: Session, actor: Actor, kind: QuotaKind) -> Usage:
     """세션 기준 오늘 사용량 (IP 합산은 응답에 노출 안 함)"""
-    if actor.kind != "guest" or _limit(kind) == 0 or not _available(db, kind):
+    if actor.kind != "guest" or _limit(kind) == 0:
         return Usage(limit=None, used=0)
     return Usage(limit=_limit(kind), used=_count(db, kind, guest_id=actor.guest_id))
 

@@ -3,12 +3,14 @@ from contextlib import asynccontextmanager
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import (
     actor,
     auth,
     dev,
     guest,
+    hair,
     health,
     images,
     kiosk,
@@ -62,3 +64,6 @@ api.include_router(me.router)
 if settings.dev_login:
     api.include_router(dev.router)
 app.include_router(api)
+api.include_router(hair.router) 
+
+app.mount("/static", StaticFiles(directory="static"), name="static")

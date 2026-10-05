@@ -3,14 +3,22 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import delete, inspect, select, text
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.models import ConsentHistory, EmailVerification, SkinAnalysis, Terms, User
+from app.models import (
+    ConsentHistory,
+    EmailVerification,
+    FaceAnalysis,
+    HairRecRun,
+    SkinAnalysis,
+    Terms,
+    User,
+)
 from app.services import terms
 
-# 헤어 파트 결과 테이블 (통합 ERD 이름, 없으면 건너뜀), 자식 테이블부터
-HAIR_RESULT_TABLES = ("hair_rec_run", "face_analysis")
+# 분석 결과 모델 (회원·세션 FK가 없어 직접 삭제·이관), 하위 행은 각 테이블 CASCADE
+RESULT_MODELS = (SkinAnalysis, HairRecRun, FaceAnalysis)
 
 
 class ConsentError(Exception):
@@ -77,9 +85,6 @@ def delete_user(db: Session, user: User) -> None:
     동의 이력·리프레시 토큰·비회원 세션은 users CASCADE로 삭제
     """
     db.execute(delete(EmailVerification).where(EmailVerification.email == user.email))
-    db.execute(delete(SkinAnalysis).where(SkinAnalysis.user_id == user.id))
-    existing = inspect(db.get_bind()).get_table_names()
-    for table in HAIR_RESULT_TABLES:
-        if table in existing:
-            db.execute(text(f"delete from {table} where user_id = :uid"), {"uid": user.id})
+    for model in RESULT_MODELS:
+        db.execute(delete(model).where(model.user_id == user.id))
     db.delete(user)

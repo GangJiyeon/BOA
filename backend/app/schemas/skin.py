@@ -58,3 +58,9 @@ class AnalysisRead(BaseModel):
     moisture_source: MoistureSource
     image_id: int | None
     scores: list[ScoreRead]
+
+
+class DebugAnalysisRead(AnalysisRead):
+    """디버그 응답. 정규화 전 원시값을 함께 내려 임계값 조정에 쓴다."""
+
+    raw: dict[str, float]

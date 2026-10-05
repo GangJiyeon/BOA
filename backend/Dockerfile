@@ -10,7 +10,30 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH="/opt/venv/bin:$PATH"
 
+# OpenCV 런타임 의존 라이브러리.
+# mediapipe가 headless가 아닌 opencv를 함께 설치해서 libGL을 찾는다.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
+
+
+# OpenCV/MediaPipe가 이미지 처리 시 필요로 하는 시스템 라이브러리
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libxcb1 \
+    libxext6 \
+    libsm6 \
+    libxrender1 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# MediaPipe Face Landmarker 모델 파일 (Tasks API에 필요)
+RUN mkdir -p /app/ml_assets && \
+    curl -L -o /app/ml_assets/face_landmarker.task \
+    https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task
 
 # 의존성 먼저 설치 (코드만 바뀌면 이 레이어는 캐시 재사용)
 COPY pyproject.toml uv.lock ./

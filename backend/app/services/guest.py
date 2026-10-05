@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.security import hash_token, new_token
-from app.models import GuestSession, SkinAnalysis
+from app.models import FaceAnalysis, GuestSession, HairRecRun, SkinAnalysis
 
 
 def find_active_session(db: Session, guest_id: UUID | None) -> GuestSession | None:
@@ -70,9 +70,11 @@ def transfer_to_user(db: Session, session: GuestSession, user_id: int) -> None:
     session.user_id = user_id
     session.qr_token_hash = None
     session.expires_at = None
-    # 분석 결과 테이블 (얼굴형·헤어 테이블 생기면 추가)
+    # 분석 결과 (guest_id는 그대로, expires_at은 피부 테이블에만 있음)
     db.execute(
         update(SkinAnalysis)
         .where(SkinAnalysis.guest_id == session.id)
         .values(user_id=user_id, expires_at=None)
     )
+    for model in (HairRecRun, FaceAnalysis):
+        db.execute(update(model).where(model.guest_id == session.id).values(user_id=user_id))

@@ -6,12 +6,12 @@
 import logging
 from datetime import UTC, datetime, timedelta, timezone
 
-from sqlalchemy import delete, inspect, select, text
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
-from app.models import EmailVerification, GuestSession, RefreshToken, SkinAnalysis
-from app.services.account import HAIR_RESULT_TABLES
+from app.models import EmailVerification, GuestSession, RefreshToken
+from app.services.account import RESULT_MODELS
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -34,17 +34,10 @@ def cleanup_expired(db: Session) -> dict[str, int]:
     def run(stmt) -> int:
         return db.execute(stmt.execution_options(synchronize_session=False)).rowcount
 
-    counts = {"skin_analyses": run(delete(SkinAnalysis).where(SkinAnalysis.guest_id.in_(expired_sessions)))}
-    existing = inspect(db.get_bind()).get_table_names()
-    for table in HAIR_RESULT_TABLES:
-        if table in existing:
-            counts[table] = db.execute(
-                text(
-                    f"delete from {table} where guest_id in "
-                    "(select id from guest_sessions where user_id is null and expires_at < :now)"
-                ),
-                {"now": now},
-            ).rowcount
+    counts = {
+        model.__tablename__: run(delete(model).where(model.guest_id.in_(expired_sessions)))
+        for model in RESULT_MODELS
+    }
     counts["guest_sessions"] = run(delete(GuestSession).where(GuestSession.id.in_(expired_sessions)))
     counts["refresh_tokens"] = run(delete(RefreshToken).where(RefreshToken.expires_at < now))
     counts["email_verifications"] = run(

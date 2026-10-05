@@ -8,9 +8,12 @@ dependencies = [
     "boto3>=1.43.103",
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
+    "mediapipe==0.10.21",
+    "opencv-python-headless<5",
     "psycopg[binary]>=3.3.6",
     "pydantic-settings>=2.15.0",
     "pyjwt[crypto]>=2.15.1",
+    "python-multipart>=0.0.32",
     "sqlalchemy>=2.0,<2.1",
     "uvicorn[standard]>=0.54.0",
 ]
