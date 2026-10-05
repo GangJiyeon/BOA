@@ -3,8 +3,17 @@ import { api } from './client'
 export type MetricCode = 'moisture' | 'redness' | 'brightness' | 'trouble' | 'uniformity'
 export type ProductCategory = 'moisturizer' | 'serum' | 'toner'
 
+export type AnalysisMetricScore = {
+  metric_code: MetricCode
+  metric_name: string
+  score: number
+  category_name: string
+  higher_is_better: boolean
+}
+
 export type PreviewRequest = {
-  scores: Record<Exclude<MetricCode, 'moisture'>, number> & { moisture: number | null }
+  scores: (Record<Exclude<MetricCode, 'moisture'>, number> & { moisture: number | null }) | AnalysisMetricScore[]
+  score_semantics?: 'photo_v1' | 'development_assumption'
   category: ProductCategory | null
   avoid_redness_triggers: boolean
   excluded_ingredients: string[]

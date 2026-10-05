@@ -22,10 +22,21 @@ class SkinScoresInput(BaseModel):
     uniformity: Score
 
 
+class AnalysisMetricScore(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    metric_code: MetricCode
+    metric_name: str
+    score: Score
+    category_name: str
+    higher_is_better: Annotated[bool, Field(strict=True)]
+
+
 class CosmeticPreviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    scores: SkinScoresInput
+    scores: SkinScoresInput | Annotated[list[AnalysisMetricScore], Field(min_length=4, max_length=5)]
+    score_semantics: Literal["photo_v1", "development_assumption"] = "photo_v1"
     category: ProductCategory | None = None
     ranking_policy: RankingMode = "metric_count"
     priority_metric: MetricCode | None = None
@@ -37,6 +48,23 @@ class CosmeticPreviewRequest(BaseModel):
     excluded_ingredients: list[Annotated[str, Field(min_length=1, max_length=255)]] = Field(
         default_factory=list, max_length=30
     )
+
+    @property
+    def normalized_scores(self) -> SkinScoresInput:
+        if isinstance(self.scores, SkinScoresInput):
+            return self.scores
+        return SkinScoresInput.model_validate({s.metric_code: s.score for s in self.scores})
+
+    @model_validator(mode="after")
+    def validate_analysis_scores(self):
+        if isinstance(self.scores, list):
+            codes = [s.metric_code for s in self.scores]
+            if len(codes) != len(set(codes)):
+                raise ValueError("중복된 피부 지표입니다.")
+            self.normalized_scores  # 필수 사진 지표 4개 검증; 수분 미측정은 None
+            if self.score_semantics != "photo_v1":
+                raise ValueError("피부 분석 배열은 photo_v1 의미로만 처리합니다.")
+        return self
 
     @model_validator(mode="after")
     def validate_priority_policy(self):
@@ -127,6 +155,7 @@ class RankingTieGroup(BaseModel):
 
 
 class CosmeticPreviewResponse(BaseModel):
+    score_semantics: Literal["photo_v1", "development_assumption"] = "photo_v1"
     snapshot_token: str = ""
     tie_groups: list[RankingTieGroup] = Field(default_factory=list)
     engine_version: str

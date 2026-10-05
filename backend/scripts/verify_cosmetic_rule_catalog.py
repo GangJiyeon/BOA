@@ -57,7 +57,7 @@ def main():
     }
     results={}
     for name,scores in scenarios.items():
-        request=CosmeticPreviewRequest(scores=scores)
+        request=CosmeticPreviewRequest(scores=scores, score_semantics="development_assumption")
         with Session(engine) as db:
             actual=preview_from_database(db,request)
         expected=recommend(request,default_definitions(),products,known,rule_bundle=bundle)

@@ -67,7 +67,7 @@ def main():
     }
     report = {"source": "SQLite snapshot (read-only)", "thresholds": "default development seed", "scenarios": {}}
     for name, scores in scenarios.items():
-        result = recommend(CosmeticPreviewRequest(scores=scores), default_definitions(), products, known, rule_bundle=load_seed_bundle())
+        result = recommend(CosmeticPreviewRequest(scores=scores, score_semantics="development_assumption"), default_definitions(), products, known, rule_bundle=load_seed_bundle())
         report["scenarios"][name] = {
             "rule_version": result.rule_version, "scorable_target_count": result.scorable_target_count,
             "deferred_metrics": result.deferred_metrics, "target_count": result.target_count, "stats": result.stats.model_dump(),

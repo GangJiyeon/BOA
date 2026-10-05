@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { getCosmeticPreview, type MetricCode, type PreviewRequest, type PreviewResponse, type ProductCategory } from '../api/cosmetics'
+import { getCosmeticPreview, type AnalysisMetricScore, type MetricCode, type PreviewRequest, type PreviewResponse, type ProductCategory } from '../api/cosmetics'
 import { ApiError } from '../api/client'
 import CosmeticMatchDetails from './CosmeticMatchDetails'
 
@@ -21,6 +21,8 @@ function ProductImage({ url, name }: { url: string | null; name: string }) {
 }
 
 export default function CosmeticPreview() {
+  const [inputMode, setInputMode] = useState<'analysis' | 'development'>('analysis')
+  const [analysisJson, setAnalysisJson] = useState('')
   const [scores, setScores] = useState(initialScores)
   const [hasMoisture, setHasMoisture] = useState(true)
   const [category, setCategory] = useState<ProductCategory | ''>('')
@@ -80,8 +82,17 @@ export default function CosmeticPreview() {
     setLoading(true)
     clearResult()
     try {
+      let analysisScores: AnalysisMetricScore[] | undefined
+      if (inputMode === 'analysis') {
+        const parsed: unknown = JSON.parse(analysisJson)
+        const rows = Array.isArray(parsed) ? parsed
+          : parsed && typeof parsed === 'object' && 'scores' in parsed ? parsed.scores : undefined
+        if (!Array.isArray(rows)) throw new Error('피부 분석 응답 또는 scores 배열을 입력해 주세요.')
+        analysisScores = rows as AnalysisMetricScore[] // 서버에서 코드·범위·방향·라벨을 검증
+      }
       const body: PreviewRequest = {
-        scores: { ...scores, moisture: hasMoisture ? scores.moisture : null },
+        score_semantics: inputMode === 'analysis' ? 'photo_v1' : 'development_assumption',
+        scores: analysisScores ?? { ...scores, moisture: hasMoisture ? scores.moisture : null },
         category: category || null, avoid_redness_triggers: avoidTriggers,
         excluded_ingredients: excluded.split(',').map(s => s.trim()).filter(Boolean),
       }
@@ -99,11 +110,20 @@ export default function CosmeticPreview() {
       <header className="preview-heading">
         <span className="eyebrow">COSMETIC MATCH</span>
         <h2 id="preview-title">피부 고민에 맞는 성분을 찾아보세요</h2>
-        <p>임시 피부 점수를 입력해 실제 제품 DB에서 추천을 확인합니다. 입력값과 결과는 저장하지 않습니다.</p>
+        <p>피부 분석 결과를 받아 실제 제품 DB에서 성분 매칭 후보를 확인합니다. 입력값과 결과는 저장하지 않습니다.</p>
       </header>
       <form onSubmit={submit} onChange={clearResult}>
         <fieldset disabled={loading}>
-          <legend>피부 점수 입력 <span>0–100 · 개발용 예시값</span></legend>
+          <legend>피부 분석 결과</legend>
+          <label>입력 방식<select value={inputMode} onChange={e => setInputMode(e.target.value as 'analysis' | 'development')}>
+            <option value="analysis">피부 분석 결과</option>
+            <option value="development">임시 점수 실험 · 개발용 가정</option>
+          </select></label>
+          {inputMode === 'analysis' && <label>분석 결과 JSON<textarea rows={10} value={analysisJson}
+            onChange={e => setAnalysisJson(e.target.value)} placeholder={'{"scores": [...]}'}/>
+            <small>전체 분석 응답 또는 scores 배열을 붙여넣으세요. 수분이 없으면 미측정으로 처리합니다.</small></label>}
+          {inputMode === 'development' && <>
+          <p>색소·모공 막힘 관련 고민을 가정한 규칙 실험입니다. 실제 사진 분석값에 그대로 적용하지 않습니다.</p>
           <div className="metric-grid">
             {metrics.map(m => (
               <div className="metric-input" key={m.code}>
@@ -116,6 +136,7 @@ export default function CosmeticPreview() {
             ))}
           </div>
           <label className="check-row"><input type="checkbox" checked={!hasMoisture} onChange={e => setHasMoisture(!e.target.checked)} />수분 미측정 — 나머지 4개 지표만 사용</label>
+          </>}
           <div className="filter-grid">
             <label>제품 종류<select value={category} onChange={e => setCategory(e.target.value as ProductCategory | '')}>
               <option value="">전체 기초 제품</option><option value="moisturizer">보습제</option><option value="serum">세럼</option><option value="toner">토너</option>
@@ -134,6 +155,7 @@ export default function CosmeticPreview() {
           <div className="assessment-list">{result.assessments.map(a => <span key={a.code} className={a.needs_improvement ? 'assessment needs-care' : 'assessment'}>{a.name} {a.score} · {a.category}</span>)}{result.missing_metrics.includes('moisture') && <span className="assessment">수분 미측정</span>}</div>
           <p className="result-explanation">성분 매칭은 효과의 크기나 확률이 아닙니다. 개선 대상 {result.target_count}개 중 현재 규칙으로 매칭 가능한 지표는 {result.scorable_target_count}개입니다. 같은 지표에 여러 성분이 있어도 1점입니다.</p>
           <p>매칭 지표 수를 우선하며 기획·세트 의심 제품은 후순위로 표시합니다. 같은 정렬 조건 안의 표시 순서는 효과의 우열을 뜻하지 않습니다.</p>
+          {result.deferred_metrics.some(code => ['brightness', 'uniformity', 'trouble'].includes(code)) && <p>사진의 밝기·명도 편차·붉은 반점으로는 색소침착이나 모공 막힘을 확인할 수 없어 관련 성분 매칭을 보류합니다.</p>}
           {result.deferred_metrics.includes('redness') && <p>홍조 가점은 근거 검토 중으로 보류합니다. 홍조는 조건부 배제에만 사용합니다.</p>}
           {result.applied_exclusions.length > 0 && <p className="exclusion-summary">제외 적용: {result.applied_exclusions.join(', ')}</p>}
           {result.exclusion_details.length > 0 && <details><summary>자동 배제 근거와 적용 한계</summary>{result.exclusion_details.map(rule => <p key={rule.rule_code}><strong>{rule.ingredient}</strong> · {rule.rationale}<br />{rule.limitations}{' '}<a href={rule.evidence_url} target="_blank" rel="noopener noreferrer">근거 ↗</a></p>)}</details>}
