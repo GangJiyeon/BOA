@@ -42,7 +42,7 @@ def scenarios():
     })
     for category in ("moisturizer", "serum", "toner"):
         cases[f"category_{category}"] = {"scores": CONCERNS, "category": category}
-    return {name: CosmeticPreviewRequest.model_validate(body) for name, body in cases.items()}
+    return {name: CosmeticPreviewRequest.model_validate(body | {"score_semantics": "development_assumption"}) for name, body in cases.items()}
 
 
 def audit_scenario(request, products, known, source_ids, bundle):
