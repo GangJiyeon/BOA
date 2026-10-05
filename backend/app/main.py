@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import health, images, hair
 from app.api.routes import health, images, skin
 from app.core.config import get_settings
+from fastapi.staticfiles import StaticFiles
 
 settings = get_settings()
 
@@ -23,3 +24,5 @@ api.include_router(images.router)
 api.include_router(skin.router)
 app.include_router(api)
 api.include_router(hair.router) 
+
+app.mount("/static", StaticFiles(directory="static"), name="static")

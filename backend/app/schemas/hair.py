@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.models.hair import Sex
+
 
 class LandmarkPoint(BaseModel):
     x: float
@@ -15,6 +17,7 @@ LandmarkSet = dict[str, LandmarkPoint]
 class FaceAnalysisRequest(BaseModel):
     # 1장(single) 또는 3장(triple) 분량의 랜드마크 세트
     landmark_sets: list[LandmarkSet] = Field(min_length=1, max_length=3)
+    sex: Sex
     user_id: int | None = None
     guest_id: str | None = None  # UUID 문자열
     image_id: int | None = None
@@ -22,6 +25,7 @@ class FaceAnalysisRequest(BaseModel):
 
 class FaceAnalysisResult(BaseModel):
     id: int
+    sex: Sex
     face_shape: str
     top2: str | None
     confidence: float | None
@@ -65,11 +69,13 @@ class HairRecommendResult(BaseModel):
 class HairStyleCreate(BaseModel):
     style_id: str
     name: str
+    sex: Sex
     length: str
     texture: str
     face_fit: dict[str, float]
     asset_id: str | None = None
     image: str | None = None
+    image_credit: str | None = None  # 예: "Photo by 홍길동 on Pixabay"
     guide: str | None = None
 
 
