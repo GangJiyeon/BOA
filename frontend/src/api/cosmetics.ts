@@ -33,6 +33,10 @@ export type RuleExplanation = {
 }
 
 export type PreviewResponse = {
+  recommendation_mode?: 'improvement' | 'daily_care'
+  daily_care_reason?: 'no_improvement_targets' | 'no_supported_matching_rules' | null
+  recommendation_notice?: string
+  ranking_basis?: string
   snapshot_token: string
   tie_groups: { key: string; total: number; next_offset: number | null }[]
   engine_version: string
@@ -71,6 +75,8 @@ export type PreviewResponse = {
         product_efficacy_verified: false
       }
     }[]
+    daily_care_ingredients?: string[]
+    daily_care_rules?: RuleExplanation[]
     shared_evidence_groups?: { evidence_url: string; metric_codes: MetricCode[]; explanation: string }[]
     recommendation_reason: string
     bundle_suspected: boolean
@@ -84,6 +90,7 @@ export type PreviewResponse = {
     excluded_by_usage: number
     excluded_by_ingredient: number
     no_matching_metric: number
+    no_daily_care_ingredient?: number
     eligible_products: number
   }
   notices: string[]

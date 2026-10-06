@@ -9,6 +9,7 @@ export default defineConfig({
     // 배포 후에는 Vercel rewrites가 같은 역할을 한다.
     proxy: {
       '/api': 'http://localhost:8000',
+      '/static': 'http://localhost:8000',
     },
   },
 })
