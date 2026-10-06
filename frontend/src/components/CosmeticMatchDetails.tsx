@@ -1,6 +1,19 @@
-import type { PreviewResponse } from '../api/cosmetics'
+import type { PreviewResponse, RuleExplanation } from '../api/cosmetics'
 
 type Matches = PreviewResponse['recommendations'][number]['matches']
+
+export function DailyCareDetails({ rules }: { rules: RuleExplanation[] }) {
+  return <details className="match-details">
+    <summary>일상 관리용으로 제안한 이유</summary>
+    <p>기존 활성 보습 성분 규칙에 포함된 성분을 전성분표에서 확인했습니다. 수분 부족을 추정하거나 개선 지표 점수를 부여한 결과가 아닙니다.</p>
+    <p>성분 함량·제형·개인 적합도는 확인되지 않았으며, 성분이 더 많다고 높은 순위를 부여하지 않습니다.</p>
+    {rules.map(rule => <section key={rule.rule_code}>
+      <h5>{rule.ingredient}</h5><p>{rule.evidence_summary}</p>
+      <p><strong>근거의 적용 한계</strong><br />{rule.limitations}</p>
+      <a href={rule.evidence_url} target="_blank" rel="noopener noreferrer">연결된 성분 근거 ↗</a>
+    </section>)}
+  </details>
+}
 
 export default function CosmeticMatchDetails({ matches }: { matches: Matches }) {
   const bases = new Map<string, Set<string>>()

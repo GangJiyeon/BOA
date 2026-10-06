@@ -16,3 +16,5 @@ export function analyzeSkinPhoto(file: File, moisture: number | null, signal?: A
   // 현재 S3 없이 사진을 분석하는 경로로 통합 흐름을 확인한다.
   return api<SkinAnalysis>('/skin/analyses/debug', { method: 'POST', body: form, signal })
 }
+
+export const getSkinAnalysis = (id: number, signal?: AbortSignal) => api<SkinAnalysis>(`/skin/analyses/${id}`, { signal })

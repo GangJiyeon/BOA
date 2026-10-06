@@ -24,5 +24,20 @@ try {
   await assert.rejects(api('/test'), /body.score: 정수 필요/)
   globalThis.fetch = async () => new Response(JSON.stringify({detail:'추천 조건 오류'}), {status:422})
   await assert.rejects(api('/test'), /추천 조건 오류/)
-  console.log('API client: 8 checks passed')
+  assert.equal(captured.init.credentials, 'same-origin')
+  globalThis.fetch = async () => new Response(null, {status:204})
+  assert.equal(await api('/auth/logout', {method:'POST'}), undefined)
+  assert.equal(await api('/kiosk/session', {method:'DELETE'}), undefined)
+  globalThis.fetch = async () => new Response('<html>proxy failed</html>', {status:502})
+  await assert.rejects(api('/test'), err => err instanceof ApiError && err.status === 502 && err.message.includes('서버에서 요청'))
+  globalThis.fetch = async () => new Response(JSON.stringify({detail:[null, {loc:'body',msg:'입력 오류'}]}), {status:422})
+  await assert.rejects(api('/test'), /입력: 입력 오류/)
+  globalThis.fetch = async () => new Response('<html>wrong server</html>')
+  await assert.rejects(api('/test'), /서버 응답 형식/)
+  globalThis.fetch = async () => { throw new TypeError('Failed to fetch') }
+  await assert.rejects(api('/test'), err => err instanceof ApiError && err.status === 0 && err.message.includes('서버에 연결'))
+  const cancelled = new DOMException('cancelled', 'AbortError')
+  globalThis.fetch = async () => { throw cancelled }
+  await assert.rejects(api('/test'), err => err === cancelled)
+  console.log('API client: 16 checks passed')
 } finally { globalThis.fetch = savedFetch }

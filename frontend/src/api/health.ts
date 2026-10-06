@@ -6,4 +6,4 @@ export type Health = {
   s3: boolean
 }
 
-export const getHealth = () => api<Health>('/health')
+export const getHealth = (signal?: AbortSignal) => api<Health>('/health', { signal })
