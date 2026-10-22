@@ -37,13 +37,16 @@ class SkinRecommendationFlowTests(unittest.TestCase):
         with Session(self.engine) as db:
             self.assertEqual(db.scalar(select(func.count()).select_from(SkinAnalysis)),1)
 
-    def test_sensorless_photo_scores_unchanged_and_recommendation_deferred(self):
+    def test_sensorless_photo_scores_unchanged_and_daily_care_separated(self):
         scores={'redness':15,'brightness':71,'trouble':92,'uniformity':91}
         with patch('app.api.routes.skin.skin_analysis.analyze_image_detail',return_value=(scores,{})):
             analysis,result=asyncio.run(self.flow())
         self.assertEqual({r['metric_code']:r['score'] for r in analysis.json()['scores']},scores)
         self.assertEqual(result.json()['missing_metrics'],['moisture'])
-        self.assertEqual(result.json()['recommendations'],[])
+        self.assertEqual(result.json()['recommendation_mode'],'daily_care')
+        self.assertEqual(result.json()['recommendations'][0]['matches'],[])
+        self.assertEqual(result.json()['recommendations'][0]['match_count'],0)
+        self.assertEqual(result.json()['deferred_metrics'],['trouble'])
         self.assertEqual(result.json()['target_count'],1)
 
     def test_corrupt_photo_uses_real_decoder_and_no_save(self):

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { getCosmeticPreview, type AnalysisMetricScore, type MetricCode, type PreviewRequest, type PreviewResponse, type ProductCategory } from '../api/cosmetics'
 import { ApiError } from '../api/client'
 import { analyzeSkinPhoto, type SkinAnalysis } from '../api/skin'
+import MoisturePanel from './MoisturePanel'
 import SinglePhotoUpload from './SinglePhotoUpload'
 import PageIntro, { ProgressSteps } from './PageIntro'
 import MetricScores from './MetricScores'
@@ -21,7 +22,8 @@ const metrics: { code: MetricCode; name: string; direction: string }[] = [
 ]
 const initialScores = { moisture: 25, redness: 75, brightness: 30, trouble: 75, uniformity: 30 }
 
-export default function CosmeticPreview({ onAnalysis, onRecommendation }: {
+export default function CosmeticPreview({ onAnalysis, onRecommendation, active = true }: {
+  active?: boolean
   onAnalysis?: (value: SkinAnalysis) => void
   onRecommendation?: (value: CosmeticSessionResult) => void
 }) {
@@ -172,12 +174,13 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation }: {
 
   return (
     <section className="cosmetic-preview" aria-label="피부 분석 및 화장품 추천">
-      <PageIntro eyebrow="SKIN & COSMETICS" title="피부 분석 · 화장품 추천">사진 속 피부 상태를 살펴보고, 분석 결과에 맞는 성분과 제품을 확인하세요.</PageIntro>
+      <PageIntro eyebrow="BOA · SKIN & CARE" title="피부 분석 · 화장품 추천">정면 사진을 촬영하거나 선택하세요.</PageIntro>
       <ProgressSteps labels={['사진 입력', '피부 분석', '성분 기반 추천']} current={result ? 3 : stage === 'recommendation' ? 2 : loading || analysis ? 1 : 0} />
-      <form onSubmit={submit}>
+      {active && <MoisturePanel analysisId={analysis?.id ?? null} />}
+      <form onSubmit={submit} className={inputMode === 'photo' && !!photo && !result ? 'has-floating-action' : undefined}>
         <fieldset disabled={loading} className="analysis-fieldset"><legend className="sr-only">피부 분석 입력</legend>
-          <details className="developer-tools"><summary>연동 테스트 도구 {inputMode !== 'photo' && <span className="category-pill">테스트 모드</span>}</summary><label className="field">입력 방식<select value={inputMode} onChange={e => { clearResult(); setInputMode(e.target.value as 'photo' | 'analysis' | 'development') }}><option value="photo">사진 분석 후 자동 추천</option><option value="analysis">분석 결과 JSON · 연동 확인</option><option value="development">임시 점수 실험 · 개발용 가정</option></select></label></details>
-          <div className="analysis-layout"><section className="form-card input-panel"><div className="card-heading"><span className="step-number">01</span><div><h3 id="skin-input-title" className="section-target" tabIndex={-1}>{inputMode === 'photo' ? '분석할 사진' : '분석 입력 확인'}</h3><p>{inputMode === 'photo' ? '정면에서 얼굴이 크게 나온 사진을 준비해 주세요.' : '실제 사진 분석과 구분되는 연동 확인 도구입니다.'}</p></div></div>
+
+          <div className="analysis-layout"><section className="form-card input-panel"><div className="card-heading"><span className="step-number">01</span><div><h3 id="skin-input-title" className="section-target" tabIndex={-1}>{inputMode === 'photo' ? '분석할 사진' : '분석 입력 확인'}</h3><p>{inputMode === 'photo' ? '얼굴이 선명하게 보이는 정면 사진을 사용해 주세요.' : '실제 사진 분석과 구분되는 연동 확인 도구입니다.'}</p></div></div>
           {inputMode === 'photo' && <SinglePhotoUpload file={photo} disabled={loading} onChange={file => { clearResult(); setPhoto(file); cachedAnalysis.current = null }} />}
           {inputMode === 'analysis' && <label>분석 결과 JSON<textarea rows={10} value={analysisJson}
             onChange={e => { clearResult(); setAnalysisJson(e.target.value) }} placeholder={'{"scores": [...]}'}/>
@@ -197,13 +200,15 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation }: {
           </div>
           <label className="check-row"><input type="checkbox" checked={!hasMoisture} onChange={e => { clearResult(); setHasMoisture(!e.target.checked) }} />수분 미측정 — 나머지 4개 지표만 사용</label>
           </>}
-          </section><section className="form-card options-panel"><div className="card-heading"><span className="step-number">02</span><div><h3>분석·추천 시작</h3><p>전체 기초 제품에서 먼저 추천해 드립니다.</p></div></div>
-          {inputMode === 'photo' && <label className="field">수분 점수 <span className="optional-label">선택</span><input type="number" min={0} max={100} step={1} value={manualMoisture} onChange={e => { clearResult(); setManualMoisture(e.target.value) }} placeholder="0–100 · 미측정이면 비워두세요" /><small>센서 연결 전 측정값을 직접 입력합니다. 사진으로 수분을 추정하지 않습니다.</small></label>}
-          <p className="recommendation-scope">보습제·세럼·토너를 함께 비교합니다.<br />제품 종류는 추천 결과에서 골라볼 수 있어요.</p>
+          </section><section className="form-card options-panel"><div className="card-heading"><span className="step-number">02</span><div><h3>분석 및 추천</h3><p>분석 결과로 화장품을 조회합니다.</p></div></div>
+          {inputMode === 'photo' && <details className="filter-details moisture-options"><summary>수분 측정값 추가 <small>선택{manualMoisture !== '' ? ` · ${manualMoisture}점` : ''}</small></summary><label className="field">수분 점수<input type="number" min={0} max={100} step={1} value={manualMoisture} onChange={e => { clearResult(); setManualMoisture(e.target.value) }} placeholder="0–100" /><small>보정된 점수만 입력하세요. 센서 원시값은 입력하지 않습니다.</small></label></details>}
           <details className="filter-details"><summary>성분 제외 조건</summary><label className="field">직접 제외할 성분<input type="text" value={excluded} maxLength={1500} onChange={e => { clearResult(); setExcluded(e.target.value) }} placeholder="예: 향료, 살리실릭애씨드" /><small>정확한 성분명을 쉼표로 구분해 입력하세요.</small></label><label className="check-row"><input type="checkbox" checked={avoidTriggers} onChange={e => { clearResult(); setAvoidTriggers(e.target.checked) }} />홍조가 ‘개선 필요’이면 프로젝트 주의 성분 제외</label></details>
-          <button className="recommend-button" type="submit">{loading ? stage === 'analysis' ? '사진을 분석하고 있어요…' : '성분을 비교하고 있어요…' : inputMode === 'photo' ? '사진 분석하고 추천 확인하기' : '추천 제품 확인하기'}<Icon name="arrow" size={18} /></button>
-          <p className="input-note">분석 점수를 저장하고 추천에 사용합니다. 이 업로드 경로는 원본 사진을 저장하지 않습니다.</p>
+          <div className={`analysis-actionbar${inputMode === 'photo' && !!photo && !result ? ' floating-action' : ''}`}>
+            <div><strong>{loading ? stage === 'analysis' ? '사진 분석 중' : '추천 제품 조회 중' : photo ? '사진 입력 완료' : inputMode === 'photo' ? '사진을 입력하세요' : '추천 조회'}</strong><small>{loading ? '완료될 때까지 기다려 주세요.' : '원본 사진은 보관하지 않습니다.'}</small></div>
+            <button className="recommend-button" type="submit" disabled={loading || (inputMode === 'photo' && !photo)}>{loading ? '처리 중…' : inputMode === 'photo' ? '분석 시작' : '추천 제품 확인하기'}<Icon name="arrow" size={18} /></button>
+          </div>
           </section></div>
+          <details className="developer-tools"><summary>연동 테스트 도구 {inputMode !== 'photo' && <span className="category-pill">테스트 모드</span>}</summary><label className="field">입력 방식<select value={inputMode} onChange={e => { clearResult(); setInputMode(e.target.value as 'photo' | 'analysis' | 'development') }}><option value="photo">사진 분석 후 자동 추천</option><option value="analysis">분석 결과 JSON · 연동 확인</option><option value="development">임시 점수 실험 · 개발용 가정</option></select></label></details>
         </fieldset>
       </form>
       {result && <div className="result-shortcut"><p role="status">추천 조회 완료 · {result.recommendations.length ? `${result.recommendations.length}개 제품을 확인할 수 있습니다.` : '제품이 없는 이유를 아래에서 확인해 주세요.'}</p><SectionJump targetId="results-title">결과로 이동</SectionJump></div>}
@@ -213,35 +218,35 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation }: {
       {error && <p role="alert" className="error-box">{error}</p>}
       <div aria-live="polite" aria-busy={loading || pendingCategory !== null}>
         {result && <section className="recommendation-results" aria-labelledby="results-title">
-          <div className="results-heading"><h3 id="results-title" className="section-target" tabIndex={-1}>{dailyCare ? '일상 관리용 제품 제안' : '추천 결과'}</h3><span>{category ? categoryNames[category] : '전체'} · {result.recommendations.length}개 제품{!dailyCare && ` · 개선 대상 ${result.target_count}개 지표`}</span></div>
-          <MetricScores scores={result.assessments.map(a => ({ metric_code: a.code, metric_name: a.name, score: a.score, category_name: a.category, higher_is_better: !['redness', 'trouble'].includes(a.code) }))} />
+          <div className="results-heading"><h3 id="results-title" className="section-target" tabIndex={-1}>{dailyCare ? '일상 관리용 제품' : '화장품 추천 결과'}</h3><span>{category ? categoryNames[category] : '전체'} · {result.recommendations.length}개 제품{!dailyCare && ` · 개선 대상 ${result.target_count}개 지표`}</span></div>
+          <p className="section-kicker">01 / 피부 지표</p><MetricScores scores={result.assessments.map(a => ({ metric_code: a.code, metric_name: a.name, score: a.score, category_name: a.category, higher_is_better: !['redness', 'trouble'].includes(a.code) }))} />
           {dailyCare ? <p className="result-explanation">{result.recommendation_notice}</p>
-            : <p className="result-explanation">성분 매칭은 효과의 크기나 확률이 아닙니다. 개선 대상 {result.target_count}개 중 현재 규칙으로 매칭 가능한 지표는 {result.scorable_target_count}개입니다. 같은 지표에 여러 성분이 있어도 1점입니다.</p>}
-          <details className="scope-details"><summary>추천 기준과 분석 한계</summary><p>{dailyCare ? '활성 보습 성분 규칙에 해당하는 성분이 포함된 제품을 고릅니다. 개선 점수는 부여하지 않으며, 기획·세트 의심 제품은 후순위로 표시합니다.' : '매칭 지표 수를 우선하며 기획·세트 의심 제품은 후순위로 표시합니다.'} 같은 정렬 조건 안의 표시 순서는 효과의 우열을 뜻하지 않습니다.</p>
-          {dailyCare && <p>{result.ranking_basis}</p>}
-          {result.deferred_metrics.some(code => ['brightness', 'uniformity', 'trouble'].includes(code)) && <p>사진의 밝기·명도 편차·붉은 반점으로는 색소침착이나 모공 막힘을 확인할 수 없어 관련 성분 매칭을 보류합니다.</p>}
-          {result.deferred_metrics.includes('redness') && <p>홍조 가점은 근거 검토 중으로 보류합니다. 홍조는 조건부 배제에만 사용합니다.</p>}
-          </details>
+            : <p className="result-explanation">성분을 기준으로 조회한 제품입니다. 매칭 점수는 제품 효과를 뜻하지 않습니다.</p>}
           <div className="result-category-panel">
-            <p id="category-filter-label">제품 종류로 보기</p>
+            <p className="section-kicker">02 / 추천 제품</p><p id="category-filter-label">제품 종류</p>
             <div className="category-filters" role="group" aria-labelledby="category-filter-label">
               {(['', 'moisturizer', 'serum', 'toner'] as const).map(value => <button type="button" key={value} aria-pressed={category === value}
                 disabled={loading || (category === value && pendingCategory === null)} onClick={() => void filterCategory(value)}>{value ? categoryNames[value] : '전체'}</button>)}
             </div>
             {pendingCategory !== null ? <p role="status">{pendingCategory ? categoryNames[pendingCategory] : '전체'} 제품을 다시 조회하고 있어요. 완료 전까지 기존 결과를 표시합니다.</p>
-              : <p>현재 {category ? categoryNames[category] : '전체 기초 제품'} 결과입니다. 제품 종류를 바꿔도 사진은 다시 분석하지 않습니다.</p>}
+              : null}
             {filterError && <div className="error-box" role="alert">{filterError}<br />기존 결과를 유지했습니다. <button type="button" className="secondary" disabled={pendingCategory !== null} onClick={() => void filterCategory(failedCategory)}>필터 다시 조회</button></div>}
           </div>
           {result.applied_exclusions.length > 0 && <p className="exclusion-summary">제외 적용: {result.applied_exclusions.join(', ')}</p>}
           {result.exclusion_details.length > 0 && <details><summary>자동 배제 근거와 적용 한계</summary>{result.exclusion_details.map(rule => <p key={rule.rule_code}><strong>{rule.ingredient}</strong> · {rule.rationale}<br />{rule.limitations}{' '}<a href={rule.evidence_url} target="_blank" rel="noopener noreferrer">근거 ↗</a></p>)}</details>}
           {!result.recommendations.length && <CosmeticEmptyState result={result} />}
           {result.tie_groups.map(group => <section className="tie-group" key={group.key} aria-label="같은 정렬 조건의 제품">
-          <p className="tie-group-summary">같은 정렬 조건의 제품 {group.total}개 중 {result.recommendations.filter(p => p.ranking_group === group.key).length}개 표시</p>
+          <p className="tie-group-summary">같은 추천 조건의 제품 {group.total}개 중 {result.recommendations.filter(p => p.ranking_group === group.key).length}개 표시</p>
           <ul className="product-list">{result.recommendations.filter(p => p.ranking_group === group.key).map(product =>
             <CosmeticProductCard key={product.product_id} product={product} dailyCare={dailyCare} scorableTargetCount={result.scorable_target_count} />)}</ul>
           {group.next_offset !== null && <button className="tie-more-button" type="button" disabled={pendingCategory !== null || loadingGroup !== null || stale}
             onClick={() => loadMore(group)}>{loadingGroup === group.key ? '제품을 불러오는 중…' : `같은 조건 제품 ${Math.min(5, group.total - group.next_offset)}개 더보기`}</button>}
           </section>)}
+          <details className="scope-details"><summary>추천 기준과 분석 한계</summary>{!dailyCare && <p>성분 매칭은 효과의 크기나 확률이 아닙니다. 개선 대상 {result.target_count}개 중 현재 규칙으로 매칭 가능한 지표는 {result.scorable_target_count}개입니다. 같은 지표에 여러 성분이 있어도 1점입니다.</p>}<p>{dailyCare ? '활성 보습 성분 규칙에 해당하는 성분이 포함된 제품을 고릅니다. 개선 점수는 부여하지 않으며, 기획·세트 의심 제품은 후순위로 표시합니다.' : '매칭 지표 수를 우선하며 기획·세트 의심 제품은 후순위로 표시합니다.'} 같은 정렬 조건 안의 표시 순서는 효과의 우열을 뜻하지 않습니다.</p>
+          {dailyCare && <p>{result.ranking_basis}</p>}
+          {result.deferred_metrics.some(code => ['brightness', 'uniformity', 'trouble'].includes(code)) && <p>사진의 밝기·명도 편차·붉은 반점으로는 색소침착이나 모공 막힘을 확인할 수 없어 관련 성분 매칭을 보류합니다.</p>}
+          {result.deferred_metrics.includes('redness') && <p>홍조 가점은 근거 검토 중으로 보류합니다. 홍조는 조건부 배제에만 사용합니다.</p>}
+          </details>
           <details className="method-details"><summary>추천 범위와 제한 확인</summary><p>전체 {result.stats.total_products.toLocaleString()}개 중 조건을 충족한 제품은 {result.stats.eligible_products.toLocaleString()}개입니다.</p><ul><li>종류 조건 제외: {result.stats.unsupported_category}</li><li>전성분 확인 미완료: {result.stats.incomplete_ingredients}</li><li>사용 방식 조건 제외: {result.stats.excluded_by_usage}</li><li>제외 성분 포함: {result.stats.excluded_by_ingredient}</li>{dailyCare ? <li>일상 관리 성분 기준 미충족: {result.stats.no_daily_care_ingredient ?? 0}</li> : <li>개선 지표 매칭 없음: {result.stats.no_matching_metric}</li>}</ul>{result.notices.filter(note => !note.startsWith('정렬 기준:') && !note.startsWith('제품명·종류로')).map(note => <p key={note}>{note}</p>)}<small>{result.rule_version}</small></details>
           <div className="result-return"><a className="button" href="#/results">이번 분석 결과 모아보기</a><SectionJump targetId="skin-input-title">입력·추천 조건으로 돌아가기</SectionJump></div>
         </section>}

@@ -46,7 +46,7 @@ export default function CosmeticMatchDetails({ matches }: { matches: Matches }) 
   const scope = (names: Set<string>) => names.size === matches.length ? '' : `${[...names].join(' · ')}: `
 
   return <details className="match-details">
-    <summary>왜 매칭됐나요? — 근거·가정·미확인 정보</summary>
+    <summary>성분 매칭 상세 보기</summary>
     {bases.size > 0 && <section>
       <h5>성분표에서 확인한 내용</h5>
       {[...bases].map(([text, names]) => <p key={text}>{scope(names)}{text}</p>)}

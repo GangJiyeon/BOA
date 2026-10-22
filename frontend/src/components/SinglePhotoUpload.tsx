@@ -25,7 +25,7 @@ export default function SinglePhotoUpload({ file, onChange, disabled }: { file: 
   return <div className={`single-photo-upload${dragging ? ' dragging' : ''}`}
     onDragOver={event => { event.preventDefault(); if (!disabled) setDragging(true) }} onDragLeave={() => setDragging(false)}
     onDrop={event => { event.preventDefault(); setDragging(false); const files = Array.from(event.dataTransfer.files); if (files.length) select(files); else if (!disabled) setError('사진 파일을 끌어 놓아 주세요.') }}>
-    {file ? <><PhotoFrame key={revision} file={file} />{actions}</> : <div className="upload-zone single-upload-zone"><span className="upload-icon"><Icon name="camera" size={30} /></span><strong>얼굴 사진을 준비해 주세요</strong><p>카메라로 촬영하거나 사진을 선택하세요.<br />사진을 이곳에 끌어 놓아도 됩니다.</p>{actions}<small>JPG · PNG · WEBP</small></div>}
+    {file ? <><PhotoFrame key={revision} file={file} />{actions}</> : <div className="upload-zone single-upload-zone"><div className="portrait-guide" aria-hidden="true"><svg viewBox="0 0 180 200" fill="none"><path className="guide-corners" d="M40 16H20v24m120-24h20v24M20 160v24h20m120-24v24h-20"/><ellipse cx="90" cy="85" rx="43" ry="56" strokeDasharray="4 6"/><path d="M63 79h10m34 0h10M90 86l-4 19h8m-18 13q14 9 28 0M72 139v15q-33 7-40 29m76-44v15q33 7 40 29"/></svg><span>FACE PHOTO</span></div><strong>정면 사진 입력</strong><p>밝은 곳에서 필터 없이 촬영하세요.</p>{actions}<small>또는 사진을 여기에 끌어 놓으세요 · JPG / PNG / WEBP</small></div>}
     {error && <p role="alert" className="error-box">{error}</p>}
     {camera && <CameraCapture onClose={closeCamera} onCapture={photo => select([photo])} />}
     <p className="photo-tip"><Icon name="info" size={16} />밝은 곳에서 얼굴을 가리지 않고 촬영해 주세요.</p>

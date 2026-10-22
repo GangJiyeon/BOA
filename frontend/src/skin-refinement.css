@@ -1,0 +1,57 @@
+/* Skin consultation: visual overrides only. */
+.cosmetic-preview .page-intro { max-width: 760px; }
+.cosmetic-preview .page-intro h2 { font-size: clamp(28px, 3vw, 42px); font-weight: 600; letter-spacing: -.055em; }
+.cosmetic-preview .analysis-layout { grid-template-columns: minmax(0, 1.5fr) minmax(290px, 1fr); gap: 28px; }
+.cosmetic-preview .input-panel { background: #fff; padding: 26px; border-radius: 20px; }
+.cosmetic-preview .options-panel { background: #eef1e9; padding: 28px; border: 0; border-radius: 20px; }
+.cosmetic-preview .upload-zone { min-height: 430px; background: #f7f8f3; border-color: #b7c3ae; border-radius: 14px; }
+.portrait-guide { width: 142px; color: #6e846d; margin: 0 auto 16px; }
+.portrait-guide svg { width: 100%; fill: none; stroke: currentColor; stroke-width: 1.25; }
+.portrait-guide span { font-size: 9px; letter-spacing: .2em; }
+.cosmetic-preview .upload-zone strong { font-size: 20px; }
+.cosmetic-preview .upload-zone p { font-size: 13px; line-height: 1.8; }
+.cosmetic-preview .photo-frame { aspect-ratio: 1 / 1; max-height: 600px; border-radius: 14px; }
+.capture-checklist { list-style: none; padding: 0 0 20px; margin: 18px 0; border-bottom: 1px solid #d8dfd2; }
+.capture-checklist li { display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 2; color: #53634e; }
+.capture-checklist svg { width: 15px; height: 15px; flex-shrink: 0; }
+.scope-caption { font-weight: 600; font-size: 13px; }
+.care-types { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.care-types span { background: #fff; border: 1px solid #dce2d8; border-radius: 30px; padding: 5px 12px; font-size: 12px; }
+.cosmetic-preview .developer-tools { margin-top: 20px; background: transparent; border: 0; border-top: 1px solid #dce2d8; border-radius: 0; font-size: 12px; }
+.section-kicker { color: #57705c; font-size: 11px; letter-spacing: .08em; font-weight: 600; margin: 25px 0 12px; }
+.product-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.product-card { display: flex; flex-direction: column; gap: 0; padding: 0; overflow: hidden; border-radius: 16px; box-shadow: 0 4px 18px #243d3006; }
+.product-visual { position: relative; background: #f2f4ee; padding: 34px 24px 18px; }
+.product-type { position: absolute; top: 12px; left: 14px; font-size: 10px; background: #fff; border-radius: 20px; padding: 4px 10px; color: #4b614d; }
+.product-card .product-image { width: 100%; height: 190px; object-fit: contain; border-radius: 0; background: transparent; }
+.product-card .image-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #798d76; }
+.image-placeholder span { font: 48px Georgia, serif; letter-spacing: -.06em; }
+.image-placeholder small { font-size: 11px; }
+.product-card .product-content { padding: 22px; min-width: 0; flex: 1; }
+.product-card .brand-name { font-size: 11px; }
+.product-card h4 { font-size: 16px; line-height: 1.65; }
+.product-card .product-actions a { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid #e4e8e0; padding-top: 14px; margin-top: 18px; }
+.product-card .product-actions a svg { width: 16px; height: 16px; }
+.product-card .match-details { font-size: 11px; overflow-wrap: anywhere; }
+@media (max-width: 1150px) {
+  .cosmetic-preview .analysis-layout { grid-template-columns: minmax(0, 1.2fr) minmax(260px, 1fr); gap: 18px; }
+  .cosmetic-preview .input-panel, .cosmetic-preview .options-panel { padding: 22px; }
+  .product-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .cosmetic-preview .analysis-layout { grid-template-columns: minmax(0, 1fr); }
+  .cosmetic-preview .upload-zone { min-height: 350px; }
+}
+@media (max-width: 540px) {
+  .product-list { grid-template-columns: minmax(0, 1fr); }
+  .product-card .product-image { height: 220px; }
+  .cosmetic-preview .input-panel, .cosmetic-preview .options-panel { padding: 18px; }
+}
+
+.capture-checklist ul { list-style: none; padding: 0; margin: 10px 0 0; }
+.cosmetic-preview .recommend-button { min-height: 54px; border-radius: 10px; }
+.cosmetic-preview .recommend-button:disabled { opacity: .5; cursor: not-allowed; }
+.score-card { border-radius: 14px; }
+.score-card > small { font-size: 11px; }
+
+@media (max-width: 700px) { .score-grid .score-card:last-child { grid-column: 1 / -1; } }

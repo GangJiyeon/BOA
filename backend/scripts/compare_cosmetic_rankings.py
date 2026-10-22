@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from app.services.cosmetic_ranking import rank_candidates, POLICY_VERSION
+from app.services.cosmetic_ranking import rank_candidates, rank_daily_care_candidates, POLICY_VERSION
 from app.services.cosmetic_rule_types import load_seed_bundle
 from app.services.cosmetic_recommendation import recommend
 from app.services.cosmetic_observation_import import read_snapshot
@@ -29,12 +29,14 @@ def compare(path):
                                         rule_bundle=bundle).recommendations)
         scorable = frozenset(a.code for a in original.assessments
                              if a.needs_improvement and a.code not in original.deferred_metrics)
-        baseline = rank_candidates(candidates, "metric_count")
+        daily_care = original.recommendation_mode == "daily_care"
+        baseline = rank_daily_care_candidates(candidates) if daily_care else rank_candidates(candidates, "metric_count")
         assert len(baseline) == original.stats.eligible_products
         assert [r.product.product_id for r in baseline[:5]] == [p.product_id for p in original.recommendations]
         base_ranks = {r.product.product_id: r.rank for r in baseline}
         base_top = {r.product.product_id for r in baseline[:5]}
-        variants = {"metric_count": baseline, "concern_groups": rank_candidates(candidates, "concern_groups")}
+        variants = ({"daily_care": baseline} if daily_care else
+                    {"metric_count": baseline, "concern_groups": rank_candidates(candidates, "concern_groups")})
         for priority in sorted(scorable):
             variants["priority_"+priority] = rank_candidates(candidates, "explicit_priority",
                                                            priority=priority, scorable_metrics=scorable)
@@ -49,6 +51,7 @@ def compare(path):
                         "rank": r.rank, "baseline_rank": base_ranks[p.product_id],
                         "match_count": p.match_count, "group_count": r.group_count,
                         "matched_metrics": [m.metric_code for m in p.matches],
+                        "daily_care_ingredients": p.daily_care_ingredients,
                         "priority_matched": r.priority_matched, "tie_count": r.tie_count,
                         "bundle_suspected": p.bundle_suspected}
             report[label] = {"candidate_count": len(ranked), "changed_ranks": len(changes),
@@ -56,6 +59,7 @@ def compare(path):
                              "top5": [item(r) for r in ranked[:5]],
                              "largest_rank_changes": [item(r) for r in changes[:5]]}
         results[name] = {"scores": request.scores.model_dump(), "filters": request.model_dump(exclude={"scores"}),
+                         "recommendation_mode": original.recommendation_mode,
                          "priorities_are_test_assumptions_not_user_preferences": True,
                          "stats": original.stats.model_dump(), "variants": report}
     with path.open("rb") as f:

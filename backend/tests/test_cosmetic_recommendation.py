@@ -118,11 +118,13 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(result.missing_metrics, ["moisture"])
         self.assertEqual(result.recommendations[0].match_count, 3)
 
-    def test_good_scores_return_no_forced_recommendations(self):
+    def test_good_scores_return_daily_care_without_improvement_points(self):
         result = run([product()], request(scores={"moisture": 90, "redness": 10, "brightness": 90, "trouble": 10, "uniformity": 90}))
         self.assertEqual(result.target_count, 0)
-        self.assertEqual(result.recommendations, [])
-        self.assertIsNotNone(result.empty_reason)
+        self.assertEqual(result.recommendation_mode, "daily_care")
+        self.assertEqual(result.recommendations[0].match_count, 0)
+        self.assertEqual(result.recommendations[0].matches, [])
+        self.assertIsNone(result.empty_reason)
 
     def test_boundary_and_inverse_direction(self):
         for score, expected_up, expected_down in [(0, True, False), (33, True, False), (34, False, False), (66, False, False), (67, False, True), (100, False, True)]:
@@ -168,7 +170,9 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(result.target_count, 1)
         self.assertEqual(result.scorable_target_count, 0)
         self.assertEqual(result.deferred_metrics, ["redness"])
-        self.assertEqual(result.recommendations, [])
+        self.assertEqual(result.recommendation_mode, "daily_care")
+        self.assertEqual(result.recommendations[0].match_count, 0)
+        self.assertEqual(result.recommendations[0].matches, [])
 
     def test_acid_policy_conditions_and_exact_matching(self):
         for acid in ("글라이콜릭애씨드", "락틱애씨드"):
