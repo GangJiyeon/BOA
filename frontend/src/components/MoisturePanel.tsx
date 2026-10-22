@@ -31,7 +31,7 @@ export default function MoisturePanel({ analysisId }: { analysisId: number | nul
     <div className="button-row">
       <button type="button" disabled={sensor.state === 'connecting' || sensor.state === 'connected'} onClick={() => sensor.connect()}>측정기 연결 / 재연결</button>{' '}
       <button type="button" className="secondary" disabled={sensor.state === 'disconnected'} onClick={sensor.disconnect}>측정 종료</button>{' '}
-      {import.meta.env.DEV && <button type="button" className="secondary" disabled={sensor.state === 'connecting' || sensor.state === 'connected'} onClick={() => sensor.connect(true)}>개발용 Mock 시작</button>}
+      {import.meta.env.DEV && import.meta.env.VITE_MOISTURE_MOCK === 'true' && <button type="button" className="secondary" disabled={sensor.state === 'connecting' || sensor.state === 'connected'} onClick={() => sensor.connect(true)}>개발용 Mock 시작</button>}
     </div>
     {value ? <p><strong>{value.source === 'ble_sensor' ? '센서 원시값' : '가상 데이터 · 실제 측정 아님'}: {value.raw_value ?? '유효값 없음'}</strong> {value.unit}<br />
       상태: {value.status} · 수신: {new Date(value.received_at).toLocaleTimeString()} · 순번 {value.sequence}</p> : <p>수신한 측정값이 없습니다.</p>}
