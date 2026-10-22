@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 MetricCode = Literal["moisture", "redness", "brightness", "trouble", "uniformity"]
 RankingMode = Literal["metric_count", "concern_groups", "explicit_priority"]
 ProductCategory = Literal["moisturizer", "serum", "toner"]
+RecommendationMode = Literal["improvement", "daily_care"]
 Score = Annotated[int, Field(strict=True, ge=0, le=100)]
 
 
@@ -131,6 +132,9 @@ class CosmeticRecommendationItem(BaseModel):
     ranking_tie_count: int = Field(default=1, ge=1)
     ranking_group: str = ""
     matches: list[IngredientMatch]
+    # 일상 관리 후보의 함유 근거. 개선 지표 매칭/점수와 분리한다.
+    daily_care_ingredients: list[str] = Field(default_factory=list)
+    daily_care_rules: list[RuleExplanation] = Field(default_factory=list)
     shared_evidence_groups: list[SharedEvidenceGroup] = Field(default_factory=list)
     recommendation_reason: str
     bundle_suspected: bool
@@ -145,6 +149,7 @@ class RecommendationStats(BaseModel):
     excluded_by_usage: int = 0
     excluded_by_ingredient: int = 0
     no_matching_metric: int = 0
+    no_daily_care_ingredient: int = 0
     eligible_products: int = 0
 
 
@@ -155,6 +160,9 @@ class RankingTieGroup(BaseModel):
 
 
 class CosmeticPreviewResponse(BaseModel):
+    recommendation_mode: RecommendationMode = "improvement"
+    daily_care_reason: Literal["no_improvement_targets", "no_supported_matching_rules"] | None = None
+    recommendation_notice: str = ""
     score_semantics: Literal["photo_v1", "development_assumption"] = "photo_v1"
     snapshot_token: str = ""
     tie_groups: list[RankingTieGroup] = Field(default_factory=list)

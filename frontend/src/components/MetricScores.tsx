@@ -1,9 +1,10 @@
 import type { AnalysisMetricScore } from '../api/cosmetics'
+const names = { moisture: '수분', redness: '홍조', brightness: '밝기', trouble: '트러블', uniformity: '균일도' }
 const order = ['moisture', 'redness', 'brightness', 'trouble', 'uniformity'] as const
 export default function MetricScores({ scores }: { scores: AnalysisMetricScore[] }) {
   return <div className="score-grid">{order.map(code => {
     const score = scores.find(item => item.metric_code === code)
-    if (!score) return <div className="score-card unmeasured" key={code}><span>{code === 'moisture' ? '수분' : code}</span><strong>—</strong><span className="category-pill">미측정</span><small>측정값이 없습니다</small></div>
+    if (!score) return <div className="score-card unmeasured" key={code}><span>{names[code]}</span><strong>—</strong><span className="category-pill">미측정</span><small>측정값이 없습니다</small></div>
     return <div className={`score-card${score.category_name === '개선 필요' ? ' needs-care' : ''}`} key={code}>
       <div className="score-card-top"><span>{score.metric_name}</span><span className="category-pill">{score.category_name}</span></div>
       <strong>{score.score}<small>/ 100</small></strong>

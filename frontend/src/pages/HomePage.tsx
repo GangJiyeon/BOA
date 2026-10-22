@@ -98,12 +98,12 @@ export default function HomePage() {
   const startAnalysis = () => { window.location.hash = '/skin' }
   return <div className="app-shell">
     <a className="skip-link" href="#page-content" onClick={event => { event.preventDefault(); document.getElementById('page-content')?.focus() }}>본문으로 이동</a>
-    <aside className="sidebar"><a href="#/home" className="brand" aria-label="BOA 홈"><span className="brand-symbol">b.</span><span>BOA<small>BEAUTY ON YOUR TERMS</small></span></a>
-      <p className="nav-caption">MY BEAUTY JOURNEY</p>
-      <nav className="app-nav" aria-label="주요 메뉴">{pages.map(page => <a key={page.id} href={`#/${page.id}`} aria-current={current.page === page.id ? 'page' : undefined}><Icon name={page.icon as IconName} /><span>{page.label}</span>{page.id === 'studio' && <small>준비 중</small>}</a>)}</nav>
-      <div className="sidebar-bottom"><Icon name="sparkles" /><p>나를 위한 선택의 시작.</p><small>BOA PROJECT · 2026</small></div>
+    <aside className="tablet-sidebar">
+      <a href="#/home" className="tablet-brand" aria-label="BOA 홈">BOA<span>분석 · 추천</span></a>
+      <nav className="app-nav" aria-label="주요 메뉴">{pages.map(page => <a key={page.id} href={`#/${page.id}`} aria-current={current.page === page.id ? 'page' : undefined}><Icon name={page.icon as IconName} size={23} /><span>{page.label}</span>{page.id === 'studio' && <small>준비 중</small>}</a>)}</nav>
     </aside>
-    <div className="workspace"><header className="topbar"><span className="breadcrumb">BOA <span>/</span> {pages.find(page => page.id === current.page)?.label}</span><div className="topbar-actions"><span className={`connection-badge ${health?.db ? 'connected' : ''}`}><i />{health?.db ? '서비스 연결됨' : healthError || (health && !health.db) ? '연결 확인 필요' : '연결 확인 중'}</span><a href="#/start" className="account-link" aria-label="계정 화면 열기"><Icon name="user" size={17} />{actor ? actorNames[actor.kind] : actorError ? '세션 확인 실패' : '확인 중'}</a></div></header>
+    <div className="workspace">
+      <header className="tablet-topbar"><span>{pages.find(page => page.id === current.page)?.label}</span><div><span className={`connection-badge ${health?.db ? 'connected' : ''}`}><i />{health?.db ? '연결됨' : '연결 확인 필요'}</span><a href="#/start" className="account-link" aria-label="계정 화면 열기"><Icon name="user" size={20} />{actor ? actorNames[actor.kind] : '계정'}</a></div></header>
     <main id="page-content" tabIndex={-1}>
     {(healthError || actorError) && <div role="alert" className="error-box">{healthError && `백엔드 연결 실패: ${healthError}`}{actorError && ` 세션 확인 실패: ${actorError}`} <button onClick={() => { void refreshHealth(); void refreshActor() }}>연결 다시 확인</button></div>}
     <div className="page-content">
@@ -113,9 +113,9 @@ export default function HomePage() {
       {current.page === 'start' && <AccountPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onLogin={clearSession} onLogout={clearSession} onSignup={clearSession} onStart={startAnalysis} />}
       {current.page === 'results' && <ResultsPage key={current.token} latestSkin={latestSkin} latestHair={latestHair} cosmetics={latestCosmetics} hasSharedToken={Boolean(current.token)} />}
       {current.page === 'kiosk' && <KioskPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onEnd={clearSession} onStart={startAnalysis} />}
-      {current.page === 'studio' && <section><PageIntro eyebrow="COMING NEXT" title="AI Studio">추천받은 스타일을 나의 얼굴에 미리 보는 다음 단계입니다.</PageIntro><div className="studio-placeholder"><span className="feature-icon"><Icon name="sparkles" size={36} /></span><h3>새로운 나를 미리 만나는 공간</h3><p>생성 기능을 연결하고 있습니다.<br />지금은 피부·헤어 분석과 추천을 먼저 확인해 보세요.</p><button disabled>미리보기 생성 · 준비 중</button><a href="#/home">분석 시작 화면으로 →</a></div></section>}
+      {current.page === 'studio' && <section><PageIntro eyebrow="COMING NEXT" title="AI Studio">추천 스타일을 사진에 적용하는 기능입니다.</PageIntro><div className="studio-placeholder"><span className="feature-icon"><Icon name="sparkles" size={36} /></span><h3>스타일 미리보기</h3><p>아직 사용할 수 없습니다.</p><button disabled>미리보기 생성 · 준비 중</button><a href="#/home">분석 시작 화면으로 →</a></div></section>}
     </div>
-    <footer className="app-footer"><span>BOA · 나에게 맞는 뷰티 추천</span><details><summary>연결 상태 확인</summary><ul className="health-status"><li>API: {health?.status ?? '연결 확인 필요'}</li><li>DB: {health?.db ? '연결됨' : '연결 확인 필요'}</li><li>S3: {health?.s3 ? '설정됨' : '미설정'}</li>{quota && <li>횟수 조회 · 피부 {quota.skin.remaining ?? '제한 없음'} / 헤어 {quota.hair.remaining ?? '제한 없음'}</li>}</ul>{quotaError && <p>{quotaError}</p>}<p>중간발표 버전 · 세션별 저장과 사용 횟수 적용은 연결 준비 중입니다.</p><button className="secondary" onClick={() => { void refreshHealth(); void refreshActor() }}>상태 다시 확인</button></details></footer>
+    <footer className="app-footer"><span>BOA · 분석 및 추천</span><details><summary>연결 상태 확인</summary><ul className="health-status"><li>API: {health?.status ?? '연결 확인 필요'}</li><li>DB: {health?.db ? '연결됨' : '연결 확인 필요'}</li><li>S3: {health?.s3 ? '설정됨' : '미설정'}</li>{quota && <li>횟수 조회 · 피부 {quota.skin.remaining ?? '제한 없음'} / 헤어 {quota.hair.remaining ?? '제한 없음'}</li>}</ul>{quotaError && <p>{quotaError}</p>}<p>중간발표 버전 · 세션별 저장과 사용 횟수 적용은 연결 준비 중입니다.</p><button className="secondary" onClick={() => { void refreshHealth(); void refreshActor() }}>상태 다시 확인</button></details></footer>
     </main></div>
   </div>
 }

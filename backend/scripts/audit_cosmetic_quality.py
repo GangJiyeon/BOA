@@ -69,6 +69,8 @@ def audit_scenario(request, products, known, source_ids, bundle):
         shared_evidence_products += any(len(metrics) > 1 for metrics in evidence_metrics.values())
     return {
         "request": request.model_dump(),
+        "recommendation_mode": result.recommendation_mode,
+        "recommendation_notice": result.recommendation_notice,
         "target_count": result.target_count,
         "scorable_target_count": result.scorable_target_count,
         "deferred_metrics": result.deferred_metrics,
@@ -81,6 +83,7 @@ def audit_scenario(request, products, known, source_ids, bundle):
         "top5": [{"source_product_id": source_ids[p.product_id], "name": p.product_name,
                   "match_count": p.match_count, "ranking_tie_count": ties[(p.match_count, p.bundle_suspected)],
                   "matched_metrics": [m.metric_code for m in p.matches],
+                  "daily_care_ingredients": p.daily_care_ingredients,
                   "matched_ingredients": sorted({n for m in p.matches for n in m.ingredients})}
                  for p in result.recommendations],
         "empty_reason": result.empty_reason,

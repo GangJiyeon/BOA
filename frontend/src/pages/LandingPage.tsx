@@ -3,15 +3,17 @@ import type { SkinAnalysis } from '../api/skin'
 import type { HairResult } from '../api/hair'
 import type { CosmeticSessionResult } from '../types/sessionResults'
 export default function LandingPage({ skin, hair, cosmetics }: { skin: SkinAnalysis | null; hair: HairResult | null; cosmetics: CosmeticSessionResult | null }) {
-  return <section className="landing-page">
-    <div className="welcome-line"><span className="eyebrow">BEAUTY, ON YOUR TERMS</span><span className="version-tag">BOA · 중간발표 버전</span></div>
-    <div className="hero"><div className="hero-copy"><h2>나를 이해하는 뷰티,<br /><em>사진 한 장부터.</em></h2><p>피부 상태와 얼굴형을 살펴보고,<br />나에게 맞는 화장품과 헤어스타일을 찾아보세요.</p><div className="actions"><a href="#/skin" className="button primary">피부 분석 시작하기 <Icon name="arrow" /></a><a href="#/hair" className="button secondary">헤어 추천 받기</a></div><p className="hero-footnote">사진 입력 → 분석 → 나에게 맞는 추천</p></div>
-      <div className="hero-art" aria-hidden="true"><div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="portrait-frame"><svg viewBox="0 0 220 260" fill="none"><path d="M54 119C37 78 55 35 109 35c55 0 73 46 56 84" stroke="currentColor" strokeWidth="2"/><path d="M62 95c23 2 36-14 42-30 12 23 31 32 56 32v49c0 39-27 66-50 66s-49-26-49-65V97Z" stroke="currentColor" strokeWidth="2"/><path d="M79 125h14m34 0h14m-31 3-5 25h10m-20 21c10 7 20 7 30 0M82 200l-5 26-34 19m95-45 5 26 34 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M40 47H25v20m155-20h15v20M25 194v20h15m155-20v20h-15" stroke="currentColor" strokeOpacity=".45" strokeWidth="2"/><circle cx="63" cy="140" r="4" fill="currentColor"/><circle cx="157" cy="140" r="4" fill="currentColor"/><circle cx="110" cy="210" r="4" fill="currentColor"/></svg><span>YOUR BEAUTY PROFILE</span></div><span className="art-label art-label-top"><Icon name="skin" />피부를 이해하고</span><span className="art-label art-label-bottom"><Icon name="hair" />스타일을 발견하세요</span></div>
-    </div>
-    <div className="section-label"><h3>어떤 분석을 시작할까요?</h3><span>두 가지 흐름, 하나의 나</span></div>
-    <div className="feature-grid"><a href="#/skin" className="feature-card"><span className="feature-icon"><Icon name="skin" size={26} /></span><span className="eyebrow">01 · SKIN & COSMETICS</span><h3>피부 분석 · 화장품 추천</h3><p>피부 지표를 확인하고 성분이 매칭된 <br />제품과 추천 이유를 살펴보세요.</p><span className="feature-link">사진으로 시작 <Icon name="arrow" /></span></a>
-      <a href="#/hair" className="feature-card warm"><span className="feature-icon"><Icon name="hair" size={26} /></span><span className="eyebrow">02 · FACE & HAIR</span><h3>얼굴형 · 헤어 추천</h3><p>얼굴형에 원하는 길이와 질감을 더해 <br />어울리는 스타일을 찾아보세요.</p><span className="feature-link">스타일 찾기 <Icon name="arrow" /></span></a></div>
-    {(skin || hair || cosmetics) && <section className="recent-strip"><Icon name="results" size={24} /><div><h3>이어서 확인할 결과가 있어요</h3><p>{[skin && `피부 분석 #${skin.id}`, cosmetics && `화장품 ${cosmetics.response.recommendations.length}개`, hair && `헤어 추천 #${hair.run_id}`].filter(Boolean).join(' · ')}</p></div><a className="button secondary" href="#/results">이번 분석 결과 <Icon name="arrow" /></a></section>}
-    <div className="landing-bottom"><div><Icon name="user" /><h3>회원·비회원으로 시작</h3><p>이메일 인증과 촬영 동의 화면을 확인하세요.</p><a href="#/start">시작 · 계정으로 이동 →</a></div><div><Icon name="sparkles" /><h3>다음 단계, AI Studio</h3><p>분석 이후의 스타일 미리보기를 준비하고 있습니다.</p><span className="category-pill">연결 준비 중</span></div></div>
+  const services = [
+    { route: 'skin', icon: 'skin' as const, title: '피부 분석 · 화장품 추천', description: '사진 분석 후 성분에 맞는 제품 조회', label: '사진 입력', primary: true },
+    { route: 'hair', icon: 'hair' as const, title: '얼굴형 · 헤어 추천', description: '얼굴형과 선호 조건으로 스타일 조회', label: '사진 입력', primary: true },
+    { route: 'studio', icon: 'sparkles' as const, title: 'AI Studio', description: '사진에 추천 스타일 적용', label: '준비 중', primary: false },
+    { route: 'results', icon: 'results' as const, title: '이번 분석 결과', description: '피부·화장품·헤어 결과 확인', label: '결과 확인', primary: false },
+    { route: 'start', icon: 'user' as const, title: '시작 · 계정', description: '비회원 시작, 이메일 인증 및 로그인', label: '계정 화면', primary: false },
+    { route: 'kiosk', icon: 'kiosk' as const, title: '키오스크', description: '기기 등록 및 분석 세션 관리', label: '기기 관리', primary: false },
+  ]
+  return <section className="tablet-home">
+    <header className="tablet-home-heading"><div><h1>기능 선택</h1><p>사용할 기능을 선택하세요.</p></div><span className="tablet-mode-label"><Icon name="kiosk" size={20} />터치 화면</span></header>
+    <div className="service-grid">{services.map(service => <a key={service.route} href={`#/${service.route}`} className={`service-tile${service.primary ? ' primary-tile' : ''}`}><div className="tile-top"><span className="tile-icon"><Icon name={service.icon} size={30} /></span>{service.route === 'studio' && <span className="availability">준비 중</span>}</div><h2>{service.title}</h2><p>{service.description}</p><span className="tile-action">{service.label}<Icon name="arrow" size={21} /></span></a>)}</div>
+    {(skin || hair || cosmetics) && <section className="recent-strip"><Icon name="results" size={24} /><div><h3>최근 분석 결과</h3><p>{[skin && '피부 분석', cosmetics && `화장품 ${cosmetics.response.recommendations.length}개`, hair && '헤어 추천'].filter(Boolean).join(' · ')}</p></div><a className="button secondary" href="#/results">결과 확인 <Icon name="arrow" /></a></section>}
   </section>
 }

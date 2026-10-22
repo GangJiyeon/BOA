@@ -20,7 +20,9 @@ class SkinContractTests(unittest.TestCase):
         r = f.run([f.product()], CosmeticPreviewRequest(scores=example()))
         self.assertEqual((r.target_count, r.scorable_target_count), (1,0))
         self.assertEqual(r.deferred_metrics, ['trouble'])
-        self.assertEqual(r.recommendations, [])
+        self.assertEqual(r.recommendation_mode, 'daily_care')
+        self.assertEqual(r.recommendations[0].matches, [])
+        self.assertEqual(r.recommendations[0].match_count, 0)
 
     def test_only_moisture_matches_actual_photo_scores(self):
         rows=example()

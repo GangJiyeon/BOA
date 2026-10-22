@@ -30,13 +30,16 @@ def check_case(case, products, known, bundle):
                        [product], known, rule_bundle=bundle)
     item = result.recommendations[0] if result.recommendations else None
     actual = {
+        "recommendation_mode": result.recommendation_mode,
+        "daily_care_ingredients": item.daily_care_ingredients if item else [],
         "metrics": sorted(m.metric_code for m in item.matches) if item else [],
         "groups": item.matched_group_count if item else 0,
         "ingredients": sorted({n for m in item.matches for n in m.ingredients}) if item else [],
         "blocked_by": next((k for k, v in result.stats.model_dump().items()
                             if k not in {"total_products", "eligible_products"} and v), None),
     }
-    expected = {k: sorted(case[k]) if isinstance(case[k], list) else case[k] for k in actual}
+    criteria = {"recommendation_mode": "improvement", "daily_care_ingredients": [], **case}
+    expected = {k: sorted(criteria[k]) if isinstance(criteria[k], list) else criteria[k] for k in actual}
     return {"id": case["id"], "source_product_id": case["product"], "name": product.product_name,
             "reason": case["reason"], "passed": actual == expected,
             "expected": expected, "actual": actual,

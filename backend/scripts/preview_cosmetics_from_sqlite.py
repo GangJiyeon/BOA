@@ -69,9 +69,12 @@ def main():
     for name, scores in scenarios.items():
         result = recommend(CosmeticPreviewRequest(scores=scores, score_semantics="development_assumption"), default_definitions(), products, known, rule_bundle=load_seed_bundle())
         report["scenarios"][name] = {
+            "recommendation_mode": result.recommendation_mode,
+            "recommendation_notice": result.recommendation_notice,
             "rule_version": result.rule_version, "scorable_target_count": result.scorable_target_count,
             "deferred_metrics": result.deferred_metrics, "target_count": result.target_count, "stats": result.stats.model_dump(),
-            "top5": [{"source_product_id": source_ids[p.product_id], "name": p.product_name, "match_count": p.match_count} for p in result.recommendations],
+            "top5": [{"source_product_id": source_ids[p.product_id], "name": p.product_name,
+                      "match_count": p.match_count, "daily_care_ingredients": p.daily_care_ingredients} for p in result.recommendations],
             "empty_reason": result.empty_reason,
         }
     print(json.dumps(report, ensure_ascii=False, indent=2))
