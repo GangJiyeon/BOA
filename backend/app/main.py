@@ -18,6 +18,7 @@ from app.api.routes import (
     me,
     qr,
     skin,
+    moisture,
     terms,
 )
 from app.core.config import get_settings
@@ -54,6 +55,7 @@ api = APIRouter(prefix="/api")
 api.include_router(health.router)
 api.include_router(images.router)
 api.include_router(skin.router)
+api.include_router(moisture.router)
 api.include_router(cosmetics.router)
 api.include_router(hair.router)
 api.include_router(actor.router)

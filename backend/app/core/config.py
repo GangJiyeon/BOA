@@ -6,6 +6,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    moisture_allow_simulation: bool = False
+
     database_url: str
 
     # 쉼표로 구분: "http://localhost:5173,https://boa.vercel.app"

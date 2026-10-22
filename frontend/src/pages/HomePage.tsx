@@ -108,7 +108,7 @@ export default function HomePage() {
     {(healthError || actorError) && <div role="alert" className="error-box">{healthError && `백엔드 연결 실패: ${healthError}`}{actorError && ` 세션 확인 실패: ${actorError}`} <button onClick={() => { void refreshHealth(); void refreshActor() }}>연결 다시 확인</button></div>}
     <div className="page-content">
       {current.page === 'home' && <LandingPage skin={latestSkin} hair={latestHair?.result ?? null} cosmetics={latestCosmetics} />}
-      {visited.skin && <div hidden={current.page !== 'skin'} key={`skin:${sessionVersion}`}><CosmeticPreview onAnalysis={handleSkinAnalysis} onRecommendation={handleCosmeticResult} /></div>}
+      {visited.skin && <div hidden={current.page !== 'skin'} key={`skin:${sessionVersion}`}><CosmeticPreview active={current.page === 'skin'} onAnalysis={handleSkinAnalysis} onRecommendation={handleCosmeticResult} /></div>}
       {visited.hair && <div hidden={current.page !== 'hair'} key={`hair:${sessionVersion}`}><HairPage onResult={value => { setLatestHair(value); void refreshQuota() }} /></div>}
       {current.page === 'start' && <AccountPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onLogin={clearSession} onLogout={clearSession} onSignup={clearSession} onStart={startAnalysis} />}
       {current.page === 'results' && <ResultsPage key={current.token} latestSkin={latestSkin} latestHair={latestHair} cosmetics={latestCosmetics} hasSharedToken={Boolean(current.token)} />}

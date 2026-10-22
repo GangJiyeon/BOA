@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { getCosmeticPreview, type AnalysisMetricScore, type MetricCode, type PreviewRequest, type PreviewResponse, type ProductCategory } from '../api/cosmetics'
 import { ApiError } from '../api/client'
 import { analyzeSkinPhoto, type SkinAnalysis } from '../api/skin'
+import MoisturePanel from './MoisturePanel'
 import SinglePhotoUpload from './SinglePhotoUpload'
 import PageIntro, { ProgressSteps } from './PageIntro'
 import MetricScores from './MetricScores'
@@ -21,7 +22,8 @@ const metrics: { code: MetricCode; name: string; direction: string }[] = [
 ]
 const initialScores = { moisture: 25, redness: 75, brightness: 30, trouble: 75, uniformity: 30 }
 
-export default function CosmeticPreview({ onAnalysis, onRecommendation }: {
+export default function CosmeticPreview({ onAnalysis, onRecommendation, active = true }: {
+  active?: boolean
   onAnalysis?: (value: SkinAnalysis) => void
   onRecommendation?: (value: CosmeticSessionResult) => void
 }) {
@@ -174,6 +176,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation }: {
     <section className="cosmetic-preview" aria-label="피부 분석 및 화장품 추천">
       <PageIntro eyebrow="BOA · SKIN & CARE" title="피부 분석 · 화장품 추천">정면 사진을 촬영하거나 선택하세요.</PageIntro>
       <ProgressSteps labels={['사진 입력', '피부 분석', '성분 기반 추천']} current={result ? 3 : stage === 'recommendation' ? 2 : loading || analysis ? 1 : 0} />
+      {active && <MoisturePanel analysisId={analysis?.id ?? null} />}
       <form onSubmit={submit} className={inputMode === 'photo' && !!photo && !result ? 'has-floating-action' : undefined}>
         <fieldset disabled={loading} className="analysis-fieldset"><legend className="sr-only">피부 분석 입력</legend>
 
@@ -198,7 +201,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation }: {
           <label className="check-row"><input type="checkbox" checked={!hasMoisture} onChange={e => { clearResult(); setHasMoisture(!e.target.checked) }} />수분 미측정 — 나머지 4개 지표만 사용</label>
           </>}
           </section><section className="form-card options-panel"><div className="card-heading"><span className="step-number">02</span><div><h3>분석 및 추천</h3><p>분석 결과로 화장품을 조회합니다.</p></div></div>
-          {inputMode === 'photo' && <details className="filter-details moisture-options"><summary>수분 측정값 추가 <small>선택{manualMoisture !== '' ? ` · ${manualMoisture}점` : ''}</small></summary><label className="field">수분 점수<input type="number" min={0} max={100} step={1} value={manualMoisture} onChange={e => { clearResult(); setManualMoisture(e.target.value) }} placeholder="0–100" /><small>사진으로 수분을 추정하지 않습니다. 측정값이 있을 때만 입력하세요.</small></label></details>}
+          {inputMode === 'photo' && <details className="filter-details moisture-options"><summary>수분 측정값 추가 <small>선택{manualMoisture !== '' ? ` · ${manualMoisture}점` : ''}</small></summary><label className="field">수분 점수<input type="number" min={0} max={100} step={1} value={manualMoisture} onChange={e => { clearResult(); setManualMoisture(e.target.value) }} placeholder="0–100" /><small>보정된 점수만 입력하세요. 센서 원시값은 입력하지 않습니다.</small></label></details>}
           <details className="filter-details"><summary>성분 제외 조건</summary><label className="field">직접 제외할 성분<input type="text" value={excluded} maxLength={1500} onChange={e => { clearResult(); setExcluded(e.target.value) }} placeholder="예: 향료, 살리실릭애씨드" /><small>정확한 성분명을 쉼표로 구분해 입력하세요.</small></label><label className="check-row"><input type="checkbox" checked={avoidTriggers} onChange={e => { clearResult(); setAvoidTriggers(e.target.checked) }} />홍조가 ‘개선 필요’이면 프로젝트 주의 성분 제외</label></details>
           <div className={`analysis-actionbar${inputMode === 'photo' && !!photo && !result ? ' floating-action' : ''}`}>
             <div><strong>{loading ? stage === 'analysis' ? '사진 분석 중' : '추천 제품 조회 중' : photo ? '사진 입력 완료' : inputMode === 'photo' ? '사진을 입력하세요' : '추천 조회'}</strong><small>{loading ? '완료될 때까지 기다려 주세요.' : '원본 사진은 보관하지 않습니다.'}</small></div>
