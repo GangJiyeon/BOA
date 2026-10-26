@@ -11,6 +11,7 @@ from app.models import (
     EmailVerification,
     FaceAnalysis,
     HairRecRun,
+    HairRender,
     SkinAnalysis,
     Terms,
     User,
@@ -18,7 +19,7 @@ from app.models import (
 from app.services import terms
 
 # 분석 결과 모델 (회원·세션 FK가 없어 직접 삭제·이관), 하위 행은 각 테이블 CASCADE
-RESULT_MODELS = (SkinAnalysis, HairRecRun, FaceAnalysis)
+RESULT_MODELS = (SkinAnalysis, HairRender, HairRecRun, FaceAnalysis)
 
 
 class ConsentError(Exception):

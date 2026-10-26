@@ -5,7 +5,7 @@ export type Term = { id: number; type: string; version: string; required: boolea
 export type GuestSession = { qr_token: string; expires_at: string }
 export type Language = 'ko' | 'en' | 'zh' | 'ja'
 export type Member = { email: string; language: Language; nationality: string | null; resides_in_korea: boolean | null; google_linked: boolean }
-export type Quota = Record<'skin' | 'hair', { limit: number | null; used: number; remaining: number | null }>
+export type Quota = Record<'skin' | 'hair' | 'studio', { limit: number | null; used: number; remaining: number | null }>
 export type QrResults = { expires_at: string; skin: SkinAnalysis[]; hair: Record<string, unknown>[] }
 export const getActor = (signal?: AbortSignal) => api<Actor>('/actor', { signal })
 export const getTerms = (signal?: AbortSignal) => api<Term[]>('/terms/current', { signal })
