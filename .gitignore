@@ -236,3 +236,6 @@ desktop.ini
 
 # Local cosmetic dataset
 backend/data/*.db
+# AI 스튜디오 생성 결과·분할 모델
+backend/static/studio/
+backend/ml_assets/

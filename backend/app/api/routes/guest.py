@@ -57,4 +57,4 @@ def read_quota(actor: Actor = Depends(get_actor), db: Session = Depends(get_db))
         usage = quota.get_usage(db, actor, kind)
         return QuotaItem(limit=usage.limit, used=usage.used, remaining=usage.remaining)
 
-    return QuotaRead(skin=item("skin"), hair=item("hair"))
+    return QuotaRead(skin=item("skin"), hair=item("hair"), studio=item("studio"))
