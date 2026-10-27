@@ -59,7 +59,7 @@ def trouble_detail(index_map: np.ndarray, skin: np.ndarray, face_width: float) -
 
     # 사진별 임계값
     spread = 1.4826 * float(np.median(np.abs(deviation[skin > 0])))
-    threshold = max(sa.TROUBLE_MIN_THRESHOLD * sa.TROUBLE_INDEX_GAIN, sa.TROUBLE_SIGMA_FACTOR * spread)
+    threshold = sa.TROUBLE_THRESHOLD * sa.TROUBLE_INDEX_GAIN  # 고정 임계값 (spread는 참고용 출력)
     candidate = ((deviation > threshold) & (skin > 0)).astype(np.uint8)
 
     # 덩어리 크기 필터
@@ -90,7 +90,6 @@ def trouble_detail(index_map: np.ndarray, skin: np.ndarray, face_width: float) -
         "kernel": kernel,
         "spread": spread / sa.TROUBLE_INDEX_GAIN,        # 지수 단위로 환산
         "threshold": threshold / sa.TROUBLE_INDEX_GAIN,
-        "threshold_is_floor": threshold == sa.TROUBLE_MIN_THRESHOLD * sa.TROUBLE_INDEX_GAIN,
         "min_area": min_area,
         "blob_count": len(kept_ids),
         "edge_blob_count": len(edge_ids),
@@ -119,7 +118,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, help="오버레이 저장 경로 (기본: <사진>_trouble.png)")
     args = parser.parse_args()
 
-    # 1) 실제 분석과 동일한 전처리 (원본에서 얼굴만 잘라 고해상도로)
+    # 1) 실제 분석과 동일한 전처리 (원본에서 얼굴만 잘라 분석 해상도로)
     face = sa._prepare_face(args.photo.read_bytes())
     image, landmarks, balanced, lab = face.image, face.landmarks, face.balanced, face.lab
     face_width = face.face_width
@@ -139,8 +138,8 @@ def main() -> None:
     print(f"패치 사용 부위     : {', '.join(used)}")
     print(f"트러블 분석 픽셀   : {int(np.count_nonzero(skin))}")
     print(f"국소 중앙값 커널   : {d['kernel']}px")
-    print(f"질감 변동폭(spread): {d['spread']:.3f}  → 임계값 {d['threshold']:.3f}"
-          f"{'  (하한값 적용)' if d['threshold_is_floor'] else ''}")
+    print(f"질감 변동폭(spread): {d['spread']:.3f}  (참고용, 판정에는 쓰지 않음)")
+    print(f"임계값             : {d['threshold']:.3f}  (고정)")
     print(f"임계값 초과 비율   : {d['candidate_ratio'] * 100:.2f}%  (크기 필터 전)")
     print(f"최소 덩어리 면적   : {d['min_area']}px")
     print(f"트러블 덩어리      : {d['blob_count']}개, 상위 면적 {d['blob_areas'][:10]}")

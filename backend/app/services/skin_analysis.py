@@ -5,12 +5,12 @@
 
 사진 분석 흐름
   1) 디코딩 → 축소본에서 MediaPipe FaceMesh로 얼굴 위치(랜드마크) 추출
-  2) 원본에서 얼굴 부분만 잘라 얼굴 너비를 ANALYSIS_FACE_WIDTH로 맞춤 (고해상도 분석)
+  2) 원본에서 얼굴 부분만 잘라, 얼굴 너비가 ANALYSIS_FACE_WIDTH보다 크면 그 크기로 줄임 (확대는 안 함)
   3) 밝기·균일도·홍조: 이마·양볼·코·턱 다섯 부위를 원형 패치로 떼어냄
      트러블: 볼을 크게 잡은 넓은 패치(TROUBLE_REGIONS)를 씀
   4) 볼 밝기를 기준으로 머리카락(앞머리 등)을 걷어내고, 대부분 가려진 부위는 제외
      → 남은 픽셀에서 그늘·하이라이트 같은 이상치 제거
-  5) 그레이월드 화이트밸런스로 조명 색상 보정 후 Lab 색공간 변환
+  5) 기기별 고정 색 보정(DEVICE_CHANNEL_GAINS) 적용 후 Lab 색공간 변환
   6) 촬영 품질 검사: 노출 과부족·하이라이트 포화·조명 치우침이면 재촬영 요청
   7) 지표별 원시값 계산 → 0~100 정규화
 
@@ -37,11 +37,14 @@ MOISTURE_RAW_MAX = 1023
 # 얼굴 위치(랜드마크)를 찾을 때 쓰는 축소본 해상도. 위치만 찾으면 되므로 작아도 된다.
 MAX_IMAGE_SIDE = 1024
 
-# 실제 분석 해상도. 원본에서 얼굴 부분만 잘라 얼굴 너비를 이 값(px)으로 맞춘다.
-# 사진 전체를 축소하면 얼굴이 화면 일부만 차지할 때 얼굴 해상도가 크게 떨어져
-# 작은 반점이 1~2픽셀로 뭉개진다 (예: 6528px 원본 → 1024px 축소 시 얼굴 390px).
-# 배경을 버리므로 원본 전체를 처리하는 것보다 연산량이 훨씬 작다.
-ANALYSIS_FACE_WIDTH = 800
+# 분석 해상도 상한. 원본에서 얼굴 부분만 잘라, 얼굴 너비가 이 값(px)보다 크면 이 값으로 줄인다.
+# 실제 키오스크 기기(갤럭시북4 720p 웹캠)에서 얼굴 너비가 약 400px로 찍히므로 그에 맞췄다.
+#  - 휴대폰 등 고해상도 테스트 사진도 키오스크와 같은 조건으로 분석되어,
+#    테스트 결과를 실제 환경에 그대로 참고할 수 있다.
+#  - 원본 그대로(2,000px 이상) 분석해도 정확도는 거의 같고 5~15배 느렸다
+#    (지표 대부분이 평균값이고, 트러블 최소 크기도 얼굴 너비 대비 비율이기 때문).
+# 더 좋은 카메라로 바꾸면 그 카메라의 얼굴 너비에 맞춰 이 값을 올린다.
+ANALYSIS_FACE_WIDTH = 400
 
 # 얼굴을 잘라낼 때 랜드마크 바깥으로 둘 여유 (얼굴 너비 대비)
 FACE_CROP_MARGIN = 0.15
@@ -60,19 +63,18 @@ REDNESS_RANGE = (6.0, 14.0)          # 볼·이마의 홍조 지수 (R/G 로그�
 TROUBLE_RANGE = (0.0, 0.028)         # 반점으로 탐지된 픽셀 비율
 UNIFORMITY_STD_RANGE = (14.0, 27.0)  # 피부 영역 L 채널 표준편차 (낮을수록 균일)
 
-# 트러블 판정 임계값은 사진마다 다르게 잡는다.
-# 그 사진 피부의 평소 질감 변동폭(로버스트 표준편차)의 몇 배를 넘어야
-# 트러블로 볼 것인가. 고정 임계값을 쓰면 밝게 찍힌 사진일수록 미세한
-# 요철까지 또렷해져 점수가 부풀려진다.
 # 홍조 지수를 uint8로 옮길 때 쓰는 배율.
-# 지수 1단위를 16단계로 쪼개므로 변동폭(MAD) 계산의 양자화 오차가 작다.
+# 지수 1단위를 16단계로 쪼개므로 국소 중앙값 계산의 양자화 오차가 작다.
 # 담는 기준점은 그 사진 피부의 중앙값으로 잡아, 전체적으로 붉은 피부에서도
 # 표현 범위(중앙값 ±8 지수)가 밀리지 않게 한다.
 TROUBLE_INDEX_GAIN = 16.0
 
-TROUBLE_SIGMA_FACTOR = 3.0
-# 질감이 지나치게 평탄한 사진에서 임계값이 0에 수렴하지 않도록 둔 하한 (지수 단위)
-TROUBLE_MIN_THRESHOLD = 0.8
+# 트러블 판정 임계값 (홍조 지수 단위). 주변 피부보다 이만큼 더 붉으면 트러블 후보로 본다.
+# 예전에는 사진마다 피부결 변동폭의 3배로 임계값을 올렸는데, 여드름이 많은 피부는
+# 그 자체로 변동폭이 커서 임계값이 약 2배로 올라가 여드름 대부분을 놓쳤다
+# (여드름 많은 표본: 임계값 0.8→1.46, 덩어리 27개→4개). 그래서 고정값을 쓴다.
+# 피부가 깨끗한 실사진들은 원래부터 하한(0.8)이 적용되고 있어 결과가 같다.
+TROUBLE_THRESHOLD = 0.8
 
 # 트러블로 인정할 최소 덩어리 지름 (얼굴 너비 대비 비율).
 # 실제 병변은 덩어리로 뭉쳐 있고 센서 노이즈는 흩어진 점이다.
@@ -230,7 +232,7 @@ def _decode(image_bytes: bytes) -> np.ndarray:
 def _crop_face(
     image: np.ndarray, landmarks: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
-    """원본에서 얼굴 부분만 잘라 얼굴 너비를 ANALYSIS_FACE_WIDTH로 맞춘다.
+    """원본에서 얼굴 부분만 잘라, 얼굴 너비가 ANALYSIS_FACE_WIDTH보다 크면 그 크기로 줄인다.
 
     landmarks는 원본 좌표다. 잘라낸 이미지 좌표로 옮긴 랜드마크를 함께 돌려준다.
     """
@@ -245,10 +247,12 @@ def _crop_face(
     y1 = min(height, int(np.ceil(landmarks[:, 1].max() + margin)))
     crop = image[y0:y1, x0:x1]
 
-    # 얼굴 너비를 고정값으로 맞춘다 (줄일 때는 INTER_AREA, 키울 때는 INTER_CUBIC)
-    scale = ANALYSIS_FACE_WIDTH / face_width
-    interpolation = cv2.INTER_AREA if scale < 1 else cv2.INTER_CUBIC
-    crop = cv2.resize(crop, None, fx=scale, fy=scale, interpolation=interpolation)
+    # 줄이기만 하고 확대는 하지 않는다.
+    # 저화질 사진을 확대하면 JPEG 압축 흔적(8x8 블록)까지 커져서 삼각형·직선 모양의
+    # 가짜 트러블로 잡힌다 (웹캠 표본: 2배 확대 시 52점, 원본 크기 21점).
+    scale = min(1.0, ANALYSIS_FACE_WIDTH / face_width)
+    if scale < 1.0:
+        crop = cv2.resize(crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
 
     moved = (landmarks - np.array([x0, y0], dtype=np.float32)) * scale
     return crop, moved
@@ -402,6 +406,16 @@ def _trouble_area(image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray) -> 
     return area
 
 
+# 기기별 고정 색 보정 이득 (B, G, R).
+# 예전에는 사진 전체 평균색을 회색으로 맞추는 그레이월드 보정을 썼는데,
+#  - 얼굴이 화면을 크게 채우거나 피부가 붉으면 그 붉은색을 '조명 색'으로 보고 지워버리고
+#    (붉은 얼굴 표본: 홍조 지수 16.6 → 5.0, 100점 → 0점)
+#  - 몸 방향만 바꿔도 배경이 바뀌어 홍조가 흔들렸다 (변동 2.9% → 11%).
+# 그래서 사진마다 보정하지 않고, 기기(카메라)별로 한 번 정한 고정값을 쓴다.
+# 실제 키오스크 기기(갤럭시북4 웹캠)에서 색상표를 찍어 값을 정하기 전까지는 1.0(보정 없음).
+DEVICE_CHANNEL_GAINS = (1.0, 1.0, 1.0)
+
+
 def _white_balance(image: np.ndarray) -> np.ndarray:
     """이미지 전체 기준 그레이월드 보정을 적용한 BGR 이미지를 돌려준다.
 
@@ -488,11 +502,8 @@ def _trouble(
     # 주변 피부 대비 얼마나 붉은지 (양자화되지 않은 실수값으로 계산)
     deviation = fine - local_median
 
-    # 이 사진 피부의 평소 변동폭 (MAD 기반 로버스트 표준편차)
-    spread = 1.4826 * float(np.median(np.abs(deviation[skin > 0])))
-    threshold = max(
-        TROUBLE_MIN_THRESHOLD * TROUBLE_INDEX_GAIN, TROUBLE_SIGMA_FACTOR * spread
-    )
+    # 고정 임계값 (피부결이 거칠수록 올라가던 적응형 임계값은 여드름을 놓쳐서 제거)
+    threshold = TROUBLE_THRESHOLD * TROUBLE_INDEX_GAIN
 
     candidate = ((deviation > threshold) & (skin > 0)).astype(np.uint8)
 
@@ -548,7 +559,7 @@ class PreparedFace(NamedTuple):
     landmarks: np.ndarray    # 잘라낸 이미지 좌표의 랜드마크
     balanced: np.ndarray     # 화이트밸런스 적용본 (BGR)
     lab: np.ndarray          # balanced의 Lab 변환
-    face_width: float        # 분석 해상도의 얼굴 너비 (= ANALYSIS_FACE_WIDTH)
+    face_width: float        # 분석 해상도의 얼굴 너비 (최대 ANALYSIS_FACE_WIDTH)
     preview_face_width: float  # 축소본(긴 변 MAX_IMAGE_SIDE)에서의 얼굴 너비
     source_face_width: float   # 원본 사진에서의 얼굴 너비
 
@@ -556,7 +567,7 @@ class PreparedFace(NamedTuple):
 def _prepare_face(
     image_bytes: bytes, *, min_face_width: int = DEFAULT_MIN_FACE_WIDTH
 ) -> PreparedFace:
-    """디코딩 → 축소본에서 얼굴 찾기 → 원본에서 얼굴만 고해상도로 잘라내기."""
+    """디코딩 → 축소본에서 얼굴 찾기 → 원본에서 얼굴만 잘라 분석 해상도로 맞추기."""
     full = _decode_full(image_bytes)
     preview, scale = _shrink(full)
     preview_landmarks = _detect_landmarks(preview)
@@ -572,11 +583,10 @@ def _prepare_face(
             detail={"face_width_px": round(preview_face_width, 1), "required_px": min_face_width},
         )
 
-    # 화이트밸런스 이득은 기존과 같이 사진 전체(축소본) 기준으로 구한다.
-    # 잘라낸 얼굴로 구하면 피부색이 회색으로 끌려가 홍조 신호가 사라진다.
-    gains = _gray_world_gains(preview)
+    # 색 보정은 사진마다 계산하지 않고 기기별 고정값을 쓴다 (DEVICE_CHANNEL_GAINS 참고)
+    gains = np.array(DEVICE_CHANNEL_GAINS, dtype=np.float32)
 
-    # 원본 좌표로 옮긴 랜드마크로 얼굴만 잘라 고해상도로 맞춘다
+    # 원본 좌표로 옮긴 랜드마크로 얼굴만 잘라낸다 (크면 ANALYSIS_FACE_WIDTH로 축소)
     source_landmarks = preview_landmarks / scale
     image, landmarks = _crop_face(full, source_landmarks)
     balanced = _apply_gains(image, gains)
@@ -606,7 +616,7 @@ def analyze_image_detail(
     """
     face = _prepare_face(image_bytes, min_face_width=min_face_width)
     image, landmarks, balanced, lab = face.image, face.landmarks, face.balanced, face.lab
-    face_width = face.face_width  # 분석 해상도 기준 (ANALYSIS_FACE_WIDTH)
+    face_width = face.face_width  # 분석 해상도 기준 (최대 ANALYSIS_FACE_WIDTH)
 
     # 부위별 패치 → 머리카락으로 가려진 부분 제외 → 그늘·하이라이트 정제
     # 가려진 부위는 통째로 빠지므로, 이마를 깐 사람만 이마가 포함된다
@@ -693,7 +703,7 @@ def analyze_image_detail(
         "mean_l_skin": round(mean_l, 2),           # BRIGHTNESS_RANGE 기준
         "saturated_ratio": round(saturated_ratio, 3),
         "blemish_ratio": round(blemish_ratio, 5),  # TROUBLE_RANGE 기준
-        "trouble_threshold": round(trouble_threshold, 2),  # 이 사진에 적용된 임계값
+        "trouble_threshold": round(trouble_threshold, 2),  # 적용된 임계값 (TROUBLE_THRESHOLD)
         "std_l_skin": round(std_l, 2),             # UNIFORMITY_STD_RANGE 기준
         "face_width_px": round(face.preview_face_width, 1),  # 축소본 기준 (최소 크기 검사용)
         "source_face_width_px": round(face.source_face_width, 1),  # 원본 사진에서의 얼굴 너비
