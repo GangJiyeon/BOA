@@ -4,9 +4,10 @@
 각각 0~100 점수로 만든다.
 
 사진 분석 흐름
-  1) 디코딩 → 긴 변 기준 축소 (연산량 고정)
-  2) MediaPipe FaceMesh로 랜드마크 추출
-  3) 이마·양볼·코·턱 다섯 부위를 원형 패치로 떼어냄
+  1) 디코딩 → 축소본에서 MediaPipe FaceMesh로 얼굴 위치(랜드마크) 추출
+  2) 원본에서 얼굴 부분만 잘라 얼굴 너비를 ANALYSIS_FACE_WIDTH로 맞춤 (고해상도 분석)
+  3) 밝기·균일도·홍조: 이마·양볼·코·턱 다섯 부위를 원형 패치로 떼어냄
+     트러블: 볼을 크게 잡은 넓은 패치(TROUBLE_REGIONS)를 씀
   4) 볼 밝기를 기준으로 머리카락(앞머리 등)을 걷어내고, 대부분 가려진 부위는 제외
      → 남은 픽셀에서 그늘·하이라이트 같은 이상치 제거
   5) 그레이월드 화이트밸런스로 조명 색상 보정 후 Lab 색공간 변환
@@ -18,6 +19,7 @@
 
 import hashlib
 from collections.abc import Mapping
+from typing import NamedTuple
 
 import cv2
 import numpy as np
@@ -32,8 +34,17 @@ PHOTO_METRIC_CODES = ("redness", "brightness", "trouble", "uniformity")
 MOISTURE_RAW_MIN = 0
 MOISTURE_RAW_MAX = 1023
 
-# 분석 해상도. 크면 느려지고 작으면 트러블 탐지가 둔해진다.
+# 얼굴 위치(랜드마크)를 찾을 때 쓰는 축소본 해상도. 위치만 찾으면 되므로 작아도 된다.
 MAX_IMAGE_SIDE = 1024
+
+# 실제 분석 해상도. 원본에서 얼굴 부분만 잘라 얼굴 너비를 이 값(px)으로 맞춘다.
+# 사진 전체를 축소하면 얼굴이 화면 일부만 차지할 때 얼굴 해상도가 크게 떨어져
+# 작은 반점이 1~2픽셀로 뭉개진다 (예: 6528px 원본 → 1024px 축소 시 얼굴 390px).
+# 배경을 버리므로 원본 전체를 처리하는 것보다 연산량이 훨씬 작다.
+ANALYSIS_FACE_WIDTH = 800
+
+# 얼굴을 잘라낼 때 랜드마크 바깥으로 둘 여유 (얼굴 너비 대비)
+FACE_CROP_MARGIN = 0.15
 
 # 허용할 최소 얼굴 너비(px)의 기본값. 실제 값은 설정(MIN_FACE_WIDTH_PX)에서 주입한다.
 # 얼굴이 작게 찍히면 작은 반점이 뭉개져 트러블 점수가 낮게 나온다.
@@ -134,6 +145,23 @@ REGIONS = (
 # 홍조는 볼과 이마로만 판단한다 (코·턱은 원래 붉은기가 있어 과대평가된다)
 REDNESS_REGIONS = ("forehead", "left_cheek", "right_cheek")
 
+# ── 트러블 분석 영역 ─────────────────────────────────────────────────
+# 기존 패치(REGIONS)는 얼굴의 약 4%만 덮어서 볼 아래쪽처럼 트러블이 잘 생기는 곳이 빠진다.
+# 트러블은 볼을 크게 잡은 패치로 찾는다 (분석 면적 약 3배).
+# 얼굴 전체 윤곽도 시험했지만 콧볼 옆·인중·수염 부위처럼 원래 붉거나 수염 사이로
+# 피부가 보이는 곳이 대량으로 트러블로 잡혀 채택하지 않았다.
+# 턱은 수염 때문에 오탐이 많아 기존 크기를 유지한다.
+# 밝기·균일도·홍조는 얼굴 굴곡의 그늘이 섞이지 않도록 기존 패치(REGIONS)를 유지한다.
+TROUBLE_REGIONS = (
+    ("forehead", (10, 151), 0.07),
+    ("left_cheek", (50,), 0.13),          # 볼 (기존 0.08 → 0.13)
+    ("right_cheek", (280,), 0.13),
+    ("left_lower_cheek", (187,), 0.09),   # 볼 아래쪽 (신규)
+    ("right_lower_cheek", (411,), 0.09),
+    ("nose", (4,), 0.05),
+    ("chin", (152, 200), 0.05),
+)
+
 
 class AnalysisError(ValueError):
     """입력 이미지나 센서값이 분석 불가능한 경우.
@@ -170,8 +198,8 @@ def _linear_score(value: float, lo: float, hi: float) -> int:
 # ── 이미지 준비 ─────────────────────────────────────────────────────
 
 
-def _decode(image_bytes: bytes) -> np.ndarray:
-    """바이트를 BGR 이미지로 디코딩하고 긴 변을 MAX_IMAGE_SIDE로 맞춘다."""
+def _decode_full(image_bytes: bytes) -> np.ndarray:
+    """바이트를 원본 해상도 그대로 BGR 이미지로 디코딩한다."""
     if not image_bytes:
         raise AnalysisError("이미지 데이터가 비어 있습니다", code=ErrorCode.IMAGE_EMPTY)
 
@@ -182,13 +210,48 @@ def _decode(image_bytes: bytes) -> np.ndarray:
             "이미지를 읽을 수 없습니다 (지원하지 않는 형식이거나 손상된 파일)",
             code=ErrorCode.IMAGE_UNREADABLE,
         )
-
-    height, width = image.shape[:2]
-    longest = max(height, width)
-    if longest > MAX_IMAGE_SIDE:
-        scale = MAX_IMAGE_SIDE / longest
-        image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
     return image
+
+
+def _shrink(image: np.ndarray) -> tuple[np.ndarray, float]:
+    """긴 변을 MAX_IMAGE_SIDE로 줄인 축소본과 배율(축소본/원본)을 돌려준다."""
+    longest = max(image.shape[:2])
+    if longest <= MAX_IMAGE_SIDE:
+        return image, 1.0
+    scale = MAX_IMAGE_SIDE / longest
+    return cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA), scale
+
+
+def _decode(image_bytes: bytes) -> np.ndarray:
+    """디코딩 후 축소본을 돌려준다 (진단 스크립트 호환용)."""
+    return _shrink(_decode_full(image_bytes))[0]
+
+
+def _crop_face(
+    image: np.ndarray, landmarks: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """원본에서 얼굴 부분만 잘라 얼굴 너비를 ANALYSIS_FACE_WIDTH로 맞춘다.
+
+    landmarks는 원본 좌표다. 잘라낸 이미지 좌표로 옮긴 랜드마크를 함께 돌려준다.
+    """
+    height, width = image.shape[:2]
+    face_width = float(np.ptp(landmarks[:, 0]))
+    margin = face_width * FACE_CROP_MARGIN
+
+    # 얼굴 랜드마크를 감싸는 상자 + 여유, 화면 밖은 잘라낸다
+    x0 = max(0, int(landmarks[:, 0].min() - margin))
+    y0 = max(0, int(landmarks[:, 1].min() - margin))
+    x1 = min(width, int(np.ceil(landmarks[:, 0].max() + margin)))
+    y1 = min(height, int(np.ceil(landmarks[:, 1].max() + margin)))
+    crop = image[y0:y1, x0:x1]
+
+    # 얼굴 너비를 고정값으로 맞춘다 (줄일 때는 INTER_AREA, 키울 때는 INTER_CUBIC)
+    scale = ANALYSIS_FACE_WIDTH / face_width
+    interpolation = cv2.INTER_AREA if scale < 1 else cv2.INTER_CUBIC
+    crop = cv2.resize(crop, None, fx=scale, fy=scale, interpolation=interpolation)
+
+    moved = (landmarks - np.array([x0, y0], dtype=np.float32)) * scale
+    return crop, moved
 
 
 def _detect_landmarks(image: np.ndarray) -> np.ndarray:
@@ -242,13 +305,15 @@ def _refine_skin(lab: np.ndarray, mask: np.ndarray, *, min_pixels: int = 500) ->
     return refined
 
 
-def _region_masks(image: np.ndarray, landmarks: np.ndarray) -> dict[str, np.ndarray]:
-    """부위별 원형 패치 마스크를 만든다. 이마·양볼·코·턱 5곳."""
+def _region_masks(
+    image: np.ndarray, landmarks: np.ndarray, regions_def: tuple = REGIONS
+) -> dict[str, np.ndarray]:
+    """부위별 원형 패치 마스크를 만든다. 기본은 이마·양볼·코·턱 5곳(REGIONS)."""
     height, width = image.shape[:2]
     face_width = float(np.ptp(landmarks[:, 0]))
 
     masks: dict[str, np.ndarray] = {}
-    for name, indices, ratio in REGIONS:
+    for name, indices, ratio in regions_def:
         center = landmarks[list(indices)].mean(axis=0)
         x, y = int(round(center[0])), int(round(center[1]))
         if not (0 <= x < width and 0 <= y < height):
@@ -291,7 +356,7 @@ def _hair_zone(lab: np.ndarray, reference_l: float, face_width: float) -> np.nda
 
 
 def _build_skin_regions(
-    image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray
+    image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray, regions_def: tuple = REGIONS
 ) -> tuple[dict[str, np.ndarray], dict[str, float]]:
     """부위별 피부 마스크와, 부위별 피부 노출 비율(coverage)을 돌려준다.
 
@@ -299,7 +364,7 @@ def _build_skin_regions(
     이마를 깐 사람은 이마가 포함되고, 덮은 사람은 보이는 부위만으로 분석된다.
     """
     face_width = float(np.ptp(landmarks[:, 0]))
-    masks = _region_masks(image, landmarks)
+    masks = _region_masks(image, landmarks, regions_def)
 
     # 머리카락 영역은 패치 바깥 기준(볼 밝기)으로 판정한다
     reference_l = _skin_reference_l(lab, masks)
@@ -328,6 +393,15 @@ def _build_skin_regions(
     return regions, coverage
 
 
+def _trouble_area(image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray) -> np.ndarray:
+    """트러블을 찾을 피부 마스크. 넓은 패치(TROUBLE_REGIONS)에 같은 정제 과정을 적용한다."""
+    regions, _ = _build_skin_regions(image, lab, landmarks, TROUBLE_REGIONS)
+    area = np.zeros(lab.shape[:2], dtype=np.uint8)
+    for mask in regions.values():
+        area = cv2.bitwise_or(area, mask)
+    return area
+
+
 def _white_balance(image: np.ndarray) -> np.ndarray:
     """이미지 전체 기준 그레이월드 보정을 적용한 BGR 이미지를 돌려준다.
 
@@ -335,14 +409,19 @@ def _white_balance(image: np.ndarray) -> np.ndarray:
     홍조 신호가 통째로 사라진다. 그래서 화면 전체를 기준으로 삼는다.
     절대 밝기까지 맞추지는 않으므로, 촬영 가이드(조명 조건)는 여전히 필요하다.
     """
-    means = cv2.mean(image)[:3]  # B, G, R
+    return _apply_gains(image, _gray_world_gains(image))
+
+
+def _gray_world_gains(image: np.ndarray) -> np.ndarray:
+    """그레이월드 보정의 채널별 이득(B, G, R)을 계산한다."""
+    means = np.array(cv2.mean(image)[:3])  # B, G, R
     target = float(np.mean(means))
+    return np.where(means > 1.0, target / np.maximum(means, 1.0), 1.0).astype(np.float32)
 
-    balanced = image.astype(np.float32)
-    for channel, mean in enumerate(means):
-        if mean > 1.0:
-            balanced[:, :, channel] *= target / mean
 
+def _apply_gains(image: np.ndarray, gains: np.ndarray) -> np.ndarray:
+    """채널별 이득을 곱한 BGR 이미지를 돌려준다."""
+    balanced = image.astype(np.float32) * gains.reshape(1, 1, 3)
     return np.clip(balanced, 0, 255).astype(np.uint8)
 
 
@@ -462,6 +541,58 @@ def _uniformity(lab: np.ndarray, skin: np.ndarray) -> tuple[int, float]:
     return _clamp(100 - unevenness), std_l
 
 
+class PreparedFace(NamedTuple):
+    """분석 준비가 끝난 얼굴 이미지 묶음."""
+
+    image: np.ndarray        # 잘라낸 얼굴 (원본 색, BGR)
+    landmarks: np.ndarray    # 잘라낸 이미지 좌표의 랜드마크
+    balanced: np.ndarray     # 화이트밸런스 적용본 (BGR)
+    lab: np.ndarray          # balanced의 Lab 변환
+    face_width: float        # 분석 해상도의 얼굴 너비 (= ANALYSIS_FACE_WIDTH)
+    preview_face_width: float  # 축소본(긴 변 MAX_IMAGE_SIDE)에서의 얼굴 너비
+    source_face_width: float   # 원본 사진에서의 얼굴 너비
+
+
+def _prepare_face(
+    image_bytes: bytes, *, min_face_width: int = DEFAULT_MIN_FACE_WIDTH
+) -> PreparedFace:
+    """디코딩 → 축소본에서 얼굴 찾기 → 원본에서 얼굴만 고해상도로 잘라내기."""
+    full = _decode_full(image_bytes)
+    preview, scale = _shrink(full)
+    preview_landmarks = _detect_landmarks(preview)
+    preview_face_width = float(np.ptp(preview_landmarks[:, 0]))
+
+    # 얼굴이 너무 작으면 트러블 탐지가 둔해져 점수를 신뢰할 수 없다
+    # (기준은 기존과 같이 축소본 기준 너비로 판단한다)
+    if preview_face_width < min_face_width:
+        raise AnalysisError(
+            f"얼굴이 너무 작게 나왔습니다 (너비 {preview_face_width:.0f}px, 최소 {min_face_width}px). "
+            "얼굴이 화면에 더 크게 들어오도록 가까이에서 촬영해주세요.",
+            code=ErrorCode.FACE_TOO_SMALL,
+            detail={"face_width_px": round(preview_face_width, 1), "required_px": min_face_width},
+        )
+
+    # 화이트밸런스 이득은 기존과 같이 사진 전체(축소본) 기준으로 구한다.
+    # 잘라낸 얼굴로 구하면 피부색이 회색으로 끌려가 홍조 신호가 사라진다.
+    gains = _gray_world_gains(preview)
+
+    # 원본 좌표로 옮긴 랜드마크로 얼굴만 잘라 고해상도로 맞춘다
+    source_landmarks = preview_landmarks / scale
+    image, landmarks = _crop_face(full, source_landmarks)
+    balanced = _apply_gains(image, gains)
+    lab = cv2.cvtColor(balanced, cv2.COLOR_BGR2LAB)
+
+    return PreparedFace(
+        image=image,
+        landmarks=landmarks,
+        balanced=balanced,
+        lab=lab,
+        face_width=float(np.ptp(landmarks[:, 0])),
+        preview_face_width=preview_face_width,
+        source_face_width=preview_face_width / scale,
+    )
+
+
 # ── 공개 함수 ───────────────────────────────────────────────────────
 
 
@@ -473,20 +604,9 @@ def analyze_image_detail(
     원시값에는 부위별 측정치도 담긴다. 정규화 구간을 조정할 때와,
     "볼이 유독 붉다" 같은 부위별 안내를 만들 때 쓴다.
     """
-    image = _decode(image_bytes)
-    landmarks = _detect_landmarks(image)
-    balanced = _white_balance(image)
-    lab = cv2.cvtColor(balanced, cv2.COLOR_BGR2LAB)
-    face_width = float(np.ptp(landmarks[:, 0]))
-
-    # 얼굴이 너무 작으면 트러블 탐지가 둔해져 점수를 신뢰할 수 없다
-    if face_width < min_face_width:
-        raise AnalysisError(
-            f"얼굴이 너무 작게 나왔습니다 (너비 {face_width:.0f}px, 최소 {min_face_width}px). "
-            "얼굴이 화면에 더 크게 들어오도록 가까이에서 촬영해주세요.",
-            code=ErrorCode.FACE_TOO_SMALL,
-            detail={"face_width_px": round(face_width, 1), "required_px": min_face_width},
-        )
+    face = _prepare_face(image_bytes, min_face_width=min_face_width)
+    image, landmarks, balanced, lab = face.image, face.landmarks, face.balanced, face.lab
+    face_width = face.face_width  # 분석 해상도 기준 (ANALYSIS_FACE_WIDTH)
 
     # 부위별 패치 → 머리카락으로 가려진 부분 제외 → 그늘·하이라이트 정제
     # 가려진 부위는 통째로 빠지므로, 이마를 깐 사람만 이마가 포함된다
@@ -557,7 +677,9 @@ def analyze_image_detail(
 
     index_map = _redness_index(balanced)
     redness, mean_index = _redness(index_map, red_mask)
-    trouble, blemish_ratio, trouble_threshold = _trouble(index_map, skin, face_width)
+    # 트러블은 볼을 크게 잡은 넓은 패치에서 찾는다
+    trouble_skin = _trouble_area(image, lab, landmarks)
+    trouble, blemish_ratio, trouble_threshold = _trouble(index_map, trouble_skin, face_width)
     uniformity, std_l = _uniformity(lab, skin)
 
     scores = {
@@ -573,8 +695,10 @@ def analyze_image_detail(
         "blemish_ratio": round(blemish_ratio, 5),  # TROUBLE_RANGE 기준
         "trouble_threshold": round(trouble_threshold, 2),  # 이 사진에 적용된 임계값
         "std_l_skin": round(std_l, 2),             # UNIFORMITY_STD_RANGE 기준
-        "face_width_px": round(face_width, 1),
-        "skin_px": int(np.count_nonzero(skin)),
+        "face_width_px": round(face.preview_face_width, 1),  # 축소본 기준 (최소 크기 검사용)
+        "source_face_width_px": round(face.source_face_width, 1),  # 원본 사진에서의 얼굴 너비
+        "skin_px": int(np.count_nonzero(skin)),                   # 패치(밝기·균일도·홍조) 픽셀
+        "trouble_skin_px": int(np.count_nonzero(trouble_skin)),   # 트러블 분석 영역 픽셀
         "regions_used": len(regions),              # 분석에 쓰인 부위 수 (최대 5)
     }
     # 양볼 밝기 비율 (MIN_CHEEK_L_RATIO 기준). 볼 하나가 빠졌으면 기록하지 않는다

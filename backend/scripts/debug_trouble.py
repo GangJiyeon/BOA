@@ -8,7 +8,7 @@
     → photos/me_trouble.png 생성 + 수치 출력
 
 오버레이 색
-    초록 윤곽 : 분석에 쓰인 피부 영역 (이마·양볼·코·턱 패치)
+    초록 윤곽 : 트러블 분석 영역 (TROUBLE_REGIONS 넓은 패치)
     노랑      : 임계값은 넘었지만 크기가 작아 노이즈로 버려진 픽셀
     보라      : 피부 영역 가장자리에 걸쳐 경계 효과로 제외된 덩어리
     빨강      : 최종 트러블로 집계된 덩어리
@@ -119,13 +119,12 @@ def main() -> None:
     parser.add_argument("--out", type=Path, help="오버레이 저장 경로 (기본: <사진>_trouble.png)")
     args = parser.parse_args()
 
-    # 1) 실제 분석과 동일한 전처리
-    image = sa._decode(args.photo.read_bytes())
-    landmarks = sa._detect_landmarks(image)
-    balanced = sa._white_balance(image)
-    lab = cv2.cvtColor(balanced, cv2.COLOR_BGR2LAB)
-    face_width = float(np.ptp(landmarks[:, 0]))
-    skin, used = build_skin(image, lab, landmarks)
+    # 1) 실제 분석과 동일한 전처리 (원본에서 얼굴만 잘라 고해상도로)
+    face = sa._prepare_face(args.photo.read_bytes())
+    image, landmarks, balanced, lab = face.image, face.landmarks, face.balanced, face.lab
+    face_width = face.face_width
+    _, used = build_skin(image, lab, landmarks)          # 패치(밝기·균일도·홍조) 사용 현황 출력
+    skin = sa._trouble_area(image, lab, landmarks)       # 트러블은 넓은 패치에서 찾는다
     index_map = sa._redness_index(balanced)
 
     # 2) 트러블 계산 (중간값 포함)
@@ -135,9 +134,10 @@ def main() -> None:
 
     # 3) 수치 출력
     lo, hi = sa.TROUBLE_RANGE
-    print(f"이미지 크기        : {image.shape[1]}x{image.shape[0]} (축소 후)")
-    print(f"얼굴 너비          : {face_width:.0f}px   사용 부위: {', '.join(used)}")
-    print(f"피부 픽셀          : {int(np.count_nonzero(skin))}")
+    print(f"분석 이미지 크기   : {image.shape[1]}x{image.shape[0]} (얼굴만 잘라냄)")
+    print(f"얼굴 너비          : 분석 {face_width:.0f}px / 원본 {face.source_face_width:.0f}px")
+    print(f"패치 사용 부위     : {', '.join(used)}")
+    print(f"트러블 분석 픽셀   : {int(np.count_nonzero(skin))}")
     print(f"국소 중앙값 커널   : {d['kernel']}px")
     print(f"질감 변동폭(spread): {d['spread']:.3f}  → 임계값 {d['threshold']:.3f}"
           f"{'  (하한값 적용)' if d['threshold_is_floor'] else ''}")
@@ -156,7 +156,7 @@ def main() -> None:
     overlay[d["edge_dropped"] > 0] = (255, 0, 255)                     # 보라: 가장자리라 제외
     overlay[d["kept"] > 0] = (0, 0, 255)                               # 빨강: 트러블
     contours, _ = cv2.findContours(skin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    cv2.drawContours(overlay, contours, -1, (0, 255, 0), 1)            # 초록: 피부 영역
+    cv2.drawContours(overlay, contours, -1, (0, 255, 0), 1)            # 초록: 트러블 분석 영역
     out = args.out or args.photo.with_name(f"{args.photo.stem}_trouble.png")
     cv2.imwrite(str(out), np.hstack([image, overlay]))
     print(f"\n오버레이 저장      : {out}")
