@@ -44,7 +44,8 @@ def build_skin(image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray) -> tup
 def trouble_detail(index_map: np.ndarray, skin: np.ndarray, face_width: float) -> dict:
     """sa._trouble과 같은 계산을 하되, 중간 결과(마스크·임계값)를 모두 돌려준다."""
     # 센서 노이즈 완화
-    smooth = cv2.GaussianBlur(index_map.astype(np.float32), (3, 3), 0)
+    blur = max(3, int(round(face_width * sa.TROUBLE_BLUR_RATIO)) | 1)  # sa._trouble과 같은 블러
+    smooth = cv2.GaussianBlur(index_map.astype(np.float32), (blur, blur), 0)
 
     # 피부 중앙값 기준으로 uint8 격자에 담기 (±8 지수 밖은 잘림)
     center = float(np.median(smooth[skin > 0]))

@@ -10,7 +10,7 @@
      트러블: 볼을 크게 잡은 넓은 패치(TROUBLE_REGIONS)를 씀
   4) 볼 밝기를 기준으로 머리카락(앞머리 등)을 걷어내고, 대부분 가려진 부위는 제외
      → 남은 픽셀에서 그늘·하이라이트 같은 이상치 제거
-  5) 기기별 고정 색 보정(DEVICE_CHANNEL_GAINS) 적용 후 Lab 색공간 변환
+  5) 카메라 프로필(CAMERA_PROFILES)의 고정 색 보정 적용 후 Lab 색공간 변환
   6) 촬영 품질 검사: 노출 과부족·하이라이트 포화·조명 치우침이면 재촬영 요청
   7) 지표별 원시값 계산 → 0~100 정규화
 
@@ -19,6 +19,7 @@
 
 import hashlib
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import NamedTuple
 
 import cv2
@@ -59,15 +60,39 @@ DEFAULT_MIN_FACE_WIDTH = 250
 # 즉 "이 점수는 표본 분포상의 상대 위치"라는 의미이며, 표본이 늘어나면
 # 분위수를 다시 계산해 갱신해야 한다.
 BRIGHTNESS_RANGE = (100.0, 210.0)    # 피부 영역 L 채널 평균 (0~255)
-REDNESS_RANGE = (6.0, 14.0)          # 볼·이마의 홍조 지수 (R/G 로그비)
+REDNESS_RANGE = (6.0, 14.0)          # 볼·이마의 홍조 지수 (R/G 로그비). 기본(phone) 프로필 값
 TROUBLE_RANGE = (0.0, 0.028)         # 반점으로 탐지된 픽셀 비율
-UNIFORMITY_STD_RANGE = (14.0, 27.0)  # 피부 영역 L 채널 표준편차 (낮을수록 균일)
+# 균일도: 조명 흐름(큰 그늘)을 뺀 뒤 남은 국소 밝기 편차 (낮을수록 균일).
+# 잠정값이다. 피부가 깨끗한 휴대폰 사진 2.8~3.1, 여드름 많은 얼굴 4.4, 웹캠 1.7~2.1이 나왔다.
+# 실제 시연 기기(갤럭시북 웹캠) 표본으로 다시 맞춰야 한다.
+UNIFORMITY_STD_RANGE = (2.5, 5.0)
 
 # 홍조 지수를 uint8로 옮길 때 쓰는 배율.
 # 지수 1단위를 16단계로 쪼개므로 국소 중앙값 계산의 양자화 오차가 작다.
 # 담는 기준점은 그 사진 피부의 중앙값으로 잡아, 전체적으로 붉은 피부에서도
 # 표현 범위(중앙값 ±8 지수)가 밀리지 않게 한다.
 TROUBLE_INDEX_GAIN = 16.0
+
+# 홍조 측정 가능 하한.
+# 홍조 지수가 기준 범위 하한보다 '범위 폭 x 이 비율' 넘게 낮으면 측정 불가로 돌려보낸다.
+# 사람 피부는 중립 조명에서 R/G가 일정 수준 이상이라, 이보다 훨씬 낮으면 피부가 아니라
+# 카메라 색 처리(채도 저하·푸른 치우침)나 조명 때문이다. 이 값을 0점으로 내보내면
+# '홍조 없음'으로 오해되어 엉뚱한 추천으로 이어진다.
+# (표본: 휴대폰 8.7~10.7, 붉은 얼굴 16.6, 기기 보정 전 웹캠 2.2~2.4 → 웹캠은 측정 불가)
+# 기준은 카메라 프로필의 홍조 범위에 연동되므로, 범위를 다시 맞추면 함께 옮겨간다.
+REDNESS_INVALID_MARGIN = 0.25
+
+# 균일도 계산 시 조명 흐름을 뽑는 블러 크기 (얼굴 너비 대비 가우시안 시그마).
+# 이보다 큰 밝기 변화(얼굴 굴곡 그늘, 한쪽 조명)는 조명으로 보고 빼고, 작은 얼룩·잡티만 남긴다.
+# 예전 방식(부위 전체 표준편차)은 한쪽 조명 사진을 가장 나쁘게(19.4),
+# 여드름 많은 얼굴을 오히려 고르게(8.6) 판정했다. 이 방식으로는 각각 3.4, 4.4다.
+UNIFORMITY_FLATTEN_SIGMA_RATIO = 0.02
+
+# 트러블 계산 전에 홍조 지수 지도를 부드럽게 만드는 블러 크기 (얼굴 너비 대비).
+# 웹캠 사진은 어두운 곳의 센서 노이즈와 색 정보 해상도(2x2) 때문에 작은 가짜 덩어리가 생긴다.
+# 3x3 → 7x7(얼굴 400px 기준)로 키우면 웹캠 가짜 트러블이 49→22점으로 줄고,
+# 여드름 얼굴은 100점 그대로, 작은 점(지름 1.5mm)은 오히려 더 잘 잡혔다(14→19점).
+TROUBLE_BLUR_RATIO = 0.0175
 
 # 트러블 판정 임계값 (홍조 지수 단위). 주변 피부보다 이만큼 더 붉으면 트러블 후보로 본다.
 # 예전에는 사진마다 피부결 변동폭의 3배로 임계값을 올렸는데, 여드름이 많은 피부는
@@ -413,7 +438,55 @@ def _trouble_area(image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray) -> 
 #  - 몸 방향만 바꿔도 배경이 바뀌어 홍조가 흔들렸다 (변동 2.9% → 11%).
 # 그래서 사진마다 보정하지 않고, 기기(카메라)별로 한 번 정한 고정값을 쓴다.
 # 실제 키오스크 기기(갤럭시북4 웹캠)에서 색상표를 찍어 값을 정하기 전까지는 1.0(보정 없음).
-DEVICE_CHANNEL_GAINS = (1.0, 1.0, 1.0)
+DEVICE_CHANNEL_GAINS = (1.0, 1.0, 1.0)   # 기본(phone) 프로필 값
+
+
+# ── 카메라 프로필 ───────────────────────────────────────────────────
+# 카메라마다 색 처리 방식이 달라서, 같은 사람이라도 홍조 지수가 크게 다르다
+# (같은 사람: 휴대폰 약 9.5, 720p 웹캠 2.2~2.5 — 웹캠은 피부를 거의 회색으로 기록함).
+# 그래서 기기별 보정값을 프로필로 묶어 두고 설정(SKIN_CAMERA_PROFILE)으로 고른다.
+# 새 기기를 쓰려면 그 기기로 찍은 표본으로 값을 정해 프로필을 하나 추가한다.
+@dataclass(frozen=True)
+class CameraProfile:
+    """기기(카메라)별 보정값 묶음."""
+
+    description: str
+    channel_gains: tuple[float, float, float]  # 고정 색 보정 이득 (B, G, R)
+    redness_range: tuple[float, float]         # 홍조 지수 lo → 0점, hi → 100점
+    color_check: bool                          # 홍조 지수가 지나치게 낮으면 측정 불가로 돌려보낼지
+
+
+CAMERA_PROFILES: dict[str, CameraProfile] = {
+    # 휴대폰 사진으로 맞춘 기본값 (피부가 깨끗한 사람 약 9.5 → 40점대)
+    "phone": CameraProfile(
+        description="휴대폰 카메라 (기본값)",
+        channel_gains=DEVICE_CHANNEL_GAINS,
+        redness_range=REDNESS_RANGE,
+        color_check=True,
+    ),
+    # 720p 웹캠 임시값. 표본이 1명·2장(Logitech)뿐이라 반드시 다시 맞춰야 한다.
+    # 웹캠이 색을 휴대폰의 약 1/4로 바래게 기록하는 것(홍조 지수 2.3 / 9.5, 채도 5.5% / 27.8%)을
+    # 근거로 phone 범위에 0.24를 곱해 정했다 → 같은 사람이 휴대폰과 비슷한 40점대로 나온다.
+    "webcam": CameraProfile(
+        description="720p 웹캠 임시값 (Logitech 1인 2장 기준, 재보정 필요)",
+        channel_gains=(1.0, 1.0, 1.0),
+        redness_range=(1.5, 3.5),
+        color_check=True,
+    ),
+}
+DEFAULT_CAMERA_PROFILE = "phone"
+
+
+def get_camera_profile(name: str | None) -> CameraProfile:
+    """이름으로 카메라 프로필을 찾는다. 없는 이름이면 설정 오류로 알린다."""
+    key = (name or DEFAULT_CAMERA_PROFILE).strip().lower()
+    if key not in CAMERA_PROFILES:
+        raise AnalysisError(
+            f"알 수 없는 카메라 프로필입니다: {name} (사용 가능: {', '.join(CAMERA_PROFILES)})",
+            code=ErrorCode.CONFIG_INVALID,
+            detail={"profile": name, "available": list(CAMERA_PROFILES)},
+        )
+    return CAMERA_PROFILES[key]
 
 
 def _white_balance(image: np.ndarray) -> np.ndarray:
@@ -460,9 +533,11 @@ def _brightness(lab: np.ndarray, skin: np.ndarray) -> tuple[int, float]:
     return _linear_score(mean_l, *BRIGHTNESS_RANGE), mean_l
 
 
-def _redness(index_map: np.ndarray, patches: np.ndarray) -> tuple[int, float]:
+def _redness(
+    index_map: np.ndarray, patches: np.ndarray, redness_range: tuple[float, float] = REDNESS_RANGE
+) -> tuple[int, float]:
     mean_index = cv2.mean(index_map, mask=patches)[0]
-    return _linear_score(mean_index, *REDNESS_RANGE), mean_index
+    return _linear_score(mean_index, *redness_range), mean_index
 
 
 def _outer_edge_band(skin: np.ndarray, band_px: int) -> np.ndarray:
@@ -487,7 +562,8 @@ def _trouble(
     같은 피부가 다르게 판정되는 문제를 줄인다.
     """
     # 픽셀 단위 센서 노이즈 완화 (실수 상태에서 먼저 처리한다)
-    smooth = cv2.GaussianBlur(index_map.astype(np.float32), (3, 3), 0)
+    blur = max(3, int(round(face_width * TROUBLE_BLUR_RATIO)) | 1)  # 홀수 커널
+    smooth = cv2.GaussianBlur(index_map.astype(np.float32), (blur, blur), 0)
 
     # 이 사진 피부의 지수 중앙값을 기준점으로 삼아 uint8 격자에 담는다.
     # medianBlur가 uint8만 받기 때문이며, 배경 추정용으로만 쓴다.
@@ -544,12 +620,33 @@ def _cheek_l_ratio(lab: np.ndarray, regions: dict[str, np.ndarray]) -> float | N
     return min(left, right) / brighter if brighter > 0 else None
 
 
-def _uniformity(lab: np.ndarray, skin: np.ndarray) -> tuple[int, float]:
-    """피부 톤 표준편차의 역방향 점수. 고를수록 높다."""
-    _, std = cv2.meanStdDev(lab[:, :, 0], mask=skin)
-    std_l = float(std[0][0])
-    unevenness = _linear_score(std_l, *UNIFORMITY_STD_RANGE)
-    return _clamp(100 - unevenness), std_l
+def _uniformity(
+    lab: np.ndarray, skin: np.ndarray, face_width: float
+) -> tuple[int, float, float]:
+    """조명 흐름을 뺀 국소 밝기 편차의 역방향 점수. 고를수록 높다.
+
+    1) 피부 픽셀만으로 밝기를 크게 블러해 '조명 흐름'(그늘·한쪽 조명)을 추정
+       (피부 밖 픽셀이 섞이지 않도록 마스크로 나눠 주는 정규화 블러)
+    2) 원래 밝기에서 조명 흐름을 빼면 얼룩·잡티 같은 국소 변화만 남는다
+    3) 남은 값의 표준편차가 클수록 고르지 않다
+
+    돌려주는 값: (점수, 조명 제거 후 표준편차, 참고용 예전 방식 표준편차)
+    """
+    lightness = lab[:, :, 0].astype(np.float32)
+    mask = (skin > 0).astype(np.float32)
+    sigma = max(1.0, face_width * UNIFORMITY_FLATTEN_SIGMA_RATIO)
+
+    # 피부 영역만의 가중 평균 블러 = 조명 흐름
+    weighted = cv2.GaussianBlur(lightness * mask, (0, 0), sigma)
+    weight = cv2.GaussianBlur(mask, (0, 0), sigma)
+    illumination = weighted / np.maximum(weight, 1e-3)
+
+    residual = (lightness - illumination)[skin > 0]
+    std_flat = float(residual.std())
+    std_raw = float(lightness[skin > 0].std())  # 예전 방식 (비교용으로만 기록)
+
+    unevenness = _linear_score(std_flat, *UNIFORMITY_STD_RANGE)
+    return _clamp(100 - unevenness), std_flat, std_raw
 
 
 class PreparedFace(NamedTuple):
@@ -565,7 +662,10 @@ class PreparedFace(NamedTuple):
 
 
 def _prepare_face(
-    image_bytes: bytes, *, min_face_width: int = DEFAULT_MIN_FACE_WIDTH
+    image_bytes: bytes,
+    *,
+    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
+    channel_gains: tuple[float, float, float] = DEVICE_CHANNEL_GAINS,
 ) -> PreparedFace:
     """디코딩 → 축소본에서 얼굴 찾기 → 원본에서 얼굴만 잘라 분석 해상도로 맞추기."""
     full = _decode_full(image_bytes)
@@ -583,8 +683,8 @@ def _prepare_face(
             detail={"face_width_px": round(preview_face_width, 1), "required_px": min_face_width},
         )
 
-    # 색 보정은 사진마다 계산하지 않고 기기별 고정값을 쓴다 (DEVICE_CHANNEL_GAINS 참고)
-    gains = np.array(DEVICE_CHANNEL_GAINS, dtype=np.float32)
+    # 색 보정은 사진마다 계산하지 않고 카메라 프로필의 고정값을 쓴다
+    gains = np.array(channel_gains, dtype=np.float32)
 
     # 원본 좌표로 옮긴 랜드마크로 얼굴만 잘라낸다 (크면 ANALYSIS_FACE_WIDTH로 축소)
     source_landmarks = preview_landmarks / scale
@@ -607,14 +707,20 @@ def _prepare_face(
 
 
 def analyze_image_detail(
-    image_bytes: bytes, *, min_face_width: int = DEFAULT_MIN_FACE_WIDTH
+    image_bytes: bytes,
+    *,
+    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
+    camera_profile: str = DEFAULT_CAMERA_PROFILE,
 ) -> tuple[dict[str, int], dict[str, float]]:
     """지표 점수 4개와, 정규화 전 원시값을 함께 돌려준다.
 
     원시값에는 부위별 측정치도 담긴다. 정규화 구간을 조정할 때와,
     "볼이 유독 붉다" 같은 부위별 안내를 만들 때 쓴다.
     """
-    face = _prepare_face(image_bytes, min_face_width=min_face_width)
+    profile = get_camera_profile(camera_profile)  # 기기별 보정값 (색 보정·홍조 범위)
+    face = _prepare_face(
+        image_bytes, min_face_width=min_face_width, channel_gains=profile.channel_gains
+    )
     image, landmarks, balanced, lab = face.image, face.landmarks, face.balanced, face.lab
     face_width = face.face_width  # 분석 해상도 기준 (최대 ANALYSIS_FACE_WIDTH)
 
@@ -686,11 +792,28 @@ def analyze_image_detail(
         )
 
     index_map = _redness_index(balanced)
-    redness, mean_index = _redness(index_map, red_mask)
+    redness, mean_index = _redness(index_map, red_mask, profile.redness_range)
+
+    # 홍조 지수가 보정 범위보다 지나치게 낮으면 피부색이 아니라 카메라·조명 문제다.
+    # 0점(홍조 없음)으로 내보내지 않고 측정 불가로 돌려보낸다.
+    red_lo, red_hi = profile.redness_range
+    red_min_valid = red_lo - (red_hi - red_lo) * REDNESS_INVALID_MARGIN
+    if profile.color_check and mean_index < red_min_valid:
+        raise AnalysisError(
+            f"피부색을 측정할 수 없습니다 (홍조 지수 {mean_index:.1f}, 측정 가능 최소 {red_min_valid:.1f}). "
+            "카메라가 색을 회색·푸른빛으로 기록했거나 조명이 너무 어둡습니다. "
+            "밝은 곳에서 다시 촬영하거나, 이 기기에 맞는 카메라 프로필(SKIN_CAMERA_PROFILE)을 설정해야 합니다.",
+            code=ErrorCode.SKIN_COLOR_UNMEASURABLE,
+            detail={
+                "redness_index": round(mean_index, 2),
+                "required_min": round(red_min_valid, 2),
+                "camera_profile": camera_profile,
+            },
+        )
     # 트러블은 볼을 크게 잡은 넓은 패치에서 찾는다
     trouble_skin = _trouble_area(image, lab, landmarks)
     trouble, blemish_ratio, trouble_threshold = _trouble(index_map, trouble_skin, face_width)
-    uniformity, std_l = _uniformity(lab, skin)
+    uniformity, std_l, std_l_raw = _uniformity(lab, skin, face_width)
 
     scores = {
         "redness": redness,
@@ -699,12 +822,13 @@ def analyze_image_detail(
         "uniformity": uniformity,
     }
     raw = {
-        "redness_index": round(mean_index, 2),     # REDNESS_RANGE 기준
+        "redness_index": round(mean_index, 2),     # 카메라 프로필의 홍조 범위 기준
         "mean_l_skin": round(mean_l, 2),           # BRIGHTNESS_RANGE 기준
         "saturated_ratio": round(saturated_ratio, 3),
         "blemish_ratio": round(blemish_ratio, 5),  # TROUBLE_RANGE 기준
         "trouble_threshold": round(trouble_threshold, 2),  # 적용된 임계값 (TROUBLE_THRESHOLD)
-        "std_l_skin": round(std_l, 2),             # UNIFORMITY_STD_RANGE 기준
+        "std_l_skin": round(std_l, 2),             # 조명 흐름 제거 후 편차 (UNIFORMITY_STD_RANGE 기준)
+        "std_l_skin_raw": round(std_l_raw, 2),     # 참고: 예전 방식 편차 (조명 포함)
         "face_width_px": round(face.preview_face_width, 1),  # 축소본 기준 (최소 크기 검사용)
         "source_face_width_px": round(face.source_face_width, 1),  # 원본 사진에서의 얼굴 너비
         "skin_px": int(np.count_nonzero(skin)),                   # 패치(밝기·균일도·홍조) 픽셀
@@ -726,10 +850,15 @@ def analyze_image_detail(
 
 
 def analyze_image(
-    image_bytes: bytes, *, min_face_width: int = DEFAULT_MIN_FACE_WIDTH
+    image_bytes: bytes,
+    *,
+    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
+    camera_profile: str = DEFAULT_CAMERA_PROFILE,
 ) -> dict[str, int]:
     """사진에서 지표 점수 4개를 산출한다."""
-    scores, _ = analyze_image_detail(image_bytes, min_face_width=min_face_width)
+    scores, _ = analyze_image_detail(
+        image_bytes, min_face_width=min_face_width, camera_profile=camera_profile
+    )
     return scores
 
 

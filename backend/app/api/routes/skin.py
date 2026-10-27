@@ -122,6 +122,7 @@ def _photo_scores(image: Image | None, seed: str) -> tuple[dict[str, int], str]:
             skin_analysis.analyze_image(
                 s3.download_bytes(image.s3_key),
                 min_face_width=get_settings().min_face_width_px,
+                camera_profile=get_settings().skin_camera_profile,  # 기기별 보정값
             ),
             skin_scoring.LOGIC_VERSION,
         )
@@ -214,7 +215,9 @@ def create_analysis_debug(
 
     try:
         photo_scores, raw = skin_analysis.analyze_image_detail(
-            file.file.read(), min_face_width=get_settings().min_face_width_px
+            file.file.read(),
+            min_face_width=get_settings().min_face_width_px,
+            camera_profile=get_settings().skin_camera_profile,  # 기기별 보정값
         )
     except skin_analysis.AnalysisError as e:
         raise _error(400, e.code, str(e), e.detail) from e
@@ -332,6 +335,7 @@ def check_repeatability_debug(
         raise _error(400, e.code, str(e), e.detail) from e
 
     min_face_width = get_settings().min_face_width_px
+    camera_profile = get_settings().skin_camera_profile  # 기기별 보정값
     photos: list[RepeatabilityPhoto] = []
     rejected: list[RepeatabilityRejected] = []
 
@@ -349,7 +353,7 @@ def check_repeatability_debug(
             continue
         try:
             scores, raw = skin_analysis.analyze_image_detail(
-                upload.file.read(), min_face_width=min_face_width
+                upload.file.read(), min_face_width=min_face_width, camera_profile=camera_profile
             )
             categories = {
                 code: skin_scoring.find_category(category_lookup[code], score).name

@@ -12,6 +12,7 @@ class ErrorCode:
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE"  # jpeg/png/webp 외
     IMAGE_TOO_DARK = "IMAGE_TOO_DARK"            # 노출 부족
     IMAGE_TOO_BRIGHT = "IMAGE_TOO_BRIGHT"        # 노출 과다
+    SKIN_COLOR_UNMEASURABLE = "SKIN_COLOR_UNMEASURABLE"  # 카메라 색·조명 때문에 피부색 측정 불가
 
     # 얼굴 인식 — 재촬영 안내가 필요한 경우
     FACE_NOT_FOUND = "FACE_NOT_FOUND"            # 얼굴을 찾지 못함
