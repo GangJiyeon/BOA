@@ -24,6 +24,7 @@ class ErrorCode:
     INVALID_SCORE = "INVALID_SCORE"
     MISSING_METRIC = "MISSING_METRIC"
     UNKNOWN_METRIC = "UNKNOWN_METRIC"
+    INVALID_FILE_COUNT = "INVALID_FILE_COUNT"    # 여러 장 업로드 시 개수 범위 밖
 
     # 서버 상태 — 사용자가 아니라 운영자가 조치해야 하는 경우
     SEED_MISSING = "SEED_MISSING"                # 지표/구간 기준 데이터 없음

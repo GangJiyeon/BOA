@@ -7,7 +7,8 @@
   1) 디코딩 → 긴 변 기준 축소 (연산량 고정)
   2) MediaPipe FaceMesh로 랜드마크 추출
   3) 이마·양볼·코·턱 다섯 부위를 원형 패치로 떼어냄
-  4) 각 패치에서 그늘·머리카락·안경 같은 비피부 픽셀 제거
+  4) 볼 밝기를 기준으로 머리카락(앞머리 등)을 걷어내고, 대부분 가려진 부위는 제외
+     → 남은 픽셀에서 그늘·하이라이트 같은 이상치 제거
   5) 그레이월드 화이트밸런스로 조명 색상 보정 후 Lab 색공간 변환
   6) 지표별 원시값 계산 → 0~100 정규화
 
@@ -79,6 +80,30 @@ MAX_SATURATED_SKIN_RATIO = 0.05
 # 피부 마스크 정제 강도. 중앙값에서 이 배수(MAD 기준)를 벗어난 픽셀은 버린다.
 # 머리카락·그림자·안경처럼 피부가 아닌 것이 마스크에 섞이면 통계가 망가진다.
 SKIN_MAD_FACTOR = 2.5
+
+# ── 가림(앞머리 등) 판정 ─────────────────────────────────────────────
+# 패치별 MAD 정제는 "패치 안의 다수"를 피부로 간주한다. 앞머리가 이마 패치를
+# 대부분 덮으면 머리카락이 다수가 되어, 머리카락이 남고 피부가 버려진다.
+# 그래서 패치 바깥의 기준(양볼)으로 먼저 머리카락을 걷어낸 뒤 MAD 정제를 한다.
+#
+# 피부 기준색을 잡을 부위. 볼은 앞머리에 거의 가려지지 않는다.
+# 볼이 화면 밖으로 잘린 경우에만 코·턱으로 대체한다.
+SKIN_REFERENCE_REGIONS = ("left_cheek", "right_cheek")
+SKIN_REFERENCE_FALLBACK = ("nose", "chin")
+
+# 기준 피부 밝기(L) 대비 이 비율보다 어두우면 머리카락으로 본다.
+# 색(a*·b*) 차이는 쓰지 않는다. 붉은 트러블은 색이 기준과 달라도 어둡지는 않아서,
+# 색으로 거르면 진짜 트러블까지 "피부 아님"으로 빠져버린다.
+# 표본: 볼 기준 대비 앞머리 0.41, 그늘·수염 있는 턱 0.84.
+HAIR_MAX_L_RATIO = 0.6
+
+# 머리카락 경계에서 이 거리(얼굴 너비 대비)만큼은 피부라도 버린다.
+# 머리카락 가닥 사이로 보이는 피부 틈이 "주변보다 붉은 덩어리"로 잡히는 것을 막는다.
+HAIR_EDGE_MARGIN_RATIO = 0.015
+
+# 머리카락을 걷어낸 뒤 패치에 남은 피부 비율이 이 값 미만이면
+# 그 부위는 가려진 것으로 보고 통째로 뺀다. (남은 틈새만으로는 통계가 불안정하다)
+MIN_REGION_COVERAGE = 0.4
 
 # 분석 부위 정의.
 # 얼굴 윤곽 전체를 쓰면 머리카락선·턱 그늘이 섞이므로, 피부가 확실한
@@ -226,6 +251,69 @@ def _region_masks(image: np.ndarray, landmarks: np.ndarray) -> dict[str, np.ndar
     return masks
 
 
+def _skin_reference_l(lab: np.ndarray, masks: dict[str, np.ndarray]) -> float:
+    """그 사람의 기준 피부 밝기(L 중앙값)를 구한다. 양볼 우선, 없으면 코·턱."""
+    for group in (SKIN_REFERENCE_REGIONS, SKIN_REFERENCE_FALLBACK):
+        values = [lab[:, :, 0][masks[name] > 0] for name in group if name in masks]
+        if values:
+            return float(np.median(np.concatenate(values)))
+    raise AnalysisError(
+        "피부 기준 영역(볼·코·턱)을 찾을 수 없습니다", code=ErrorCode.SKIN_AREA_TOO_SMALL
+    )
+
+
+def _hair_zone(lab: np.ndarray, reference_l: float, face_width: float) -> np.ndarray:
+    """머리카락으로 판단되는 영역(경계 여유 포함) 마스크를 만든다."""
+    # 1) 기준 피부보다 훨씬 어두운 픽셀 = 머리카락 후보
+    dark = (lab[:, :, 0] < reference_l * HAIR_MAX_L_RATIO).astype(np.uint8) * 255
+
+    # 2) 모공·점·수염 같은 작은 어두운 점은 머리카락이 아니므로 제거 (열림 연산)
+    dark = cv2.morphologyEx(dark, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+
+    # 3) 머리카락 경계 주변까지 넓혀서, 가닥 사이 피부 틈을 함께 제외
+    margin = max(1, int(round(face_width * HAIR_EDGE_MARGIN_RATIO)))
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * margin + 1, 2 * margin + 1))
+    return cv2.dilate(dark, kernel)
+
+
+def _build_skin_regions(
+    image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray
+) -> tuple[dict[str, np.ndarray], dict[str, float]]:
+    """부위별 피부 마스크와, 부위별 피부 노출 비율(coverage)을 돌려준다.
+
+    앞머리 등으로 가려진 부분은 빼고, 가려진 비율이 크면 그 부위 전체를 뺀다.
+    이마를 깐 사람은 이마가 포함되고, 덮은 사람은 보이는 부위만으로 분석된다.
+    """
+    face_width = float(np.ptp(landmarks[:, 0]))
+    masks = _region_masks(image, landmarks)
+
+    # 머리카락 영역은 패치 바깥 기준(볼 밝기)으로 판정한다
+    reference_l = _skin_reference_l(lab, masks)
+    not_hair = cv2.bitwise_not(_hair_zone(lab, reference_l, face_width))
+
+    regions: dict[str, np.ndarray] = {}
+    coverage: dict[str, float] = {}
+    for name, mask in masks.items():
+        # 패치에서 머리카락 영역을 뺀 나머지
+        visible = cv2.bitwise_and(mask, not_hair)
+        ratio = np.count_nonzero(visible) / max(1, np.count_nonzero(mask))
+        coverage[name] = ratio
+        if ratio < MIN_REGION_COVERAGE:
+            continue  # 대부분 가려졌으면 이 부위는 제외
+
+        # 남은 픽셀 안에서 그늘·하이라이트 등 이상치를 MAD로 정제
+        try:
+            regions[name] = _refine_skin(lab, visible, min_pixels=100)
+        except AnalysisError:
+            continue
+
+    if not regions:
+        raise AnalysisError(
+            "분석 가능한 피부 영역을 찾지 못했습니다", code=ErrorCode.SKIN_AREA_TOO_SMALL
+        )
+    return regions, coverage
+
+
 def _white_balance(image: np.ndarray) -> np.ndarray:
     """이미지 전체 기준 그레이월드 보정을 적용한 BGR 이미지를 돌려준다.
 
@@ -351,17 +439,9 @@ def analyze_image_detail(
             detail={"face_width_px": round(face_width, 1), "required_px": min_face_width},
         )
 
-    # 부위별 패치 → 각 패치 안에서 비피부 픽셀(그늘·머리카락·안경) 제거
-    regions: dict[str, np.ndarray] = {}
-    for name, mask in _region_masks(image, landmarks).items():
-        try:
-            regions[name] = _refine_skin(lab, mask, min_pixels=100)
-        except AnalysisError:
-            continue  # 해당 부위가 가려졌으면 제외하고 진행한다
-    if not regions:
-        raise AnalysisError(
-            "분석 가능한 피부 영역을 찾지 못했습니다", code=ErrorCode.SKIN_AREA_TOO_SMALL
-        )
+    # 부위별 패치 → 머리카락으로 가려진 부분 제외 → 그늘·하이라이트 정제
+    # 가려진 부위는 통째로 빠지므로, 이마를 깐 사람만 이마가 포함된다
+    regions, coverage = _build_skin_regions(image, lab, landmarks)
 
     skin = np.zeros(image.shape[:2], dtype=np.uint8)
     for mask in regions.values():
@@ -430,7 +510,11 @@ def analyze_image_detail(
         "std_l_skin": round(std_l, 2),             # UNIFORMITY_STD_RANGE 기준
         "face_width_px": round(face_width, 1),
         "skin_px": int(np.count_nonzero(skin)),
+        "regions_used": len(regions),              # 분석에 쓰인 부위 수 (최대 5)
     }
+    # 부위별 피부 노출 비율. MIN_REGION_COVERAGE 미만이면 그 부위는 제외된 것
+    for name, ratio in coverage.items():
+        raw[f"{name}_coverage"] = round(ratio, 2)
     # 부위별 측정치 (어느 부위가 붉은지/어두운지 확인용)
     for name, mask in regions.items():
         raw[f"{name}_idx"] = round(cv2.mean(index_map, mask=mask)[0], 2)

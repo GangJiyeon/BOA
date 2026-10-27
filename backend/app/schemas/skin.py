@@ -64,3 +64,53 @@ class DebugAnalysisRead(AnalysisRead):
     """디버그 응답. 정규화 전 원시값을 함께 내려 임계값 조정에 쓴다."""
 
     raw: dict[str, float]
+
+
+# ── 재현성 측정 (디버그) ─────────────────────────────────────────────
+
+
+class RepeatabilityPhoto(BaseModel):
+    """사진 한 장의 분석 결과."""
+
+    file: str
+    scores: dict[str, int]          # 지표 코드 → 점수
+    categories: dict[str, str]      # 지표 코드 → 판정 (양호/보통/개선 필요)
+    raw: dict[str, float]           # 정규화 전 원시값 (부위별 노출 비율 포함)
+
+
+class RepeatabilityRejected(BaseModel):
+    """분석이 거절된 사진 (얼굴 미검출·노출 이상 등)."""
+
+    file: str
+    code: str
+    message: str
+
+
+class RepeatabilityMetric(BaseModel):
+    """지표 하나의 반복 측정 통계."""
+
+    metric_code: str
+    raw_key: str                    # 통계를 낸 원시값 이름
+    raw_mean: float
+    raw_std: float
+    raw_cv_percent: float | None    # 변동계수. 평균이 0에 가까우면 의미가 없어 null
+    score_min: int
+    score_max: int
+    score_range: int
+    categories: list[str]           # 나온 판정 종류 (1개면 모든 사진의 판정이 같음)
+    category_agreed: bool
+    judged_by: Literal["cv", "score_range"]  # 아래 passed를 무엇으로 판단했는지
+    passed: bool
+
+
+class RepeatabilityReport(BaseModel):
+    """같은 사람·같은 조건 반복 촬영의 재현성 리포트."""
+
+    photo_count: int                # 분석에 성공한 사진 수
+    rejected_count: int
+    metrics: list[RepeatabilityMetric]
+    regions_consistent: bool        # 모든 사진에서 같은 부위가 분석에 쓰였는지
+    region_sets: dict[str, list[str]]  # 사진별 사용 부위 (regions_consistent가 false일 때 확인)
+    photos: list[RepeatabilityPhoto]
+    rejected: list[RepeatabilityRejected]
+    criteria: dict[str, float]      # 적용한 합격 기준
