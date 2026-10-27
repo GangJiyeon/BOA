@@ -10,7 +10,8 @@
   4) 볼 밝기를 기준으로 머리카락(앞머리 등)을 걷어내고, 대부분 가려진 부위는 제외
      → 남은 픽셀에서 그늘·하이라이트 같은 이상치 제거
   5) 그레이월드 화이트밸런스로 조명 색상 보정 후 Lab 색공간 변환
-  6) 지표별 원시값 계산 → 0~100 정규화
+  6) 촬영 품질 검사: 노출 과부족·하이라이트 포화·조명 치우침이면 재촬영 요청
+  7) 지표별 원시값 계산 → 0~100 정규화
 
 주의: 아래 임계값 상수는 샘플 사진으로 맞춰야 하는 잠정값이다.
 """
@@ -66,6 +67,19 @@ TROUBLE_MIN_THRESHOLD = 0.8
 # 실제 병변은 덩어리로 뭉쳐 있고 센서 노이즈는 흩어진 점이다.
 # 이 필터가 없으면 밝게 찍힌 사진일수록 노이즈가 더 많이 잡혀 점수가 부풀려진다.
 TROUBLE_MIN_BLOB_RATIO = 0.01
+
+# 피부 영역 가장자리에 걸친 덩어리는 트러블에서 뺀다.
+# 패치 경계 바로 바깥에 그늘·수염·머리카락처럼 덜 붉은 것이 있으면,
+# 경계 안쪽 피부가 상대적으로 "유독 붉다"고 잘못 판정되기 때문이다.
+# (표본: 턱 패치 경계 3px 안에 붙은 가짜 덩어리 2개, 실제 반점은 경계 비율 0%)
+TROUBLE_EDGE_BAND_RATIO = 0.008   # 가장자리 띠 두께 (얼굴 너비 대비, 최소 2px)
+TROUBLE_MAX_EDGE_SHARE = 0.5      # 덩어리 픽셀 중 이 비율 이상이 띠 안에 있으면 제외
+
+# 조명이 한쪽으로 치우친 사진은 거부한다.
+# 양볼 밝기 비율(어두운 쪽 / 밝은 쪽)이 이 값 미만이면 다시 촬영을 요청한다.
+# 한쪽 조명은 균일도를 크게 왜곡한다 (같은 사람: 비율 0.76 → 균일도 '개선 필요',
+# 비율 0.97 → '양호'). 표본: 정상 촬영 0.91~0.99, 한쪽 조명 0.76.
+MIN_CHEEK_L_RATIO = 0.85
 
 # 노출이 극단적인 사진은 어떤 보정으로도 정보를 복원할 수 없어 거부한다.
 # 피부 영역 L 채널 평균 기준.
@@ -358,6 +372,19 @@ def _redness(index_map: np.ndarray, patches: np.ndarray) -> tuple[int, float]:
     return _linear_score(mean_index, *REDNESS_RANGE), mean_index
 
 
+def _outer_edge_band(skin: np.ndarray, band_px: int) -> np.ndarray:
+    """피부 영역의 바깥 테두리 띠(두께 band_px)를 돌려준다.
+
+    피부 마스크 안쪽의 구멍(이상치 제거로 빠진 진한 반점 중심 등)은 채운 뒤 계산한다.
+    구멍 둘레까지 '가장자리'로 치면 진짜 반점이 경계 효과로 오인되어 빠지기 때문이다.
+    """
+    filled = np.zeros_like(skin)
+    contours, _ = cv2.findContours(skin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(filled, contours, -1, 255, thickness=-1)  # 바깥 윤곽만 채움 → 구멍 메움
+    inner = cv2.erode(filled, np.ones((3, 3), np.uint8), iterations=band_px)
+    return (skin > 0) & (inner == 0)
+
+
 def _trouble(
     index_map: np.ndarray, skin: np.ndarray, face_width: float
 ) -> tuple[int, float, float]:
@@ -394,15 +421,37 @@ def _trouble(
     min_diameter = max(2.0, face_width * TROUBLE_MIN_BLOB_RATIO)
     min_area = max(4, int(np.pi / 4 * min_diameter**2))
 
-    count, _, stats, _ = cv2.connectedComponentsWithStats(candidate, connectivity=8)
-    blemish_px = sum(
-        int(stats[i, cv2.CC_STAT_AREA])
-        for i in range(1, count)  # 0번은 배경
-        if stats[i, cv2.CC_STAT_AREA] >= min_area
-    )
+    # 피부 영역 가장자리 띠 (경계 바깥의 그늘·수염 때문에 생기는 가짜 덩어리 판별용)
+    band_px = max(2, int(round(face_width * TROUBLE_EDGE_BAND_RATIO)))
+    edge_band = _outer_edge_band(skin, band_px)
+
+    count, labels, stats, _ = cv2.connectedComponentsWithStats(candidate, connectivity=8)
+    blemish_px = 0
+    for i in range(1, count):  # 0번은 배경
+        area = int(stats[i, cv2.CC_STAT_AREA])
+        if area < min_area:
+            continue  # 너무 작은 조각은 노이즈
+        # 덩어리 대부분이 가장자리 띠에 있으면 경계 효과로 보고 제외
+        edge_share = np.count_nonzero(edge_band & (labels == i)) / area
+        if edge_share >= TROUBLE_MAX_EDGE_SHARE:
+            continue
+        blemish_px += area
 
     ratio = blemish_px / float(np.count_nonzero(skin))
     return _linear_score(ratio, *TROUBLE_RANGE), ratio, threshold / TROUBLE_INDEX_GAIN
+
+
+def _cheek_l_ratio(lab: np.ndarray, regions: dict[str, np.ndarray]) -> float | None:
+    """양볼 밝기 비율 (어두운 쪽 / 밝은 쪽). 1.0이면 좌우가 고르게 비친 것.
+
+    볼 하나라도 분석에서 빠졌으면 판단할 수 없으므로 None을 돌려준다.
+    """
+    if "left_cheek" not in regions or "right_cheek" not in regions:
+        return None
+    left = cv2.mean(lab[:, :, 0], mask=regions["left_cheek"])[0]
+    right = cv2.mean(lab[:, :, 0], mask=regions["right_cheek"])[0]
+    brighter = max(left, right)
+    return min(left, right) / brighter if brighter > 0 else None
 
 
 def _uniformity(lab: np.ndarray, skin: np.ndarray) -> tuple[int, float]:
@@ -490,6 +539,22 @@ def analyze_image_detail(
             },
         )
 
+    # 조명이 한쪽으로 치우치면 균일도·밝기가 피부가 아니라 조명을 재게 된다
+    cheek_ratio = _cheek_l_ratio(lab, regions)
+    if cheek_ratio is not None and cheek_ratio < MIN_CHEEK_L_RATIO:
+        raise AnalysisError(
+            f"조명이 한쪽으로 치우쳐 있습니다 (양볼 밝기 비율 {cheek_ratio:.3f}, "
+            f"최소 {MIN_CHEEK_L_RATIO:.2f}). "
+            "빛이 얼굴 정면에서 비치도록 방향을 바꿔 다시 촬영해주세요.",
+            code=ErrorCode.LIGHTING_UNEVEN,
+            detail={
+                "cheek_l_ratio": round(cheek_ratio, 4),
+                "left_cheek_l": round(cv2.mean(lab[:, :, 0], mask=regions["left_cheek"])[0], 1),
+                "right_cheek_l": round(cv2.mean(lab[:, :, 0], mask=regions["right_cheek"])[0], 1),
+                "required_min": MIN_CHEEK_L_RATIO,
+            },
+        )
+
     index_map = _redness_index(balanced)
     redness, mean_index = _redness(index_map, red_mask)
     trouble, blemish_ratio, trouble_threshold = _trouble(index_map, skin, face_width)
@@ -512,6 +577,9 @@ def analyze_image_detail(
         "skin_px": int(np.count_nonzero(skin)),
         "regions_used": len(regions),              # 분석에 쓰인 부위 수 (최대 5)
     }
+    # 양볼 밝기 비율 (MIN_CHEEK_L_RATIO 기준). 볼 하나가 빠졌으면 기록하지 않는다
+    if cheek_ratio is not None:
+        raw["cheek_l_ratio"] = round(cheek_ratio, 3)
     # 부위별 피부 노출 비율. MIN_REGION_COVERAGE 미만이면 그 부위는 제외된 것
     for name, ratio in coverage.items():
         raw[f"{name}_coverage"] = round(ratio, 2)

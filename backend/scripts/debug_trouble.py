@@ -10,6 +10,7 @@
 오버레이 색
     초록 윤곽 : 분석에 쓰인 피부 영역 (이마·양볼·코·턱 패치)
     노랑      : 임계값은 넘었지만 크기가 작아 노이즈로 버려진 픽셀
+    보라      : 피부 영역 가장자리에 걸쳐 경계 효과로 제외된 덩어리
     빨강      : 최종 트러블로 집계된 덩어리
 """
 
@@ -64,20 +65,35 @@ def trouble_detail(index_map: np.ndarray, skin: np.ndarray, face_width: float) -
     # 덩어리 크기 필터
     min_diameter = max(2.0, face_width * sa.TROUBLE_MIN_BLOB_RATIO)
     min_area = max(4, int(np.pi / 4 * min_diameter**2))
+    # 피부 영역 가장자리 띠 (sa._trouble과 같은 기준)
+    band_px = max(2, int(round(face_width * sa.TROUBLE_EDGE_BAND_RATIO)))
+    edge_band = sa._outer_edge_band(skin, band_px)
+
     count, labels, stats, _ = cv2.connectedComponentsWithStats(candidate, connectivity=8)
-    kept_ids = [i for i in range(1, count) if stats[i, cv2.CC_STAT_AREA] >= min_area]
+    kept_ids, edge_ids = [], []
+    for i in range(1, count):
+        area = int(stats[i, cv2.CC_STAT_AREA])
+        if area < min_area:
+            continue  # 크기 미달 → 노이즈
+        if np.count_nonzero(edge_band & (labels == i)) / area >= sa.TROUBLE_MAX_EDGE_SHARE:
+            edge_ids.append(i)  # 가장자리 경계 효과 → 제외
+            continue
+        kept_ids.append(i)
     kept = np.isin(labels, kept_ids).astype(np.uint8)
+    edge_dropped = np.isin(labels, edge_ids).astype(np.uint8)
 
     skin_px = int(np.count_nonzero(skin))
     return {
         "candidate": candidate,
         "kept": kept,
+        "edge_dropped": edge_dropped,
         "kernel": kernel,
         "spread": spread / sa.TROUBLE_INDEX_GAIN,        # 지수 단위로 환산
         "threshold": threshold / sa.TROUBLE_INDEX_GAIN,
         "threshold_is_floor": threshold == sa.TROUBLE_MIN_THRESHOLD * sa.TROUBLE_INDEX_GAIN,
         "min_area": min_area,
         "blob_count": len(kept_ids),
+        "edge_blob_count": len(edge_ids),
         "blob_areas": sorted((int(stats[i, cv2.CC_STAT_AREA]) for i in kept_ids), reverse=True),
         "candidate_ratio": int(candidate.sum()) / skin_px,
         "ratio": int(kept.sum()) / skin_px,
@@ -128,6 +144,7 @@ def main() -> None:
     print(f"임계값 초과 비율   : {d['candidate_ratio'] * 100:.2f}%  (크기 필터 전)")
     print(f"최소 덩어리 면적   : {d['min_area']}px")
     print(f"트러블 덩어리      : {d['blob_count']}개, 상위 면적 {d['blob_areas'][:10]}")
+    print(f"가장자리 제외      : {d['edge_blob_count']}개  (패치 경계에 걸친 가짜 덩어리)")
     print(f"트러블 면적 비율   : {d['ratio'] * 100:.2f}%  (100점 기준 {hi * 100:.1f}%)")
     print(f"트러블 점수        : {score}  (실제 로직: {score_official}, 일치: {score == score_official})")
     print(f"경계 3px 이내 비율 : {edge_share(d['kept'], skin, 3) * 100:.0f}%  (높으면 패치 가장자리 효과 의심)")
@@ -135,7 +152,8 @@ def main() -> None:
 
     # 4) 오버레이 이미지 저장
     overlay = image.copy()
-    overlay[(d["candidate"] > 0) & (d["kept"] == 0)] = (0, 255, 255)  # 노랑: 버려진 노이즈
+    overlay[(d["candidate"] > 0) & (d["kept"] == 0) & (d["edge_dropped"] == 0)] = (0, 255, 255)  # 노랑: 버려진 노이즈
+    overlay[d["edge_dropped"] > 0] = (255, 0, 255)                     # 보라: 가장자리라 제외
     overlay[d["kept"] > 0] = (0, 0, 255)                               # 빨강: 트러블
     contours, _ = cv2.findContours(skin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cv2.drawContours(overlay, contours, -1, (0, 255, 0), 1)            # 초록: 피부 영역

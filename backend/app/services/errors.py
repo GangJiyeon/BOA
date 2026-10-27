@@ -18,6 +18,7 @@ class ErrorCode:
     FACE_TOO_SMALL = "FACE_TOO_SMALL"            # 얼굴이 기준보다 작게 찍힘
     FACE_OUT_OF_FRAME = "FACE_OUT_OF_FRAME"      # 얼굴이 화면 밖으로 잘림
     SKIN_AREA_TOO_SMALL = "SKIN_AREA_TOO_SMALL"  # 가려짐 등으로 피부 영역 부족
+    LIGHTING_UNEVEN = "LIGHTING_UNEVEN"          # 조명이 한쪽으로 치우침 (양볼 밝기 차이)
 
     # 입력값
     INVALID_MOISTURE_INPUT = "INVALID_MOISTURE_INPUT"
