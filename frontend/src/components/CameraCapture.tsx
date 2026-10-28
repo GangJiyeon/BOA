@@ -64,13 +64,16 @@ export default function CameraCapture({ onCapture, onClose }: { onCapture: (file
     // 사용자가 본 셀프 카메라 화면과 저장 사진의 좌우 방향을 맞춘다.
     if (facing === 'user') { context.translate(canvas.width, 0); context.scale(-1, 1) }
     context.drawImage(video.current, 0, 0)
+    // 피부 분석용 사진은 무손실 PNG로 저장한다.
+    // JPEG는 8x8 블록 단위로 정보를 버려서, 웹캠 사진에서 압축 흔적이 가짜 트러블로 잡힐 수 있다.
+    // (1280x960 기준 PNG 약 1.5~2.5MB, 업로드 경로는 PNG를 이미 허용한다)
     canvas.toBlob(blob => {
       if (session.cancelled) return
       setTaking(false)
       if (!blob) { setError('촬영한 사진을 저장하지 못했습니다. 다시 촬영해 주세요.'); return }
-      onCapture(new File([blob], `boa-photo-${Date.now()}.jpg`, { type: 'image/jpeg' }))
+      onCapture(new File([blob], `boa-photo-${Date.now()}.png`, { type: 'image/png' }))
       onClose()
-    }, 'image/jpeg', 0.92)
+    }, 'image/png')
   }
 
   return createPortal(<dialog ref={dialog} className="camera-dialog" aria-labelledby="camera-title" onCancel={event => { event.preventDefault(); onClose() }}>
