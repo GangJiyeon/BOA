@@ -14,10 +14,8 @@ MAX_PHOTO_BYTES = 10 * 1024 * 1024
 
 
 def _read(render: HairRender) -> HairRenderRead:
-    done = render.status == "done"
-
-    def base(name: str) -> HairRenderBase | None:
-        if not done:
+    def base(name: str, ready: bool) -> HairRenderBase | None:
+        if not ready:
             return None
         return HairRenderBase(
             image=hair_studio.asset_url(render.asset_dir, f"{name}.jpg"),
@@ -30,8 +28,11 @@ def _read(render: HairRender) -> HairRenderRead:
         status=render.status,
         error=render.error,
         created_at=render.created_at,
-        light=base("light"),
-        mid=base("mid"),
+        mid=base("mid", render.status == "done"),
+        # 세 칸 생성 이전 결과에는 없음
+        brown=base("brown", render.status == "done" and hair_studio.asset_exists(render.asset_dir, "brown.jpg")),
+        light=base("light", render.status == "done" and hair_studio.asset_exists(render.asset_dir, "light.jpg")),
+        hair_hex=render.hair_hex,
     )
 
 
@@ -80,11 +81,8 @@ async def create_hair_render(
     return _read(render)
 
 
-@router.get("/hair-renders/{render_id}")
-def read_hair_render(
-    render_id: int, actor: Actor = Depends(get_actor), db: Session = Depends(get_db)
-) -> HairRenderRead:
-    """본인(회원 또는 같은 비회원 세션) 결과만 조회"""
+def _own(db: Session, render_id: int, actor: Actor) -> HairRender:
+    """본인(회원 또는 같은 비회원 세션) 결과만, 아니면 404"""
     render = db.get(HairRender, render_id)
     mine = render is not None and (
         (actor.user_id is not None and render.user_id == actor.user_id)
@@ -92,4 +90,11 @@ def read_hair_render(
     )
     if not mine:
         raise HTTPException(404, "합성 결과를 찾을 수 없습니다")
-    return _read(render)
+    return render
+
+
+@router.get("/hair-renders/{render_id}")
+def read_hair_render(
+    render_id: int, actor: Actor = Depends(get_actor), db: Session = Depends(get_db)
+) -> HairRenderRead:
+    return _read(_own(db, render_id, actor))

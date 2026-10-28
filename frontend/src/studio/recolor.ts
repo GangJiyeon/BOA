@@ -60,12 +60,22 @@ export function prepareBase(image: ImageData, maskPixels: Uint8ClampedArray): Pr
   return { width, height, src: data, L, A, B, mask, meanL: sw ? sl / sw : 50, meanA: sw ? sa / sw : 0, meanB: sw ? sb / sw : 0 }
 }
 
+// 이 밝기(L) 미만 목표색은 윤기 유지 방식 (흑발·블루블랙·소프트블랙·다크브라운·와인·버건디·딥퍼플·네이비)
+const DARK_L = 25
+// 머리 평균 밝기가 이보다 높으면 밝은 베이스
+const LIGHT_BASE_L = 50
+
 export function renderColor(base: PreparedBase, color: HairColor, out: Uint8ClampedArray) {
   const t = { ...DEFAULT_TUNING, ...color }
   const [tL0, tA, tB] = rgbToLab(...hexToRgb(color.hex))
   const tL = tL0 + t.lOff
   // 어두운 목표색은 명암 폭을 줄이고 밝은 목표색은 조금 키움
-  const kEff = t.tex * Math.min(1.25, Math.max(0.45, (tL + 10) / (base.meanL + 10)))
+  // 밝은 베이스에서 어둡게 내릴 때는 명암 그대로 (비율로 줄이면 결이 1/3로 줄어 떡져 보임)
+  // 어두운 베이스는 원래 계산 유지 (어두운 색은 이 계산으로 잘 나옴)
+  const lightBase = base.meanL > LIGHT_BASE_L
+  const kEff = lightBase && tL < base.meanL ? 1 : t.tex * Math.min(1.25, Math.max(0.45, (tL + 10) / (base.meanL + 10)))
+  // 아주 어두운 목표색은 비율로 깎으면 결·명암이 절반으로 줄어 칠한 덩어리처럼 보임 → 윤기(밝은 쪽)는 그대로, 그림자만 절반
+  const dark = tL < DARK_L
   const KNEE = 78, TOE = 6
   const tmp = new Uint8ClampedArray(3)
   const { src, L: Ls, A: As, B: Bs, mask, meanL, meanA, meanB } = base
@@ -73,7 +83,10 @@ export function renderColor(base: PreparedBase, color: HairColor, out: Uint8Clam
     const a = mask[i]
     let r = src[p], g = src[p + 1], b = src[p + 2]
     if (a >= 0.004) {
-      let L = tL + (Ls[i] - meanL) * kEff
+      // 밝은 베이스 가장자리는 배경과 섞여 어두운 걸 그대로 옮기면 검은 외곽선이 생김 → 마스크 0.5~0.95 구간에서 명암 차이를 줄임
+      const e = lightBase ? Math.min(1, Math.max(0, (a - 0.5) / 0.45)) : 1
+      const d = (Ls[i] - meanL) * e * e * (3 - 2 * e)
+      let L = tL + (dark ? (d > 0 ? d : d * 0.5) : d * kEff)
       // 100/0에서 딱 잘리지 않게 부드럽게 눌러줌
       if (L > KNEE) L = KNEE + (100 - KNEE) * (1 - Math.exp(-(L - KNEE) / (100 - KNEE)))
       else if (L < TOE) L = TOE * Math.exp((L - TOE) / TOE)

@@ -59,7 +59,9 @@ class StudioIntegrationTests(unittest.TestCase):
                 done=await client.get(f'/api/studio/hair-renders/{render_id}')
                 self.assertEqual(done.status_code,200,done.text)
                 self.assertEqual(done.json()['status'],'done')
-                self.assertTrue(done.json()['light']['image'].endswith('/light.jpg'))
+                self.assertTrue(done.json()['mid']['image'].endswith('/mid.jpg'))
+                self.assertIsNone(done.json()['light'])
+                self.assertIsNone(done.json()['brown'])
                 app.dependency_overrides[get_actor]=lambda:Actor(kind='member',user_id=8)
                 self.assertEqual((await client.get(f'/api/studio/hair-renders/{render_id}')).status_code,404)
         try:asyncio.run(run())
@@ -79,6 +81,29 @@ class StudioIntegrationTests(unittest.TestCase):
                 command.upgrade(config,'heads')
             self.assertIn('hair_renders',inspect(engine).get_table_names())
             with engine.connect() as db:
-                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f0910a1b2c3d','f1a2b3c4d5e6'})
+                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f1010a1b2c3d'})
+                self.assertEqual(db.scalar(text('SELECT count(*) FROM hair_style_catalog')),1)
+            engine.dispose()
+
+    def test_upgrade_from_team_studio_head_preserves_hair_rows(self):
+        with TemporaryDirectory() as folder:
+            url='sqlite:///'+str(Path(folder)/'team-first.db')
+            engine=create_engine(url)
+            Base.metadata.create_all(engine,tables=[t for t in Base.metadata.sorted_tables if t.name!='moisture_observations'])
+            with Session(engine) as db:
+                seed_style(db)
+                db.add(HairRender(style_id='bob', status='done', asset_dir='existing-team-render', hair_hex='#342820'))
+                db.commit()
+            with engine.begin() as db:
+                db.execute(text('CREATE TABLE alembic_version (version_num VARCHAR(32) PRIMARY KEY)'))
+                db.execute(text("INSERT INTO alembic_version VALUES ('b2c3d4e5f6a7')"))
+            config=Config(str(Path(__file__).parents[1]/'alembic.ini'))
+            with patch('app.core.config.get_settings',return_value=SimpleNamespace(database_url=url)):
+                command.upgrade(config,'head')
+                command.upgrade(config,'head')
+            self.assertIn('moisture_observations',inspect(engine).get_table_names())
+            with engine.connect() as db:
+                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f1010a1b2c3d'})
+                self.assertEqual(db.scalar(text('SELECT hair_hex FROM hair_renders')),'#342820')
                 self.assertEqual(db.scalar(text('SELECT count(*) FROM hair_style_catalog')),1)
             engine.dispose()

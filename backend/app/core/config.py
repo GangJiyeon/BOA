@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     # 둔해지므로 거부한다. 거부율이 높으면 이 값을 낮춘다.
     min_face_width_px: int = 250
 
+    # 피부 분석 카메라 프로필 (기기별 색 보정·홍조 범위). skin_analysis.CAMERA_PROFILES의 키.
+    # phone: 휴대폰 사진 기준(기본값), webcam: 720p 웹캠 임시값
+    skin_camera_profile: str = "phone"
+
     aws_region: str = "ap-northeast-2"
     s3_bucket: str = ""
     # 비어 있으면 boto3가 기본 자격증명(EC2 IAM Role 등)을 사용한다
@@ -56,14 +60,15 @@ class Settings(BaseSettings):
 
     # AI 스튜디오 (Gemini 이미지 편집, 키 비우면 503)
     gemini_api_key: str = ""
-    # 헤어스타일 합성용 / 색만 바꾸는 중간 베이스용
-    # 얼굴은 원본을 쓰므로 Flash로 충분 (Pro 대비 절반 가격), 더 줄이려면 gemini-3.1-flash-lite-image
+    # 헤어스타일 합성용
     studio_style_model: str = "gemini-3.1-flash-image"
-    studio_recolor_model: str = "gemini-3.1-flash-lite-image"
     guest_daily_limit_studio: int = 2
     # 결과 저장 폴더 (/static/studio/... 로 제공), 보관 일수
     studio_dir: str = "static/studio"
     studio_keep_days: int = 7
+    # 개발용, 원본·AI 원본 결과를 studio_debug_dir에 남김 (합성 조정을 AI 재호출 없이), 배포 시 false
+    studio_debug: bool = False
+    studio_debug_dir: str = "studio_debug"
     # 머리·피부 분할 모델 (없으면 첫 사용 때 내려받음)
     hair_seg_model_path: str = "ml_assets/selfie_multiclass_256x256.tflite"
 

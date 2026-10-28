@@ -21,7 +21,7 @@ dom.window.HTMLMediaElement.prototype.play=async()=>{}
 Object.defineProperty(dom.window.HTMLVideoElement.prototype,'videoWidth',{get:()=>1280})
 Object.defineProperty(dom.window.HTMLVideoElement.prototype,'videoHeight',{get:()=>960})
 dom.window.HTMLCanvasElement.prototype.getContext=()=>({translate(){},scale(){},drawImage(){}})
-dom.window.HTMLCanvasElement.prototype.toBlob=function(callback,type){assert.equal(type,'image/jpeg');captured.push(++shot);callback(new Blob([`shot:${shot}`],{type}))}
+dom.window.HTMLCanvasElement.prototype.toBlob=function(callback,type){assert.equal(type,'image/png');captured.push(++shot);callback(new Blob([`shot:${shot}`],{type}))}
 const catalog=[{style_id:'bob',name:'칼단발',sex:'female',length:'short',texture:'straight',image:null}]
 const rec={run_id:9,recommendations:[{style_id:'bob',name:'칼단발',rank:1,score:.9,image:null}]}
 const json=(value,status=200)=>new Response(JSON.stringify(value),{status})
@@ -49,7 +49,7 @@ async function take(text='사진 찍기'){
  assert.equal(requests.filter(r=>r.url.includes('face-analysis')).length,0,'capture alone does not upload')
  await click('얼굴 분석하고 헤어 추천받기')
  let face=requests.filter(r=>r.url.includes('face-analysis')).at(-1)
- assert.equal(face.init.body.getAll('photos').length,1);assert.equal(face.init.body.get('photos').type,'image/jpeg')
+ assert.equal(face.init.body.getAll('photos').length,1);assert.equal(face.init.body.get('photos').type,'image/png')
  assert.equal(await results.at(-1).photo.text(),'shot:1')
  await take('다음 사진 찍기');assert.equal(document.querySelectorAll('.photo-preview').length,2)
  assert(document.querySelector('.recommend-button').disabled)
@@ -79,5 +79,5 @@ async function take(text='사진 찍기'){
  defer=false;await click('사진 찍기');await act(async()=>window.dispatchEvent(new dom.window.HashChangeEvent('hashchange')))
  assert(!document.querySelector('dialog'));assert(streams.at(-1).stops>=1)
  await act(async()=>root.unmount());dom.window.close();fs.rmSync(dir,{recursive:true,force:true})
- console.log('Camera DOM: hair 1/3-shot input, ordered retake, front photo handoff, Studio JPEG upload, permission fallback, late permission cleanup and navigation shutdown passed (camera mocked)');process.exit(0)
+ console.log('Camera DOM: hair 1/3-shot input, ordered retake, front photo handoff, Studio PNG upload, permission fallback, late permission cleanup and navigation shutdown passed (camera mocked)');process.exit(0)
 })().catch(error=>{console.error(error);dom.window.close();process.exit(1)})

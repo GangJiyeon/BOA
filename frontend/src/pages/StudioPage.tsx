@@ -82,7 +82,7 @@ export default function StudioPage({hair,onUsed}:{hair:HairSessionResult|null;on
       setRender({value,styleName:style.name})
     })
   }
-  return <section><PageIntro eyebrow="AI STUDIO" title="AI 헤어 스튜디오">사진과 스타일을 골라 합성하고, 40가지 머리색을 바꿔 보세요.</PageIntro>
+  return <section><PageIntro eyebrow="AI STUDIO" title="AI 헤어 스튜디오">사진과 스타일을 골라 합성하고, 32가지 머리색을 바꿔 보세요.</PageIntro>
     <section className="form-card studio-entry">
       <h3>시작 방법</h3><div className="button-row" role="group" aria-label="스튜디오 시작 방법">
         <button type="button" aria-pressed={activeMode==='catalog'} disabled={task.busy} onClick={()=>changeMode('catalog')}>사진 업로드 · 직접 선택</button>
