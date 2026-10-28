@@ -238,4 +238,5 @@ desktop.ini
 backend/data/*.db
 # AI 스튜디오 생성 결과·분할 모델
 backend/static/studio/
+backend/studio_debug/
 backend/ml_assets/

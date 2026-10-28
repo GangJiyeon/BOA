@@ -15,6 +15,8 @@ class HairRenderRead(BaseModel):
     status: Literal["pending", "done", "failed"]
     error: str | None
     created_at: datetime
-    # done일 때만 채움, light = 밝은 애쉬 블론드 / mid = 중간 브라운
-    light: HairRenderBase | None = None
+    # 세 베이스는 합성 완료 시 함께 제공
     mid: HairRenderBase | None = None
+    brown: HairRenderBase | None = Field(None, description="중간 갈색 베이스 (중간톤 색용)")
+    light: HairRenderBase | None = None
+    hair_hex: str | None = Field(None, description="원본 사진 속 머리색 #rrggbb")

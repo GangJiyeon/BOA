@@ -1,7 +1,7 @@
 """AI 스튜디오 헤어 합성 결과
 
 요청 1건 = 1행, 이미지 파일은 studio_dir/{asset_dir}/ 아래
-(light.jpg, light_mask.png, mid.jpg, mid_mask.png)
+(mid.jpg, brown.jpg, light.jpg와 각 머리 마스크)
 원본 얼굴 사진은 저장 안 함
 """
 
@@ -31,6 +31,8 @@ class HairRender(Base):
     error: Mapped[str | None] = mapped_column(String(300))
     # 추측 불가 폴더명 (공개 static 경로라서)
     asset_dir: Mapped[str] = mapped_column(String(64), unique=True)
+    # 원본 사진 속 머리색 (#rrggbb, 원본 사진 대신 색만 저장)
+    hair_hex: Mapped[str | None] = mapped_column(String(7))
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
