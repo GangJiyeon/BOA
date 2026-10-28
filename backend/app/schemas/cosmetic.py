@@ -38,6 +38,8 @@ class CosmeticPreviewRequest(BaseModel):
 
     scores: SkinScoresInput | Annotated[list[AnalysisMetricScore], Field(min_length=4, max_length=5)]
     score_semantics: Literal["photo_v1", "development_assumption"] = "photo_v1"
+    moisture_analysis_id: int | None = Field(default=None, strict=True, gt=0)
+    moisture_measurement_id: str | None = Field(default=None, pattern=r"^[0-9a-fA-F-]{36}$")
     category: ProductCategory | None = None
     ranking_policy: RankingMode = "metric_count"
     priority_metric: MetricCode | None = None
@@ -46,6 +48,7 @@ class CosmeticPreviewRequest(BaseModel):
     snapshot_token: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")] | None = None
     # 높은 홍조 점수에서 적용하는 보수적인 프로젝트 필터. 질환 진단이 아님.
     avoid_redness_triggers: bool = True
+    avoid_dryness_triggers: bool = False
     excluded_ingredients: list[Annotated[str, Field(min_length=1, max_length=255)]] = Field(
         default_factory=list, max_length=30
     )
@@ -58,6 +61,8 @@ class CosmeticPreviewRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_analysis_scores(self):
+        if (self.moisture_analysis_id is None) != (self.moisture_measurement_id is None):
+            raise ValueError('수분 분석 ID와 측정 ID가 함께 필요합니다.')
         if isinstance(self.scores, list):
             codes = [s.metric_code for s in self.scores]
             if len(codes) != len(set(codes)):
@@ -77,6 +82,9 @@ class CosmeticPreviewRequest(BaseModel):
 
 
 class MetricAssessment(BaseModel):
+    score_max: int = 100
+    moisture_level: int | None = None
+    moisture_level_label: str | None = None
     code: MetricCode
     name: str
     score: int
@@ -118,6 +126,7 @@ class SharedEvidenceGroup(BaseModel):
 
 
 class CosmeticRecommendationItem(BaseModel):
+    hydration_support: list[str] = Field(default_factory=list)
     rank: int
     product_id: int
     product_name: str
@@ -136,6 +145,8 @@ class CosmeticRecommendationItem(BaseModel):
     daily_care_ingredients: list[str] = Field(default_factory=list)
     daily_care_rules: list[RuleExplanation] = Field(default_factory=list)
     shared_evidence_groups: list[SharedEvidenceGroup] = Field(default_factory=list)
+    sensor_auxiliary_bonus: float = 0
+    sensor_auxiliary_ingredients: list[str] = Field(default_factory=list)
     recommendation_reason: str
     bundle_suspected: bool
     usage_mode: UsageMode
@@ -160,9 +171,11 @@ class RankingTieGroup(BaseModel):
 
 
 class CosmeticPreviewResponse(BaseModel):
+    hydration_policy: dict | None = None
     recommendation_mode: RecommendationMode = "improvement"
     daily_care_reason: Literal["no_improvement_targets", "no_supported_matching_rules"] | None = None
     recommendation_notice: str = ""
+    sensor_auxiliary: dict | None = None
     score_semantics: Literal["photo_v1", "development_assumption"] = "photo_v1"
     snapshot_token: str = ""
     tie_groups: list[RankingTieGroup] = Field(default_factory=list)

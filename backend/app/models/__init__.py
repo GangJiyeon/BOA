@@ -51,5 +51,7 @@ from app.models.cosmetic_rule import CategoryIngredient, CosmeticRuleEvidence, C
 __all__ += ["CategoryIngredient", "CosmeticRuleEvidence", "CosmeticRuleSet"]
 from app.models.cosmetic_observation import CosmeticObservationBatch, ProductIngredientObservation
 __all__ += ["CosmeticObservationBatch", "ProductIngredientObservation"]
+from app.models.moisture import MoistureObservation
+__all__ += ['MoistureObservation']
 from app.models.studio import HairRender
-__all__ += ["HairRender"]
+__all__ += ['HairRender']

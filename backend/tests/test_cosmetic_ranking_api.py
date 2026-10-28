@@ -14,18 +14,19 @@ def products():
 
 
 class RankingEngineIntegrationTests(unittest.TestCase):
-    def test_default_preserves_legacy_order(self):
+    def test_default_preserves_metric_count_then_applies_hydration_tie_policy(self):
         r = f.run(products())
-        self.assertEqual([p.product_id for p in r.recommendations], [1, 2, 3])
+        self.assertEqual([p.product_id for p in r.recommendations], [2, 1, 3])
         self.assertEqual(r.ranking_policy, "metric_count")
         self.assertEqual(r.recommendations[0].match_count, 2)
-        self.assertEqual(r.recommendations[0].matched_group_count, 1)
+        self.assertEqual(r.recommendations[0].matched_group_count, 2)
+        self.assertEqual(r.recommendations[1].matched_group_count, 1)
 
     def test_groups_change_order_without_rewriting_metric_matches(self):
         r = f.run(products(), f.request(ranking_policy="concern_groups"))
-        self.assertEqual([p.product_id for p in r.recommendations], [2, 1, 3])
-        self.assertEqual(r.recommendations[1].match_count, 2)
-        self.assertEqual(r.recommendations[1].ranking_tie_count, 2)
+        self.assertEqual([p.product_id for p in r.recommendations], [2, 3, 1])
+        self.assertEqual(r.recommendations[2].match_count, 2)
+        self.assertEqual(r.recommendations[1].ranking_tie_count, 1)
         self.assertIn("밝기·균일도 통합", r.ranking_basis)
 
     def test_explicit_priority_changes_order(self):

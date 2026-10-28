@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     moisture_allow_simulation: bool = False
+    moisture_calibration_profile: str = ""
 
     database_url: str
 

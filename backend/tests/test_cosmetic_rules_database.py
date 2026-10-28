@@ -34,7 +34,7 @@ class RuleDatabaseTests(unittest.TestCase):
             self.assertEqual(load_database_rules(db).fingerprint(), load_seed_bundle().fingerprint())
             report = seed_rule_bundle(db, load_seed_bundle(), apply=True)
             self.assertEqual(report['action'], 'unchanged')
-            self.assertEqual(db.scalar(select(func.count()).select_from(CategoryIngredient)), 20)
+            self.assertEqual(db.scalar(select(func.count()).select_from(CategoryIngredient)), 35)
 
     def test_api_explains_sources_and_version_from_database(self):
         status, data = asyncio.run(fixtures.asgi_request(fixtures.request().model_dump()))
@@ -110,6 +110,11 @@ class SeedAndMigrationTests(unittest.TestCase):
         with self.engine.begin() as conn:
             with patch.object(self.migration, 'op', Operations(MigrationContext.configure(conn))):
                 self.migration.upgrade()
+        hydration_path=Path(__file__).resolve().parents[1]/'alembic/versions/2026_10_28_0000-f0910a1b2c3d_hydration_policy.py'
+        hydration_spec=importlib.util.spec_from_file_location('hydration_migration',hydration_path)
+        hydration=importlib.util.module_from_spec(hydration_spec);hydration_spec.loader.exec_module(hydration)
+        with self.engine.begin() as conn:
+            with patch.object(hydration,'op',Operations(MigrationContext.configure(conn))):hydration.upgrade()
         with Session(self.engine) as db:
             seed_metrics(db)
             # 실제 PostgreSQL ID를 가정하지 않고 다른 ID로도 연결되는지 확인.

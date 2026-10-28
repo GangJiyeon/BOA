@@ -1,7 +1,9 @@
 import { api } from './client'
+import type { CompletedReceipt } from './moisture'
 import type { AnalysisMetricScore } from './cosmetics'
 
 export type SkinAnalysis = {
+  moisture_measurement?: CompletedReceipt | null
   id: number
   logic_version: string
   moisture_source: 'none' | 'manual' | 'sensor'

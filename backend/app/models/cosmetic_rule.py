@@ -32,10 +32,10 @@ class CategoryIngredient(Base):
         UniqueConstraint("rule_version", "category_id", "ingredient_id", "effect", name="uq_category_ingredient_rule"),
         ForeignKeyConstraint(["rule_version", "evidence_code"], ["cosmetic_rule_evidence.rule_version", "cosmetic_rule_evidence.code"]),
         CheckConstraint("status IN ('active', 'deferred')", name="rule_status"),
-        CheckConstraint("effect IN ('match', 'exclude', 'caution')", name="rule_effect"),
+        CheckConstraint("effect IN ('match', 'exclude', 'caution', 'maintain')", name="rule_effect"),
         CheckConstraint("(effect = 'match' AND match_score = 1) OR (effect <> 'match' AND match_score = 0)", name="rule_score"),
         CheckConstraint("(effect = 'exclude' AND hard_exclude) OR (effect <> 'exclude' AND NOT hard_exclude)", name="rule_exclusion"),
-        CheckConstraint("condition IN ('always', 'redness_opt_in')", name="rule_condition"),
+        CheckConstraint("condition IN ('always', 'redness_opt_in', 'dryness_opt_in')", name="rule_condition"),
         CheckConstraint("usage_scope = 'leave_on_candidate'", name="rule_usage"),
     )
     rule_version: Mapped[str] = mapped_column(ForeignKey("cosmetic_rule_sets.version"), primary_key=True)
