@@ -20,13 +20,15 @@ def closest_aspect(width: int, height: int) -> str:
     return min(ASPECT_RATIOS, key=lambda k: abs(ASPECT_RATIOS[k] - ratio))
 
 
-def edit_image(model: str, images: list[bytes], prompt: str, aspect: str, timeout: float = 180) -> bytes:
-    """이미지(JPEG) 여러 장 + 프롬프트 → 생성 이미지 바이트"""
+def edit_image(model: str, images: list[bytes], prompt: str, aspect: str, timeout: float = 180, size: str | None = None) -> bytes:
+    """이미지(JPEG) 여러 장 + 프롬프트 → 생성 이미지 바이트, size는 출력 크기 (\"2K\" 등, 없으면 모델 기본 1K)"""
     parts = [{"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(b).decode()}} for b in images]
     body = {
         "contents": [{"parts": [*parts, {"text": prompt}]}],
         "generationConfig": {"responseModalities": ["IMAGE"], "imageConfig": {"aspectRatio": aspect}},
     }
+    if size:
+        body["generationConfig"]["imageConfig"]["imageSize"] = size
     try:
         res = httpx.post(
             API.format(model=model),

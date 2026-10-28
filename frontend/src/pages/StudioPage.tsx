@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createHairRender, getHairRender, type HairRender } from '../api/studio'
+import { createHairRender, getHairRender, wait, type HairRender } from '../api/studio'
 import PageIntro from '../components/PageIntro'
 import Icon from '../components/Icon'
 import { TaskStatus } from '../components/Shared'
@@ -9,13 +9,6 @@ import type { HairSessionResult } from '../types/sessionResults'
 
 const POLL_MS = 2000
 const POLL_LIMIT = 90 // 약 3분
-
-function wait(ms: number, signal: AbortSignal) {
-  return new Promise<void>((resolve, reject) => {
-    const id = setTimeout(resolve, ms)
-    signal.addEventListener('abort', () => { clearTimeout(id); reject(new DOMException('aborted', 'AbortError')) }, { once: true })
-  })
-}
 
 export default function StudioPage({ hair, onUsed }: { hair: HairSessionResult | null; onUsed: () => void }) {
   const task = useTask()
@@ -44,7 +37,7 @@ export default function StudioPage({ hair, onUsed }: { hair: HairSessionResult |
     })
   }
 
-  return <section><PageIntro eyebrow="AI STUDIO" title="AI 헤어 스튜디오">추천 스타일을 내 사진에 입혀 보고, 40가지 색으로 바로 바꿔 보세요.</PageIntro>
+  return <section><PageIntro eyebrow="AI STUDIO" title="AI 헤어 스튜디오">추천 스타일을 내 사진에 입혀 보고, 32가지 색으로 바로 바꿔 보세요.</PageIntro>
     <section className="form-card"><div className="card-heading"><span className="step-number">01</span><div><h3>입어볼 스타일</h3><p>얼굴형 분석 #{hair.analysis.id} · {hair.analysis.face_shape} 추천 결과</p></div></div>
       <fieldset className="studio-styles" disabled={task.busy}><legend className="sr-only">합성할 헤어스타일</legend>
         {recs.map(item => <label key={item.style_id} className={`studio-style${item.style_id === styleId ? ' selected' : ''}`}>
