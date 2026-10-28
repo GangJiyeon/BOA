@@ -73,3 +73,36 @@ def rank_candidates(candidates: list[CosmeticRecommendationItem], mode: RankingM
     ordered = sorted(candidates, key=lambda p: (*features[p.product_id][0], p.product_id))
     return [RankedCandidate(p, i, features[p.product_id][1], features[p.product_id][2],
                             ties[features[p.product_id][0]]) for i, p in enumerate(ordered, 1)]
+
+
+def apply_sensor_tiebreak(ordered: list[RankedCandidate]) -> list[RankedCandidate]:
+    """Split only existing tie groups. Preserve all primary ranking/exclusion policies."""
+    result = []
+    start = 0
+    while start < len(ordered):
+        size = ordered[start].tie_count
+        rows = ordered[start:start+size]
+        rows = sorted(rows, key=lambda r: (-r.product.sensor_auxiliary_bonus, r.product.product_id))
+        ties = Counter(r.product.sensor_auxiliary_bonus for r in rows)
+        for row in rows:
+            result.append(RankedCandidate(row.product, len(result)+1, row.group_count,
+                                          row.priority_matched, ties[row.product.sensor_auxiliary_bonus]))
+        start += size
+    return result
+
+
+def apply_hydration_tiebreak(ordered: list[RankedCandidate]) -> list[RankedCandidate]:
+    """Low hydration only: prefer complementary support within existing ties.
+
+    Counts functional groups, not ingredient quantity or clinical efficacy.
+    Existing metric/priority/bundle tiers remain intact.
+    """
+    result=[];start=0
+    while start<len(ordered):
+        size=ordered[start].tie_count
+        rows=sorted(ordered[start:start+size],key=lambda r:(-len(r.product.hydration_support),r.product.product_id))
+        ties=Counter(len(r.product.hydration_support) for r in rows)
+        for row in rows:
+            result.append(RankedCandidate(row.product,len(result)+1,row.group_count,row.priority_matched,ties[len(row.product.hydration_support)]))
+        start+=size
+    return result

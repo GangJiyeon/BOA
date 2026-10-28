@@ -5,6 +5,7 @@ from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
+from app.schemas.moisture import CompletedReceipt
 
 MoistureSource = Literal["sensor", "manual", "none"]
 
@@ -52,6 +53,7 @@ class ScoreRead(BaseModel):
 
 
 class AnalysisRead(BaseModel):
+    moisture_measurement: CompletedReceipt | None = None
     id: int
     analyzed_at: datetime
     logic_version: str

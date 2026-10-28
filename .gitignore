@@ -236,3 +236,6 @@ desktop.ini
 
 # Local cosmetic dataset
 backend/data/*.db
+backend/static/studio/
+
+backend/ml_assets/

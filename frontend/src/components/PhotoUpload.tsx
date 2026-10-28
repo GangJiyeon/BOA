@@ -1,12 +1,20 @@
-import { useId, useRef, useState } from 'react'
+import { useCallback, useId, useRef, useState } from 'react'
 import PhotoPreview from './PhotoPreview'
 import Icon from './Icon'
+import CameraCapture from './CameraCapture'
+import './PhotoUpload.css'
 
 export default function PhotoUpload({ files, onChange, multiple = false, disabled = false }: { files: File[]; onChange: (files: File[]) => void; multiple?: boolean; disabled?: boolean }) {
   const input = useRef<HTMLInputElement>(null)
   const id = useId()
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState('')
+  const [camera, setCamera] = useState<{index:number}|null>(null)
+  const closeCamera = useCallback(() => setCamera(null), [])
+  function openCamera(index:number) {
+    if(disabled)return
+    setError('');setCamera({index})
+  }
   function select(next: File[]) {
     if (disabled) return
     setError('')
@@ -21,16 +29,22 @@ export default function PhotoUpload({ files, onChange, multiple = false, disable
       <span className="upload-icon"><Icon name="upload" size={27} /></span>
       <strong>{multiple ? '얼굴 사진을 선택해 주세요' : '정면 얼굴 사진을 올려 주세요'}</strong>
       <p>{multiple ? '정면 1장 또는 정면·좌·우 3장' : '얼굴이 잘 보이는 사진 1장'}<br />사진을 끌어 놓거나 아래 버튼을 눌러 주세요.</p>
-      <label className="button upload-button" htmlFor={id}>{files.length ? '사진 다시 선택' : '사진 선택'}<input ref={input} id={id} className="file-picker" type="file" accept="image/jpeg,image/png,image/webp" multiple={multiple} disabled={disabled}
+      <div className="photo-input-actions">
+      <button type="button" disabled={disabled||(multiple&&files.length>=3)} onClick={()=>openCamera(multiple?files.length:0)}><Icon name="camera" size={18}/>{multiple?(files.length>=3?'3장 촬영 완료':files.length?'다음 사진 찍기':'사진 찍기'):files.length?'다시 찍기':'사진 찍기'}</button>
+      <label className="button secondary upload-button" htmlFor={id}>{files.length ? '사진 다시 선택' : '사진 선택'}<input ref={input} id={id} className="file-picker" type="file" accept="image/jpeg,image/png,image/webp" multiple={multiple} disabled={disabled}
         aria-label={multiple ? '얼굴 사진 · 1장 또는 3장' : '정면 얼굴 사진'}
         onChange={event => { const next = Array.from(event.target.files ?? []); if (next.length) select(next); event.target.value = '' }} /></label>
+      </div>
       <small>JPG · PNG · WEBP</small>
     </div>
     {error && <p role="alert" className="error-box">{error}</p>}
     {multiple && files.length === 2 && <p role="status" className="photo-count-note">현재 2장입니다. 분석하려면 정면 1장만 남기거나, ‘사진 다시 선택’에서 정면·좌·우 3장을 함께 선택해 주세요.</p>}
     {files.length > 0 && <div className="selected-photos"><div className="selected-heading"><span>{files.length}장 선택됨</span><button type="button" className="text-button" disabled={disabled} onClick={() => { select([]); if (input.current) input.current.value = '' }}>전체 지우기</button></div>
-      <div className="photo-strip">{files.map((file, index) => <div className="photo-item" key={`${file.name}:${file.lastModified}:${index}`}><PhotoPreview file={file} /><button type="button" className="remove-photo" aria-label={`${index + 1}번째 사진 삭제`} disabled={disabled} onClick={() => select(files.filter((_, i) => i !== index))}><Icon name="close" size={14} /></button></div>)}</div>
+      <div className="photo-strip">{files.map((file, index) => <div className="photo-item" key={`${file.name}:${file.lastModified}:${index}`}><PhotoPreview file={file} /><button type="button" className="text-button photo-retake" disabled={disabled} aria-label={`${index+1}번째 사진 다시 촬영`} onClick={()=>openCamera(index)}>다시 찍기</button><button type="button" className="remove-photo" aria-label={`${index + 1}번째 사진 삭제`} disabled={disabled} onClick={() => select(files.filter((_, i) => i !== index))}><Icon name="close" size={14} /></button></div>)}</div>
     </div>}
+    {camera&&!disabled&&<CameraCapture onClose={closeCamera} instruction={multiple?`${['정면','왼쪽 측면','오른쪽 측면'][camera.index]} 사진을 촬영해 주세요. 정면 1장 또는 서로 다른 각도의 3장을 사용할 수 있어요.`:undefined} onCapture={photo=>{
+      const next=[...files];next[camera.index]=photo;select(next)
+    }}/>} 
     <p className="photo-tip"><Icon name="info" size={16} />밝은 곳에서 얼굴을 가리지 않고 촬영하면 분석에 도움이 됩니다.</p>
   </div>
 }

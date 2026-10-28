@@ -25,5 +25,9 @@ export function useMoisture() {
       : new BleMoistureAdapter(observer, (navigator as Navigator & { bluetooth?: Bluetooth }).bluetooth, window.isSecureContext)
     void adapter.current.connect().catch(e => observer.error(String(e)))
   }
-  return { state, measurement, error, connect, disconnect }
+  const calibrate = async () => {
+    if (!adapter.current?.calibrate) throw new Error('이 연결은 보정을 지원하지 않습니다.')
+    await adapter.current.calibrate()
+  }
+  return { state, measurement, error, connect, disconnect, calibrate }
 }

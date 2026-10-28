@@ -19,6 +19,7 @@ from app.api.routes import (
     qr,
     skin,
     moisture,
+    studio,
     terms,
 )
 from app.core.config import get_settings
@@ -58,6 +59,7 @@ api.include_router(skin.router)
 api.include_router(moisture.router)
 api.include_router(cosmetics.router)
 api.include_router(hair.router)
+api.include_router(studio.router)
 api.include_router(actor.router)
 api.include_router(terms.router)
 api.include_router(guest.router)

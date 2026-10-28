@@ -1,0 +1,415 @@
+{
+  "database": "isolated in-memory SQLite; source read-only",
+  "source_counts": [
+    2584,
+    3099,
+    76970
+  ],
+  "dry_run": {
+    "version": "cosmetic-rules-2026-10-28-hydration-v1",
+    "rules": 35,
+    "evidence": 12,
+    "active_matches": 8,
+    "active_exclusions": 11,
+    "deferred": 6,
+    "action": "dry_run"
+  },
+  "applied": {
+    "version": "cosmetic-rules-2026-10-28-hydration-v1",
+    "rules": 35,
+    "evidence": 12,
+    "active_matches": 8,
+    "active_exclusions": 11,
+    "deferred": 6,
+    "action": "insert"
+  },
+  "repeat": {
+    "version": "cosmetic-rules-2026-10-28-hydration-v1",
+    "rules": 35,
+    "evidence": 12,
+    "active_matches": 8,
+    "active_exclusions": 11,
+    "deferred": 6,
+    "action": "unchanged"
+  },
+  "coverage": {
+    "글리세린": 1771,
+    "판테놀": 995,
+    "하이알루로닉애씨드": 525,
+    "나이아신아마이드": 1039,
+    "살리실릭애씨드": 108,
+    "향료": 507,
+    "에탄올": 92,
+    "변성알코올": 151,
+    "멘톨": 13,
+    "글라이콜릭애씨드": 36,
+    "락틱애씨드": 72,
+    "캠퍼": 2,
+    "우레아": 47,
+    "소듐하이알루로네이트": 1141,
+    "세라마이드엔피": 636,
+    "병풀추출물": 447,
+    "다이메티콘": 271,
+    "페트롤라툼": 9
+  },
+  "scenarios": {
+    "five_concerns": {
+      "stats": {
+        "total_products": 2584,
+        "unsupported_category": 317,
+        "incomplete_ingredients": 489,
+        "excluded_by_usage": 53,
+        "excluded_by_ingredient": 602,
+        "no_matching_metric": 46,
+        "no_daily_care_ingredient": 0,
+        "eligible_products": 1077
+      },
+      "scorable_target_count": 4,
+      "hydration_policy": {
+        "version": "hydration-care-v1",
+        "state": "low",
+        "basis": "supplied_moisture_category",
+        "strategy": "보습 성분과 수분 손실 억제 성분을 우선합니다.",
+        "dryness_exclusion_enabled": false
+      },
+      "applied_exclusions": [
+        "글라이콜릭애씨드",
+        "락틱애씨드",
+        "멘톨",
+        "변성알코올",
+        "에탄올",
+        "우레아",
+        "캠퍼",
+        "향료"
+      ],
+      "top5": [
+        {
+          "id": "A000000182721",
+          "name": "케어존 아큐어 클래리파잉 에멀전 200ml",
+          "matches": 4
+        },
+        {
+          "id": "A000000255499",
+          "name": "[~9/30 미니어처 증정] 쿠피 멜라스마 클리어 기미잡티톤업크림 50ml",
+          "matches": 4
+        },
+        {
+          "id": "A000000117997",
+          "name": "썸바이미 아하바하파하 30 데이즈 미라클 토너 150ml",
+          "matches": 4
+        },
+        {
+          "id": "A000000182685",
+          "name": "[트러블로션] 에스트라 테라크네365 수딩 액티브 모이스처라이저 60ml",
+          "matches": 4
+        },
+        {
+          "id": "A000000182686",
+          "name": "에스트라 테라크네365 하이드로 액티브 토너 200ml",
+          "matches": 4
+        }
+      ]
+    },
+    "screenshot": {
+      "stats": {
+        "total_products": 2584,
+        "unsupported_category": 317,
+        "incomplete_ingredients": 489,
+        "excluded_by_usage": 53,
+        "excluded_by_ingredient": 602,
+        "no_matching_metric": 502,
+        "no_daily_care_ingredient": 0,
+        "eligible_products": 621
+      },
+      "scorable_target_count": 3,
+      "hydration_policy": {
+        "version": "hydration-care-v1",
+        "state": "normal",
+        "basis": "supplied_moisture_category",
+        "strategy": "현재 보습 상태를 유지하며 다른 개선 지표를 함께 반영합니다.",
+        "dryness_exclusion_enabled": false
+      },
+      "applied_exclusions": [
+        "글라이콜릭애씨드",
+        "락틱애씨드",
+        "멘톨",
+        "변성알코올",
+        "에탄올",
+        "우레아",
+        "캠퍼",
+        "향료"
+      ],
+      "top5": [
+        {
+          "id": "A000000117997",
+          "name": "썸바이미 아하바하파하 30 데이즈 미라클 토너 150ml",
+          "matches": 3
+        },
+        {
+          "id": "A000000182685",
+          "name": "[트러블로션] 에스트라 테라크네365 수딩 액티브 모이스처라이저 60ml",
+          "matches": 3
+        },
+        {
+          "id": "A000000182686",
+          "name": "에스트라 테라크네365 하이드로 액티브 토너 200ml",
+          "matches": 3
+        },
+        {
+          "id": "A000000182721",
+          "name": "케어존 아큐어 클래리파잉 에멀전 200ml",
+          "matches": 3
+        },
+        {
+          "id": "A000000192300",
+          "name": "[김재원 PICK] 몰바니 볼륨 인크리징 프로틴 크림 100ml",
+          "matches": 3
+        }
+      ]
+    },
+    "moisture_only": {
+      "stats": {
+        "total_products": 2584,
+        "unsupported_category": 317,
+        "incomplete_ingredients": 489,
+        "excluded_by_usage": 53,
+        "excluded_by_ingredient": 0,
+        "no_matching_metric": 106,
+        "no_daily_care_ingredient": 0,
+        "eligible_products": 1619
+      },
+      "scorable_target_count": 1,
+      "hydration_policy": {
+        "version": "hydration-care-v1",
+        "state": "low",
+        "basis": "supplied_moisture_category",
+        "strategy": "보습 성분과 수분 손실 억제 성분을 우선합니다.",
+        "dryness_exclusion_enabled": false
+      },
+      "applied_exclusions": [],
+      "top5": [
+        {
+          "id": "A000000002848",
+          "name": "[SNS 대란템]바이오더마 세비엄 포어 리파이너",
+          "matches": 1
+        },
+        {
+          "id": "A000000005336",
+          "name": "바이오더마 하이드라비오 세럼 40ml",
+          "matches": 1
+        },
+        {
+          "id": "A000000006014",
+          "name": "[닥터이아소] 트리플 엠 하이드레이팅 크림",
+          "matches": 1
+        },
+        {
+          "id": "A000000016749",
+          "name": "라끄베르 옴므 리차지 에멀전 180ml",
+          "matches": 1
+        },
+        {
+          "id": "A000000016808",
+          "name": "유세린 볼륨리프팅 나이트 크림 50ml",
+          "matches": 1
+        }
+      ]
+    },
+    "moisture_low_exclusions": {
+      "stats": {
+        "total_products": 2584,
+        "unsupported_category": 317,
+        "incomplete_ingredients": 489,
+        "excluded_by_usage": 53,
+        "excluded_by_ingredient": 527,
+        "no_matching_metric": 62,
+        "no_daily_care_ingredient": 0,
+        "eligible_products": 1136
+      },
+      "scorable_target_count": 1,
+      "hydration_policy": {
+        "version": "hydration-care-v1",
+        "state": "low",
+        "basis": "supplied_moisture_category",
+        "strategy": "보습 성분과 수분 손실 억제 성분을 우선합니다.",
+        "dryness_exclusion_enabled": true
+      },
+      "applied_exclusions": [
+        "변성알코올",
+        "에탄올",
+        "향료"
+      ],
+      "top5": [
+        {
+          "id": "A000000103320",
+          "name": "코스알엑스 오일-프리 울트라 모이스쳐라이징 로션 100ml",
+          "matches": 1
+        },
+        {
+          "id": "A000000104173",
+          "name": "크리니크 노란에센스로션 125ml",
+          "matches": 1
+        },
+        {
+          "id": "A000000104972",
+          "name": "크리니크 포 맨 모이스춰라이징 로션 100ml",
+          "matches": 1
+        },
+        {
+          "id": "A000000112890",
+          "name": "[올리브베러단독] 라로슈포제 똘러리앙 센시티브 크림",
+          "matches": 1
+        },
+        {
+          "id": "A000000128084",
+          "name": "에르쯔틴 리제너레이티브 실트 크림 50g",
+          "matches": 1
+        }
+      ]
+    },
+    "moisture_normal": {
+      "stats": {
+        "total_products": 2584,
+        "unsupported_category": 317,
+        "incomplete_ingredients": 489,
+        "excluded_by_usage": 53,
+        "excluded_by_ingredient": 0,
+        "no_matching_metric": 0,
+        "no_daily_care_ingredient": 106,
+        "eligible_products": 1619
+      },
+      "scorable_target_count": 0,
+      "hydration_policy": {
+        "version": "hydration-care-v1",
+        "state": "normal",
+        "basis": "supplied_moisture_category",
+        "strategy": "현재 보습 상태를 유지하며 다른 개선 지표를 함께 반영합니다.",
+        "dryness_exclusion_enabled": false
+      },
+      "applied_exclusions": [],
+      "top5": [
+        {
+          "id": "A000000002839",
+          "name": "바이오더마 센시비오 토너 250ml",
+          "matches": 0
+        },
+        {
+          "id": "A000000002848",
+          "name": "[SNS 대란템]바이오더마 세비엄 포어 리파이너",
+          "matches": 0
+        },
+        {
+          "id": "A000000004434",
+          "name": "바이오더마 하이드라비오 토너 250ml",
+          "matches": 0
+        },
+        {
+          "id": "A000000005336",
+          "name": "바이오더마 하이드라비오 세럼 40ml",
+          "matches": 0
+        },
+        {
+          "id": "A000000006014",
+          "name": "[닥터이아소] 트리플 엠 하이드레이팅 크림",
+          "matches": 0
+        }
+      ]
+    },
+    "moisture_sufficient_exclusions": {
+      "stats": {
+        "total_products": 2584,
+        "unsupported_category": 317,
+        "incomplete_ingredients": 489,
+        "excluded_by_usage": 53,
+        "excluded_by_ingredient": 0,
+        "no_matching_metric": 0,
+        "no_daily_care_ingredient": 106,
+        "eligible_products": 1619
+      },
+      "scorable_target_count": 0,
+      "hydration_policy": {
+        "version": "hydration-care-v1",
+        "state": "sufficient",
+        "basis": "supplied_moisture_category",
+        "strategy": "추가 보습 가점 없이 다른 개선 지표를 우선합니다.",
+        "dryness_exclusion_enabled": false
+      },
+      "applied_exclusions": [],
+      "top5": [
+        {
+          "id": "A000000002839",
+          "name": "바이오더마 센시비오 토너 250ml",
+          "matches": 0
+        },
+        {
+          "id": "A000000002848",
+          "name": "[SNS 대란템]바이오더마 세비엄 포어 리파이너",
+          "matches": 0
+        },
+        {
+          "id": "A000000004434",
+          "name": "바이오더마 하이드라비오 토너 250ml",
+          "matches": 0
+        },
+        {
+          "id": "A000000005336",
+          "name": "바이오더마 하이드라비오 세럼 40ml",
+          "matches": 0
+        },
+        {
+          "id": "A000000006014",
+          "name": "[닥터이아소] 트리플 엠 하이드레이팅 크림",
+          "matches": 0
+        }
+      ]
+    },
+    "all_good": {
+      "stats": {
+        "total_products": 2584,
+        "unsupported_category": 317,
+        "incomplete_ingredients": 489,
+        "excluded_by_usage": 53,
+        "excluded_by_ingredient": 0,
+        "no_matching_metric": 0,
+        "no_daily_care_ingredient": 106,
+        "eligible_products": 1619
+      },
+      "scorable_target_count": 0,
+      "hydration_policy": {
+        "version": "hydration-care-v1",
+        "state": "sufficient",
+        "basis": "supplied_moisture_category",
+        "strategy": "추가 보습 가점 없이 다른 개선 지표를 우선합니다.",
+        "dryness_exclusion_enabled": false
+      },
+      "applied_exclusions": [],
+      "top5": [
+        {
+          "id": "A000000002839",
+          "name": "바이오더마 센시비오 토너 250ml",
+          "matches": 0
+        },
+        {
+          "id": "A000000002848",
+          "name": "[SNS 대란템]바이오더마 세비엄 포어 리파이너",
+          "matches": 0
+        },
+        {
+          "id": "A000000004434",
+          "name": "바이오더마 하이드라비오 토너 250ml",
+          "matches": 0
+        },
+        {
+          "id": "A000000005336",
+          "name": "바이오더마 하이드라비오 세럼 40ml",
+          "matches": 0
+        },
+        {
+          "id": "A000000006014",
+          "name": "[닥터이아소] 트리플 엠 하이드레이팅 크림",
+          "matches": 0
+        }
+      ]
+    }
+  }
+}

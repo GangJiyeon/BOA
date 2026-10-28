@@ -25,6 +25,7 @@ export default function CosmeticProductCard({ product, dailyCare, scorableTarget
         : <p className="match-score">{product.match_count}<span> / {scorableTargetCount}개 지표 성분 매칭</span></p>}
       <div className="ingredient-tags">{[...new Set(dailyCare ? product.daily_care_ingredients ?? [] : product.matches.flatMap(match => match.ingredients))].slice(0, 6).map(name => <span key={name}>{name}</span>)}</div>
       <p className="recommendation-reason">{product.recommendation_reason}</p>
+      {!!product.sensor_auxiliary_bonus && <small>수분 지수 보조 반영 · 동점 후보 내 보습 성분: {product.sensor_auxiliary_ingredients?.join(', ')}</small>}
 
       {(product.shared_evidence_groups ?? []).length > 0 && <details className="shared-evidence"><summary>지표 간 공통 근거</summary>{product.shared_evidence_groups!.map(group => <p key={group.evidence_url}><strong>{group.metric_codes.map(code => metricNames[code]).join(' · ')}</strong><br />{group.explanation}</p>)}</details>}
       <div className="product-actions">{product.source_url && <a href={product.source_url} target="_blank" rel="noopener noreferrer">제품 정보 보기 <Icon name="arrow" size={16} /></a>}{product.bundle_suspected && <span>기획·세트 가능성</span>}</div>

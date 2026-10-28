@@ -6,6 +6,7 @@
 디버그 흐름: 사진 파일을 직접 올려 S3 없이 분석한다 (CV 임계값 조정용).
 """
 
+from datetime import datetime
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -49,6 +50,7 @@ def _get_with_scores(db: Session, analysis_id: int) -> SkinAnalysis | None:
         select(SkinAnalysis)
         .where(SkinAnalysis.id == analysis_id)
         .options(
+            selectinload(SkinAnalysis.moisture_observations),
             selectinload(SkinAnalysis.scores).selectinload(SkinScore.metric),
             selectinload(SkinAnalysis.scores).selectinload(SkinScore.category),
         )
@@ -59,22 +61,22 @@ def to_read(analysis: SkinAnalysis) -> AnalysisRead:
     """응답 변환. 지표 코드 순서를 고정해 프론트에서 정렬할 필요가 없게 한다."""
     order = ("moisture", *skin_analysis.PHOTO_METRIC_CODES)
     scores = sorted(analysis.scores, key=lambda s: order.index(s.metric.code))
+    from app.services.moisture import observation_receipt
+    observation = observation_receipt(max(analysis.moisture_observations, key=lambda r: (datetime.fromisoformat(r.payload["measured_at"].replace("Z", "+00:00")), r.id))) if analysis.moisture_observations else None
+    effective = [ScoreRead(metric_code=s.metric.code, metric_name=s.metric.name, score=s.score,
+                           category_name=s.category.name, higher_is_better=s.metric.higher_is_better) for s in scores]
+    if observation and observation.used_for_scoring:
+        effective = [s for s in effective if s.metric_code != 'moisture']
+        effective.insert(0, ScoreRead(metric_code='moisture', metric_name=observation.score_metric_name,
+            score=observation.normalized_score if observation.normalized_score is not None else observation.calibrated_score, category_name=observation.score_category, higher_is_better=True))
     return AnalysisRead(
+        moisture_measurement=observation,
         id=analysis.id,
         analyzed_at=analysis.analyzed_at,
         logic_version=analysis.logic_version,
-        moisture_source=analysis.moisture_source,
+        moisture_source="sensor" if observation and observation.used_for_scoring else analysis.moisture_source,
         image_id=analysis.image_id,
-        scores=[
-            ScoreRead(
-                metric_code=s.metric.code,
-                metric_name=s.metric.name,
-                score=s.score,
-                category_name=s.category.name,
-                higher_is_better=s.metric.higher_is_better,
-            )
-            for s in scores
-        ],
+        scores=effective,
     )
 
 

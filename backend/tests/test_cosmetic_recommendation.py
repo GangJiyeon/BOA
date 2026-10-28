@@ -231,10 +231,12 @@ async def asgi_request(body):
     return status, json.loads(data)
 
 
+from app.models.moisture import MoistureObservation
+
 class ApiDatabaseTests(unittest.TestCase):
     def setUp(self):
         self.engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-        tables = [Image.__table__, SkinMetric.__table__, SkinMetricCategory.__table__, SkinAnalysis.__table__, SkinScore.__table__, Brand.__table__, Product.__table__, Ingredient.__table__, ProductIngredient.__table__, CosmeticRuleSet.__table__, CosmeticRuleEvidence.__table__, CategoryIngredient.__table__]
+        tables = [MoistureObservation.__table__, Image.__table__, SkinMetric.__table__, SkinMetricCategory.__table__, SkinAnalysis.__table__, SkinScore.__table__, Brand.__table__, Product.__table__, Ingredient.__table__, ProductIngredient.__table__, CosmeticRuleSet.__table__, CosmeticRuleEvidence.__table__, CategoryIngredient.__table__]
         Image.metadata.create_all(self.engine, tables=tables)
         with Session(self.engine) as db:
             seed_metrics(db)

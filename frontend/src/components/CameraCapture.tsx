@@ -10,7 +10,7 @@ function cameraError(error: unknown) {
   return '카메라를 시작하지 못했습니다. 다시 시도하거나 사진 선택을 이용해 주세요.'
 }
 
-export default function CameraCapture({ onCapture, onClose }: { onCapture: (file: File) => void; onClose: () => void }) {
+export default function CameraCapture({ onCapture, onClose, instruction = '얼굴 전체가 보이도록 정면을 바라봐 주세요.' }: { onCapture: (file: File) => void; onClose: () => void; instruction?: string }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const video = useRef<HTMLVideoElement>(null)
   const activeSession = useRef({ cancelled: true })
@@ -74,11 +74,11 @@ export default function CameraCapture({ onCapture, onClose }: { onCapture: (file
   }
 
   return createPortal(<dialog ref={dialog} className="camera-dialog" aria-labelledby="camera-title" onCancel={event => { event.preventDefault(); onClose() }}>
-    <div className="camera-heading"><div><h2 id="camera-title">사진 찍기</h2><p>얼굴 전체가 보이도록 정면을 바라봐 주세요.</p></div><button type="button" className="secondary" aria-label="카메라 닫기" onClick={onClose}><Icon name="close" /></button></div>
+    <div className="camera-heading"><div><h2 id="camera-title">사진 찍기</h2><p>{instruction}</p></div><button type="button" className="secondary" aria-label="카메라 닫기" onClick={onClose}><Icon name="close" /></button></div>
     <div className="camera-view"><video ref={video} autoPlay playsInline muted className={facing === 'user' ? 'mirrored' : ''} onLoadedData={() => setReady(true)} /><div className="camera-guide" aria-hidden="true" /></div>
     {error ? <div className="error-box" role="alert">{error}<button type="button" className="secondary" onClick={() => { setError(''); setReady(false); setAttempt(n => n + 1) }}>다시 시도</button></div>
       : !ready && <p role="status">카메라를 준비하고 있어요. 권한 요청이 뜨면 허용해 주세요.</p>}
     <div className="camera-actions"><button type="button" className="secondary" disabled={taking} onClick={() => { setReady(false); setError(''); setFacing(value => value === 'user' ? 'environment' : 'user') }}>카메라 전환</button><button type="button" disabled={!ready || taking || !!error} onClick={capture}>{taking ? '사진 처리 중…' : '촬영하기'}</button><button type="button" className="text-button" onClick={onClose}>취소</button></div>
-    <p className="input-note">촬영하면 미리보기에서 확인할 수 있습니다. 분석 시작 전에는 서버로 전송하지 않습니다.</p>
+    <p className="input-note">촬영한 사진은 미리보기에서 확인할 수 있습니다. 분석·합성을 시작할 때 서버로 전송합니다.</p>
   </dialog>, document.body)
 }

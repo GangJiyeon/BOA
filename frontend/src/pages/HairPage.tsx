@@ -37,7 +37,7 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
       if (signal.aborted) return
       cache.current = face; setAnalysis(face); setStage('헤어 추천 중')
       const value = await recommendHair(face.id, length, texture, signal)
-      if (!signal.aborted) { setResult(value); onResult({ result: value, analysis: face }); setStage('완료') }
+      if (!signal.aborted) { setResult(value); onResult({ result: value, analysis: face, photo: photos[0] }); setStage('완료') }
     })
   }
   const available = styles.filter(style => style.sex === sex || style.sex === 'unisex')
@@ -60,7 +60,7 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
     {result && <div className="result-shortcut"><p role="status">헤어 추천 완료 · {result.recommendations.length}개 스타일</p><SectionJump targetId="hair-result-title">결과로 이동</SectionJump></div>}
     {task.busy && <div className="request-progress" role="status"><span className="spinner" /><div><strong>{stage}…</strong><p>완료되면 얼굴형과 추천 스타일을 함께 보여드릴게요.</p></div></div>}<TaskStatus busy={false} error={task.error} />
     {analysis && <div className="face-result"><span className="feature-icon"><Icon name="hair" size={28} /></span><div><span className="eyebrow">YOUR FACE SHAPE</span><h3>{analysis.face_shape}</h3><p>얼굴 분석 #{analysis.id}{analysis.top2 && ` · 차순위 ${analysis.top2}`}</p></div><span className="category-pill">분석 완료</span></div>}
-    {result && <><HairResults result={result} titleId="hair-result-title" /><div className="result-return"><a className="button" href="#/results">이번 분석 결과 모아보기</a><SectionJump targetId="hair-input-title">사진·스타일 조건으로 돌아가기</SectionJump></div></>}
+    {result && <><HairResults result={result} titleId="hair-result-title" /><div className="result-return"><a className="button" href="#/studio">AI 스튜디오에서 입어보기</a><a className="button secondary" href="#/results">이번 분석 결과 모아보기</a><SectionJump targetId="hair-input-title">사진·스타일 조건으로 돌아가기</SectionJump></div></>}
   </section>
 }
 export function HairResults({ result, titleId }: { result: HairResult; titleId?: string }) {
