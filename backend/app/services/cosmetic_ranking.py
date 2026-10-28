@@ -9,6 +9,8 @@ from app.schemas.cosmetic import CosmeticRecommendationItem, MetricCode, Ranking
 GROUPS = {"moisture": "hydration", "redness": "redness", "brightness": "pigmentation",
           "trouble": "blemish", "uniformity": "pigmentation"}
 POLICY_VERSION = "cosmetic-ranking-v1"
+DAILY_CARE_POLICY_VERSION = "cosmetic-daily-care-v1"
+DAILY_CARE_RANKING_BASIS = "일상 관리 성분 함유 후보 중 세트 의심 후순위 → 제품 ID (적합도 순위 아님)"
 RANKING_BASES = {
     "metric_count": "매칭 지표 수 → 세트 의심 후순위 → 제품 ID",
     "concern_groups": "매칭 고민 그룹 수(밝기·균일도 통합) → 세트 의심 후순위 → 제품 ID",
@@ -23,6 +25,19 @@ class RankedCandidate:
     group_count: int
     priority_matched: bool
     tie_count: int
+
+
+def rank_daily_care_candidates(candidates: list[CosmeticRecommendationItem]) -> list[RankedCandidate]:
+    """함유 여부로 후보를 고르되 성분 수나 미측정 피부 상태에 가점을 주지 않는다."""
+    if len({p.product_id for p in candidates}) != len(candidates):
+        raise ValueError("중복 제품 ID")
+    for item in candidates:
+        if item.matches or item.match_count or not item.daily_care_ingredients or not item.daily_care_rules:
+            raise ValueError("일상 관리 후보는 개선 점수 없이 별도 성분 근거가 필요합니다.")
+    ties = Counter(p.bundle_suspected for p in candidates)
+    ordered = sorted(candidates, key=lambda p: (p.bundle_suspected, p.product_id))
+    return [RankedCandidate(p, i, 0, False, ties[p.bundle_suspected])
+            for i, p in enumerate(ordered, 1)]
 
 
 def rank_candidates(candidates: list[CosmeticRecommendationItem], mode: RankingMode,
@@ -58,3 +73,36 @@ def rank_candidates(candidates: list[CosmeticRecommendationItem], mode: RankingM
     ordered = sorted(candidates, key=lambda p: (*features[p.product_id][0], p.product_id))
     return [RankedCandidate(p, i, features[p.product_id][1], features[p.product_id][2],
                             ties[features[p.product_id][0]]) for i, p in enumerate(ordered, 1)]
+
+
+def apply_sensor_tiebreak(ordered: list[RankedCandidate]) -> list[RankedCandidate]:
+    """Split only existing tie groups. Preserve all primary ranking/exclusion policies."""
+    result = []
+    start = 0
+    while start < len(ordered):
+        size = ordered[start].tie_count
+        rows = ordered[start:start+size]
+        rows = sorted(rows, key=lambda r: (-r.product.sensor_auxiliary_bonus, r.product.product_id))
+        ties = Counter(r.product.sensor_auxiliary_bonus for r in rows)
+        for row in rows:
+            result.append(RankedCandidate(row.product, len(result)+1, row.group_count,
+                                          row.priority_matched, ties[row.product.sensor_auxiliary_bonus]))
+        start += size
+    return result
+
+
+def apply_hydration_tiebreak(ordered: list[RankedCandidate]) -> list[RankedCandidate]:
+    """Low hydration only: prefer complementary support within existing ties.
+
+    Counts functional groups, not ingredient quantity or clinical efficacy.
+    Existing metric/priority/bundle tiers remain intact.
+    """
+    result=[];start=0
+    while start<len(ordered):
+        size=ordered[start].tie_count
+        rows=sorted(ordered[start:start+size],key=lambda r:(-len(r.product.hydration_support),r.product.product_id))
+        ties=Counter(len(r.product.hydration_support) for r in rows)
+        for row in rows:
+            result.append(RankedCandidate(row.product,len(result)+1,row.group_count,row.priority_matched,ties[len(row.product.hydration_support)]))
+        start+=size
+    return result

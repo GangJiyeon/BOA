@@ -40,7 +40,9 @@ class ExplanationTests(unittest.TestCase):
     def test_no_matches_produces_no_evidence_groups(self):
         self.assertEqual(shared_evidence([]), [])
         result = fixtures.run([fixtures.product()], scenarios()["all_good"])
-        self.assertEqual(result.recommendations, [])
+        self.assertEqual(result.recommendations[0].matches, [])
+        self.assertEqual(result.recommendations[0].shared_evidence_groups, [])
+        self.assertTrue(result.recommendations[0].daily_care_rules)
         self.assertEqual(result.explanation_version, "cosmetic-explanations-v1")
 
     def test_shared_groups_are_from_actual_matches_not_fixed_names(self):

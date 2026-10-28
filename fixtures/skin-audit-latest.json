@@ -1,0 +1,6604 @@
+{
+  "entries": [
+    {
+      "elapsed_ms": 19367.599999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "uncalibrated",
+          "baseline": null,
+          "average": 508,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 50,
+        "device_uptime_ms": 6065,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 19472.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "uncalibrated",
+          "baseline": null,
+          "average": 508,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 51,
+        "device_uptime_ms": 6169,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 19577,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "uncalibrated",
+          "baseline": null,
+          "average": 508,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 52,
+        "device_uptime_ms": 6271,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 19667,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "uncalibrated",
+          "baseline": null,
+          "average": 508,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 53,
+        "device_uptime_ms": 6374,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 19771.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "uncalibrated",
+          "baseline": null,
+          "average": 508,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 54,
+        "device_uptime_ms": 6475,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 19877.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "uncalibrated",
+          "baseline": null,
+          "average": 508,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 55,
+        "device_uptime_ms": 6576,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 19982.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "uncalibrated",
+          "baseline": null,
+          "average": 508,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 56,
+        "device_uptime_ms": 6677,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 20072.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "uncalibrated",
+          "baseline": null,
+          "average": 508,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 57,
+        "device_uptime_ms": 6778,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 20177.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "uncalibrated",
+          "baseline": null,
+          "average": 508,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 58,
+        "device_uptime_ms": 6878,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 20282.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 59,
+        "device_uptime_ms": 6981,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 20386.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 60,
+        "device_uptime_ms": 7084,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 20477.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 61,
+        "device_uptime_ms": 7184,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 20582.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 62,
+        "device_uptime_ms": 7286,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 20776.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 63,
+        "device_uptime_ms": 7386,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 20836.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 64,
+        "device_uptime_ms": 7488,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 20897,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 65,
+        "device_uptime_ms": 7590,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 21017,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 66,
+        "device_uptime_ms": 7693,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 21136.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 67,
+        "device_uptime_ms": 7795,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 21197.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 68,
+        "device_uptime_ms": 7897,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 21317,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 69,
+        "device_uptime_ms": 7998,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 21436.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 70,
+        "device_uptime_ms": 8098,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 21497.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 71,
+        "device_uptime_ms": 8198,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 21617.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 72,
+        "device_uptime_ms": 8298,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 21736.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 73,
+        "device_uptime_ms": 8398,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 21797.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 74,
+        "device_uptime_ms": 8498,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 21917.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 75,
+        "device_uptime_ms": 8598,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 22036.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 76,
+        "device_uptime_ms": 8701,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 22157.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 77,
+        "device_uptime_ms": 8804,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 22217.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 78,
+        "device_uptime_ms": 8905,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 22336.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 79,
+        "device_uptime_ms": 9007,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 22457.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 80,
+        "device_uptime_ms": 9111,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 22517,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 81,
+        "device_uptime_ms": 9215,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 22636.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 82,
+        "device_uptime_ms": 9317,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 22757.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 83,
+        "device_uptime_ms": 9418,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 22817.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 84,
+        "device_uptime_ms": 9519,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 22937,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 85,
+        "device_uptime_ms": 9622,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 23057.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 86,
+        "device_uptime_ms": 9725,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 23177.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 87,
+        "device_uptime_ms": 9828,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 23237,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 88,
+        "device_uptime_ms": 9929,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 23357,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 89,
+        "device_uptime_ms": 10030,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 23477.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 90,
+        "device_uptime_ms": 10131,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 23537.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 91,
+        "device_uptime_ms": 10233,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 23657,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 92,
+        "device_uptime_ms": 10336,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 23777.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 93,
+        "device_uptime_ms": 10439,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 23897.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 94,
+        "device_uptime_ms": 10542,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 23957.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 95,
+        "device_uptime_ms": 10645,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 24077.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 96,
+        "device_uptime_ms": 10745,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 24197.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 97,
+        "device_uptime_ms": 10846,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 24257.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 98,
+        "device_uptime_ms": 10949,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 24377,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 99,
+        "device_uptime_ms": 11049,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 24497.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 100,
+        "device_uptime_ms": 11152,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 24557,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 101,
+        "device_uptime_ms": 11252,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 24677.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 102,
+        "device_uptime_ms": 11353,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 24797,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 103,
+        "device_uptime_ms": 11453,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 24857,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 104,
+        "device_uptime_ms": 11554,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 24977.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 105,
+        "device_uptime_ms": 11655,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 25097.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "calibrating",
+          "baseline": null,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 106,
+        "device_uptime_ms": 11756,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 25217.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": null,
+          "percent": null,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "not_ready",
+        "raw_value": null,
+        "unit": "fdc2112_count",
+        "sequence": 107,
+        "device_uptime_ms": 11863,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 25277.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 108,
+        "device_uptime_ms": 11960,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 25397.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 109,
+        "device_uptime_ms": 12062,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 25517.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 110,
+        "device_uptime_ms": 12164,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 25577.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 111,
+        "device_uptime_ms": 12267,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 25697.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 112,
+        "device_uptime_ms": 12367,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 25817.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 113,
+        "device_uptime_ms": 12469,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 25877.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 114,
+        "device_uptime_ms": 12571,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 25997.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 115,
+        "device_uptime_ms": 12673,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 26117.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 116,
+        "device_uptime_ms": 12774,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 26177,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 117,
+        "device_uptime_ms": 12876,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 26297.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 118,
+        "device_uptime_ms": 12977,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 26417,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 119,
+        "device_uptime_ms": 13078,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 26537,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 120,
+        "device_uptime_ms": 13178,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 26597.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 121,
+        "device_uptime_ms": 13280,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 26717.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 122,
+        "device_uptime_ms": 13383,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 26837,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 123,
+        "device_uptime_ms": 13486,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 26897,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 124,
+        "device_uptime_ms": 13587,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 27017.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 125,
+        "device_uptime_ms": 13689,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 27137.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 126,
+        "device_uptime_ms": 13790,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 27197.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 127,
+        "device_uptime_ms": 13892,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 27317.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 128,
+        "device_uptime_ms": 13992,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 27437.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 129,
+        "device_uptime_ms": 14094,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 27497.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 130,
+        "device_uptime_ms": 14196,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 27617.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 131,
+        "device_uptime_ms": 14299,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 27737,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 132,
+        "device_uptime_ms": 14399,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 27857,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 133,
+        "device_uptime_ms": 14502,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 27917.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 134,
+        "device_uptime_ms": 14603,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 28037.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 135,
+        "device_uptime_ms": 14706,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 28157.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 136,
+        "device_uptime_ms": 14808,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 28217.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 137,
+        "device_uptime_ms": 14910,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 28337.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 138,
+        "device_uptime_ms": 15011,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 28457.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 139,
+        "device_uptime_ms": 15111,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 28517.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 140,
+        "device_uptime_ms": 15212,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 28637.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 141,
+        "device_uptime_ms": 15312,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 28757.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 142,
+        "device_uptime_ms": 15414,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 28817.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 143,
+        "device_uptime_ms": 15515,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 28937.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 144,
+        "device_uptime_ms": 15617,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 29117.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 145,
+        "device_uptime_ms": 15718,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 29177.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 146,
+        "device_uptime_ms": 15818,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 29237.099999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 147,
+        "device_uptime_ms": 15918,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 29357.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 148,
+        "device_uptime_ms": 16021,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 29477.599999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 149,
+        "device_uptime_ms": 16122,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 29537.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 150,
+        "device_uptime_ms": 16223,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 29657.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 151,
+        "device_uptime_ms": 16324,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 29777.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 152,
+        "device_uptime_ms": 16427,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 29837,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 153,
+        "device_uptime_ms": 16527,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 29957.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 154,
+        "device_uptime_ms": 16627,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 30077.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 155,
+        "device_uptime_ms": 16729,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 30137.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 156,
+        "device_uptime_ms": 16832,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 30257.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 157,
+        "device_uptime_ms": 16932,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 30377.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 158,
+        "device_uptime_ms": 17034,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 30497.599999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 159,
+        "device_uptime_ms": 17135,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 30557.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 160,
+        "device_uptime_ms": 17237,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 30677.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 161,
+        "device_uptime_ms": 17338,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 30797.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 162,
+        "device_uptime_ms": 17438,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 30857.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 163,
+        "device_uptime_ms": 17540,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31097.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 164,
+        "device_uptime_ms": 17642,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31097.900000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 165,
+        "device_uptime_ms": 17743,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31157.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 166,
+        "device_uptime_ms": 17845,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31277.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 167,
+        "device_uptime_ms": 17946,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31397.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 168,
+        "device_uptime_ms": 18047,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31457.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 169,
+        "device_uptime_ms": 18147,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31577.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 170,
+        "device_uptime_ms": 18248,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31697.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 171,
+        "device_uptime_ms": 18349,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31757.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 172,
+        "device_uptime_ms": 18450,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31877.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 173,
+        "device_uptime_ms": 18553,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 31997.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 174,
+        "device_uptime_ms": 18656,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 32117.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 175,
+        "device_uptime_ms": 18757,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 32177.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 176,
+        "device_uptime_ms": 18860,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 32297.400000000373,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 177,
+        "device_uptime_ms": 18963,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 32417.599999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 178,
+        "device_uptime_ms": 19065,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 32477.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 508,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 508,
+        "unit": "fdc2112_count",
+        "sequence": 179,
+        "device_uptime_ms": 19168,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 32597.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 180,
+        "device_uptime_ms": 19269,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 32717.599999999627,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 506,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 506,
+        "unit": "fdc2112_count",
+        "sequence": 181,
+        "device_uptime_ms": 19369,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 32837.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 182,
+        "device_uptime_ms": 19472,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 32897.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 183,
+        "device_uptime_ms": 19573,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 33017.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 184,
+        "device_uptime_ms": 19677,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 33137.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 185,
+        "device_uptime_ms": 19777,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 33197.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 186,
+        "device_uptime_ms": 19879,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 33317.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 187,
+        "device_uptime_ms": 19981,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 33437.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 188,
+        "device_uptime_ms": 20082,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 33497.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 189,
+        "device_uptime_ms": 20182,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 33617.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 190,
+        "device_uptime_ms": 20282,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 33737.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 191,
+        "device_uptime_ms": 20385,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 33797.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 192,
+        "device_uptime_ms": 20486,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 33917.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 505,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 505,
+        "unit": "fdc2112_count",
+        "sequence": 193,
+        "device_uptime_ms": 20589,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 34037.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 194,
+        "device_uptime_ms": 20691,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 34157.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 195,
+        "device_uptime_ms": 20792,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 34217.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 196,
+        "device_uptime_ms": 20893,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 34337.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 197,
+        "device_uptime_ms": 20995,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 34517.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 198,
+        "device_uptime_ms": 21095,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 34518,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 199,
+        "device_uptime_ms": 21197,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 34637.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 200,
+        "device_uptime_ms": 21298,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 34757.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 201,
+        "device_uptime_ms": 21398,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 34817.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 202,
+        "device_uptime_ms": 21499,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 34937.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 203,
+        "device_uptime_ms": 21599,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 35057.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 204,
+        "device_uptime_ms": 21700,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 35117.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 205,
+        "device_uptime_ms": 21802,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 35237.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 206,
+        "device_uptime_ms": 21902,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 35357.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 207,
+        "device_uptime_ms": 22004,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 35417.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 208,
+        "device_uptime_ms": 22104,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 35537.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 209,
+        "device_uptime_ms": 22207,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 35657.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 210,
+        "device_uptime_ms": 22308,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 35777.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 211,
+        "device_uptime_ms": 22411,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 35837.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 212,
+        "device_uptime_ms": 22513,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 35957.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 213,
+        "device_uptime_ms": 22614,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 36077.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 504,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 504,
+        "unit": "fdc2112_count",
+        "sequence": 214,
+        "device_uptime_ms": 22716,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 36138,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 215,
+        "device_uptime_ms": 22816,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 36257.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 216,
+        "device_uptime_ms": 22917,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 36377.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 217,
+        "device_uptime_ms": 23019,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 36437.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 218,
+        "device_uptime_ms": 23121,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 36557.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 219,
+        "device_uptime_ms": 23221,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 36677.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 220,
+        "device_uptime_ms": 23322,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 36737.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 221,
+        "device_uptime_ms": 23424,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 36857.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 222,
+        "device_uptime_ms": 23527,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 36977.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 223,
+        "device_uptime_ms": 23629,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 37097.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 224,
+        "device_uptime_ms": 23731,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 37157.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 225,
+        "device_uptime_ms": 23834,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 37277.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 226,
+        "device_uptime_ms": 23935,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 37457.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 227,
+        "device_uptime_ms": 24036,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 37458.09999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 228,
+        "device_uptime_ms": 24139,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 37577.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 229,
+        "device_uptime_ms": 24240,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 37697.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 230,
+        "device_uptime_ms": 24342,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 37757.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 231,
+        "device_uptime_ms": 24444,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 37877.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 502,
+          "percent": 1,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 502,
+        "unit": "fdc2112_count",
+        "sequence": 232,
+        "device_uptime_ms": 24546,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 37997.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 503,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 503,
+        "unit": "fdc2112_count",
+        "sequence": 233,
+        "device_uptime_ms": 24647,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 38117.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 234,
+        "device_uptime_ms": 24750,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 38177.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 235,
+        "device_uptime_ms": 24851,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 38297.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 236,
+        "device_uptime_ms": 24955,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 38417.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 237,
+        "device_uptime_ms": 25055,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 38477.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 238,
+        "device_uptime_ms": 25156,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 38597.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 239,
+        "device_uptime_ms": 25257,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 38717.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 240,
+        "device_uptime_ms": 25357,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 38777.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 241,
+        "device_uptime_ms": 25459,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 38897.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 242,
+        "device_uptime_ms": 25562,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 39017.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 243,
+        "device_uptime_ms": 25663,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 39137.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 244,
+        "device_uptime_ms": 25766,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 39197.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 245,
+        "device_uptime_ms": 25866,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 39317.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 246,
+        "device_uptime_ms": 25966,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 39437.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 247,
+        "device_uptime_ms": 26067,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 39497.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 248,
+        "device_uptime_ms": 26168,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 39617.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 249,
+        "device_uptime_ms": 26271,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 39737.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 250,
+        "device_uptime_ms": 26373,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 39797.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 251,
+        "device_uptime_ms": 26476,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 39917.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 252,
+        "device_uptime_ms": 26578,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 40037.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 253,
+        "device_uptime_ms": 26680,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 40097.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 254,
+        "device_uptime_ms": 26782,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 40217.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 255,
+        "device_uptime_ms": 26882,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 40398.09999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 256,
+        "device_uptime_ms": 26985,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 40458.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 257,
+        "device_uptime_ms": 27085,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 40518.09999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 258,
+        "device_uptime_ms": 27185,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 40637.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 259,
+        "device_uptime_ms": 27288,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 40757.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 260,
+        "device_uptime_ms": 27390,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 40817.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 261,
+        "device_uptime_ms": 27492,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 40937.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 262,
+        "device_uptime_ms": 27596,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 41057.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 263,
+        "device_uptime_ms": 27698,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 41117.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 264,
+        "device_uptime_ms": 27801,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 41237.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 265,
+        "device_uptime_ms": 27902,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 41357.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 266,
+        "device_uptime_ms": 28003,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 41478.09999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 267,
+        "device_uptime_ms": 28106,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 41537.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 268,
+        "device_uptime_ms": 28207,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 41657.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 269,
+        "device_uptime_ms": 28307,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 41782,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 270,
+        "device_uptime_ms": 28408,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 41898,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 271,
+        "device_uptime_ms": 28510,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 41957.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 272,
+        "device_uptime_ms": 28611,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 42078.09999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 273,
+        "device_uptime_ms": 28713,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 42138.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 274,
+        "device_uptime_ms": 28816,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 42257.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 275,
+        "device_uptime_ms": 28917,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 42377.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 276,
+        "device_uptime_ms": 29018,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 42437.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 277,
+        "device_uptime_ms": 29120,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 42557.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 278,
+        "device_uptime_ms": 29222,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 42677.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 279,
+        "device_uptime_ms": 29322,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 42797.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 280,
+        "device_uptime_ms": 29423,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 42857.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 281,
+        "device_uptime_ms": 29524,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 42977.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 282,
+        "device_uptime_ms": 29624,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 43097.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 283,
+        "device_uptime_ms": 29725,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 43157.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 284,
+        "device_uptime_ms": 29826,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 43337.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 285,
+        "device_uptime_ms": 29926,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 43397.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 286,
+        "device_uptime_ms": 30028,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 43457.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 287,
+        "device_uptime_ms": 30131,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 43579.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 288,
+        "device_uptime_ms": 30231,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 43697.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 289,
+        "device_uptime_ms": 30333,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 43757.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 290,
+        "device_uptime_ms": 30435,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 43877.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 291,
+        "device_uptime_ms": 30536,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 43997.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 292,
+        "device_uptime_ms": 30638,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 44117.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 293,
+        "device_uptime_ms": 30740,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 44177.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 294,
+        "device_uptime_ms": 30841,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 44297.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 295,
+        "device_uptime_ms": 30941,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 44417.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 296,
+        "device_uptime_ms": 31042,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 44477.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 297,
+        "device_uptime_ms": 31142,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 44597.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 298,
+        "device_uptime_ms": 31242,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 44717.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 299,
+        "device_uptime_ms": 31342,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 44777.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 300,
+        "device_uptime_ms": 31443,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 44897.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 301,
+        "device_uptime_ms": 31546,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 45018,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 302,
+        "device_uptime_ms": 31647,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 45077.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 303,
+        "device_uptime_ms": 31747,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 45197.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 304,
+        "device_uptime_ms": 31848,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 45317.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 305,
+        "device_uptime_ms": 31950,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 45377.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 306,
+        "device_uptime_ms": 32052,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 45497.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 307,
+        "device_uptime_ms": 32156,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 45617.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 308,
+        "device_uptime_ms": 32258,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 45737.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 309,
+        "device_uptime_ms": 32359,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 45797.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 310,
+        "device_uptime_ms": 32462,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 45917.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 311,
+        "device_uptime_ms": 32564,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 46037.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 312,
+        "device_uptime_ms": 32665,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 46097.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 313,
+        "device_uptime_ms": 32767,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 46277.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 314,
+        "device_uptime_ms": 32869,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 46397.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 315,
+        "device_uptime_ms": 32978,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 46457.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 316,
+        "device_uptime_ms": 33079,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 46518.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 317,
+        "device_uptime_ms": 33183,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 46638.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 318,
+        "device_uptime_ms": 33285,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 46818.5,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 319,
+        "device_uptime_ms": 33387,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 46819.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 320,
+        "device_uptime_ms": 33488,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 46937.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 321,
+        "device_uptime_ms": 33590,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 47057.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 322,
+        "device_uptime_ms": 33691,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 47118,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 323,
+        "device_uptime_ms": 33792,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 47237.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 324,
+        "device_uptime_ms": 33894,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 47358.299999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 325,
+        "device_uptime_ms": 33994,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 47477.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 326,
+        "device_uptime_ms": 34096,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 47537.59999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 327,
+        "device_uptime_ms": 34198,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 47657.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 328,
+        "device_uptime_ms": 34299,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 47777.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 329,
+        "device_uptime_ms": 34401,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 47837.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 330,
+        "device_uptime_ms": 34504,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 47957.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 331,
+        "device_uptime_ms": 34604,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 48078,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 332,
+        "device_uptime_ms": 34706,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 48137.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 333,
+        "device_uptime_ms": 34809,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 48258,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 334,
+        "device_uptime_ms": 34912,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 48378,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 335,
+        "device_uptime_ms": 35014,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 48497.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 336,
+        "device_uptime_ms": 35116,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 48558,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 337,
+        "device_uptime_ms": 35218,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 48677.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 338,
+        "device_uptime_ms": 35318,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 48798,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 339,
+        "device_uptime_ms": 35420,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 48857.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 340,
+        "device_uptime_ms": 35521,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 48977.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 341,
+        "device_uptime_ms": 35621,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 49098,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 342,
+        "device_uptime_ms": 35723,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 49217.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 343,
+        "device_uptime_ms": 35826,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 49277.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 344,
+        "device_uptime_ms": 35928,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 49397.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 345,
+        "device_uptime_ms": 36029,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 49458.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 346,
+        "device_uptime_ms": 36130,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 49577.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 347,
+        "device_uptime_ms": 36230,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 49697.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 348,
+        "device_uptime_ms": 36331,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 49818.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 349,
+        "device_uptime_ms": 36434,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 49877.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 350,
+        "device_uptime_ms": 36536,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 49997.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 351,
+        "device_uptime_ms": 36636,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 50118.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 352,
+        "device_uptime_ms": 36737,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 50177.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 353,
+        "device_uptime_ms": 36839,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 50297.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 354,
+        "device_uptime_ms": 36940,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 50418.200000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 355,
+        "device_uptime_ms": 37043,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 50477.700000000186,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 356,
+        "device_uptime_ms": 37144,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 50597.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 357,
+        "device_uptime_ms": 37244,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 50717.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 358,
+        "device_uptime_ms": 37346,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 50777.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 359,
+        "device_uptime_ms": 37446,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 50897.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 360,
+        "device_uptime_ms": 37547,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 51018,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 361,
+        "device_uptime_ms": 37648,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 51077.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 362,
+        "device_uptime_ms": 37749,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 51197.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 363,
+        "device_uptime_ms": 37851,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 51317.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 364,
+        "device_uptime_ms": 37955,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 51438.09999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 365,
+        "device_uptime_ms": 38056,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 51497.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 366,
+        "device_uptime_ms": 38157,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 51618.09999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 367,
+        "device_uptime_ms": 38257,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 51737.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 368,
+        "device_uptime_ms": 38358,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 51797.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 369,
+        "device_uptime_ms": 38460,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 51918.09999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 370,
+        "device_uptime_ms": 38562,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 52038,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 371,
+        "device_uptime_ms": 38663,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 52157.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 372,
+        "device_uptime_ms": 38766,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 52277.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 373,
+        "device_uptime_ms": 38869,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 52337.799999999814,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 374,
+        "device_uptime_ms": 38971,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 52458.09999999963,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 375,
+        "device_uptime_ms": 39073,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 52519,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 376,
+        "device_uptime_ms": 39173,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 52637.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 377,
+        "device_uptime_ms": 39273,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 52757.90000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 378,
+        "device_uptime_ms": 39374,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    },
+    {
+      "elapsed_ms": 52818.40000000037,
+      "measurement": {
+        "protocol_version": 3,
+        "reference": {
+          "calibration": "ready",
+          "baseline": 508,
+          "average": 507,
+          "percent": 0,
+          "amplitudeWarning": false
+        },
+        "source": "ble_sensor",
+        "status": "valid",
+        "raw_value": 507,
+        "unit": "fdc2112_count",
+        "sequence": 379,
+        "device_uptime_ms": 39474,
+        "received_at": "2026-01-01T00:00:00Z"
+      }
+    }
+  ]
+}

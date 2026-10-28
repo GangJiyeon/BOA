@@ -12,18 +12,21 @@ class ErrorCode:
     UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE"  # jpeg/png/webp 외
     IMAGE_TOO_DARK = "IMAGE_TOO_DARK"            # 노출 부족
     IMAGE_TOO_BRIGHT = "IMAGE_TOO_BRIGHT"        # 노출 과다
+    SKIN_COLOR_UNMEASURABLE = "SKIN_COLOR_UNMEASURABLE"  # 카메라 색·조명 때문에 피부색 측정 불가
 
     # 얼굴 인식 — 재촬영 안내가 필요한 경우
     FACE_NOT_FOUND = "FACE_NOT_FOUND"            # 얼굴을 찾지 못함
     FACE_TOO_SMALL = "FACE_TOO_SMALL"            # 얼굴이 기준보다 작게 찍힘
     FACE_OUT_OF_FRAME = "FACE_OUT_OF_FRAME"      # 얼굴이 화면 밖으로 잘림
     SKIN_AREA_TOO_SMALL = "SKIN_AREA_TOO_SMALL"  # 가려짐 등으로 피부 영역 부족
+    LIGHTING_UNEVEN = "LIGHTING_UNEVEN"          # 조명이 한쪽으로 치우침 (양볼 밝기 차이)
 
     # 입력값
     INVALID_MOISTURE_INPUT = "INVALID_MOISTURE_INPUT"
     INVALID_SCORE = "INVALID_SCORE"
     MISSING_METRIC = "MISSING_METRIC"
     UNKNOWN_METRIC = "UNKNOWN_METRIC"
+    INVALID_FILE_COUNT = "INVALID_FILE_COUNT"    # 여러 장 업로드 시 개수 범위 밖
 
     # 서버 상태 — 사용자가 아니라 운영자가 조치해야 하는 경우
     SEED_MISSING = "SEED_MISSING"                # 지표/구간 기준 데이터 없음

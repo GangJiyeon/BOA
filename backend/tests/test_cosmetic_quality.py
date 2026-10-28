@@ -48,8 +48,9 @@ class QualityTests(unittest.TestCase):
 
     def test_redness_only_explains_rule_gap_not_product_failure(self):
         result = run([product()], scenarios()["redness_only"])
-        self.assertIn("활성 매칭 규칙", result.empty_reason)
-        self.assertIn("부적합하다는 뜻은 아닙니다", result.empty_reason)
+        self.assertIn("해당 고민 개선 추천과 별도로", result.recommendation_notice)
+        self.assertEqual(result.daily_care_reason, "no_supported_matching_rules")
+        self.assertIsNone(result.empty_reason)
         self.assertEqual(result.scorable_target_count, 0)
 
     def test_same_band_severity_does_not_invent_weight(self):

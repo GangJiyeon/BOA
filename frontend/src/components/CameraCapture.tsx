@@ -10,7 +10,7 @@ function cameraError(error: unknown) {
   return '카메라를 시작하지 못했습니다. 다시 시도하거나 사진 선택을 이용해 주세요.'
 }
 
-export default function CameraCapture({ onCapture, onClose }: { onCapture: (file: File) => void; onClose: () => void }) {
+export default function CameraCapture({ onCapture, onClose, instruction = '얼굴 전체가 보이도록 정면을 바라봐 주세요.' }: { onCapture: (file: File) => void; onClose: () => void; instruction?: string }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const video = useRef<HTMLVideoElement>(null)
   const activeSession = useRef({ cancelled: true })
@@ -64,21 +64,24 @@ export default function CameraCapture({ onCapture, onClose }: { onCapture: (file
     // 사용자가 본 셀프 카메라 화면과 저장 사진의 좌우 방향을 맞춘다.
     if (facing === 'user') { context.translate(canvas.width, 0); context.scale(-1, 1) }
     context.drawImage(video.current, 0, 0)
+    // 피부 분석용 사진은 무손실 PNG로 저장한다.
+    // JPEG는 8x8 블록 단위로 정보를 버려서, 웹캠 사진에서 압축 흔적이 가짜 트러블로 잡힐 수 있다.
+    // (1280x960 기준 PNG 약 1.5~2.5MB, 업로드 경로는 PNG를 이미 허용한다)
     canvas.toBlob(blob => {
       if (session.cancelled) return
       setTaking(false)
       if (!blob) { setError('촬영한 사진을 저장하지 못했습니다. 다시 촬영해 주세요.'); return }
-      onCapture(new File([blob], `boa-photo-${Date.now()}.jpg`, { type: 'image/jpeg' }))
+      onCapture(new File([blob], `boa-photo-${Date.now()}.png`, { type: 'image/png' }))
       onClose()
-    }, 'image/jpeg', 0.92)
+    }, 'image/png')
   }
 
   return createPortal(<dialog ref={dialog} className="camera-dialog" aria-labelledby="camera-title" onCancel={event => { event.preventDefault(); onClose() }}>
-    <div className="camera-heading"><div><h2 id="camera-title">사진 찍기</h2><p>얼굴 전체가 보이도록 정면을 바라봐 주세요.</p></div><button type="button" className="secondary" aria-label="카메라 닫기" onClick={onClose}><Icon name="close" /></button></div>
+    <div className="camera-heading"><div><h2 id="camera-title">사진 찍기</h2><p>{instruction}</p></div><button type="button" className="secondary" aria-label="카메라 닫기" onClick={onClose}><Icon name="close" /></button></div>
     <div className="camera-view"><video ref={video} autoPlay playsInline muted className={facing === 'user' ? 'mirrored' : ''} onLoadedData={() => setReady(true)} /><div className="camera-guide" aria-hidden="true" /></div>
     {error ? <div className="error-box" role="alert">{error}<button type="button" className="secondary" onClick={() => { setError(''); setReady(false); setAttempt(n => n + 1) }}>다시 시도</button></div>
       : !ready && <p role="status">카메라를 준비하고 있어요. 권한 요청이 뜨면 허용해 주세요.</p>}
     <div className="camera-actions"><button type="button" className="secondary" disabled={taking} onClick={() => { setReady(false); setError(''); setFacing(value => value === 'user' ? 'environment' : 'user') }}>카메라 전환</button><button type="button" disabled={!ready || taking || !!error} onClick={capture}>{taking ? '사진 처리 중…' : '촬영하기'}</button><button type="button" className="text-button" onClick={onClose}>취소</button></div>
-    <p className="input-note">촬영하면 미리보기에서 확인할 수 있습니다. 분석 시작 전에는 서버로 전송하지 않습니다.</p>
+    <p className="input-note">촬영한 사진은 미리보기에서 확인할 수 있습니다. 분석·합성을 시작할 때 서버로 전송합니다.</p>
   </dialog>, document.body)
 }
