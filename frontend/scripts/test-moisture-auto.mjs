@@ -68,7 +68,7 @@ assert.equal(summarize(actual[0]).duration_ms,3000);assert.equal(actual[0].algor
 assert.equal(replay.view().phase,'completed')
 console.log('Fixed 3s: timer and packet completion, continuous drift, no extension/repeat, faults, dropout, buffered packets, counter wraps, normalization passed')
 console.log('Actual trace fixed window:',JSON.stringify({score:summarize(actual[0]).normalized_score,samples:actual[0].samples.length,first:actual[0].samples[0],last:actual[0].samples.at(-1),terminal:summarize(actual[0]).terminal_count,host_duration_ms:finishHost-contactHost}))
-assert.equal(summarize(actual[0]).normalized_score,3,'new 0..60 scale; replay profile is assumed, not measured ground truth')
+assert.equal(summarize(actual[0]).normalized_score,16,'provisional gain10 scale; replay profile is assumed, not measured ground truth')
 assert.equal(summarize(actual[0]).estimated_state,'low')
 // Configuration is supplied ONLY for software replay; it was not in the old trace.
 for(const [response,state] of [[22.99,'low'],[23,'normal'],[45.99,'normal'],[46,'sufficient']]){
