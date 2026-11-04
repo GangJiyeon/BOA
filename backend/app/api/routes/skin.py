@@ -30,6 +30,7 @@ from app.schemas.skin import (
 )
 from app.services import s3, skin_analysis, skin_scoring
 from app.services.errors import ErrorCode
+from app.services.moisture_scale60 import classification
 
 router = APIRouter(prefix="/skin", tags=["skin"])
 
@@ -200,6 +201,7 @@ def create_analysis_debug(
     moisture_source: MoistureSource = Form("none"),
     moisture_raw: int | None = Form(None),
     moisture_score: int | None = Form(None),
+    manual_moisture_index: int | None = Form(None, ge=0, le=60),
     db: Session = Depends(get_db),
 ) -> DebugAnalysisRead:
     """사진을 직접 올려 분석한다 (S3를 거치지 않음).
@@ -207,6 +209,22 @@ def create_analysis_debug(
     CV 임계값을 맞출 때 쓰는 개발용 경로다. 원본은 저장하지 않으므로
     image_id는 항상 null이 된다. 응답에는 정규화 전 원시값(raw)이 함께 담긴다.
     """
+    if manual_moisture_index is not None:
+        if moisture_source != "manual" or moisture_score is not None or moisture_raw is not None:
+            raise HTTPException(422, "수동 수분 지수는 다른 수분값과 함께 보낼 수 없습니다.")
+        category = classification(manual_moisture_index)["estimation_category"]
+        metric = skin_scoring._load_metrics(db, {"moisture"}).get("moisture")
+        ranges = skin_scoring._load_categories(db, [metric.id]).get(metric.id, []) if metric else []
+        matched = [r for r in ranges if r.name == category]
+        if len(matched) != 1:
+            raise HTTPException(500, "수분 판정 구간을 확인해 주세요.")
+        # Preserve the sensor category while storing a compatible legacy score.
+        lo, hi = {"개선 필요": (0, 19), "보통": (20, 49), "양호": (50, 60)}[category]
+        band = matched[0]
+        moisture_score = band.min_score + round(
+            (manual_moisture_index - lo) * (band.max_score - band.min_score) / (hi - lo)
+        )
+
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise _error(
             400,

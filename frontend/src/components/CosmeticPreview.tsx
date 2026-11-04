@@ -50,6 +50,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
   const [excluded, setExcluded] = useState('')
   const [result, setResult] = useState<PreviewResponse | null>(null)
   const dailyCare = result?.recommendation_mode === 'daily_care'
+  const rednessCare = dailyCare && (result?.ranking_policy_version?.split('+').includes('redness-care-v1') ?? false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const activeRequest = useRef<AbortController | null>(null)
@@ -178,13 +179,13 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
         if (!photo) throw new Error('정면 얼굴 사진을 선택해 주세요.')
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.type)) throw new Error('JPG, PNG, WEBP 사진을 사용해 주세요.')
         const moisture = manualMoisture.trim() === '' ? null : Number(manualMoisture)
-        if (moisture !== null && (!Number.isInteger(moisture) || moisture < 0 || moisture > 100)) {
-          throw new Error('수분은 0–100 정수로 입력하거나 미측정이면 비워 주세요.')
+        if (moisture !== null && (!Number.isInteger(moisture) || moisture < 0 || moisture > 60)) {
+          throw new Error('수분 지수는 0–60 정수로 입력하거나 미측정이면 비워 주세요.')
         }
         setStage('analysis')
         const cached = cachedAnalysis.current
         const value = cached?.file === photo && cached.moisture === moisture ? cached.value
-          : await analyzeSkinPhoto(photo, moisture, controller.signal)
+          : await analyzeSkinPhoto(photo, moisture, controller.signal, 60)
         if (controller.signal.aborted) return
         cachedAnalysis.current = { file: photo, moisture, value }
         setAnalysis(value)
@@ -257,8 +258,8 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
           <label className="check-row"><input type="checkbox" checked={!hasMoisture} onChange={e => { clearResult(); setHasMoisture(!e.target.checked) }} />수분 미측정 — 나머지 4개 지표만 사용</label>
           </>}
           </section><section className="form-card options-panel"><div className="card-heading"><span className="step-number">02</span><div><h3>분석 및 추천</h3><p>분석 결과로 화장품을 조회합니다.</p></div></div>
-          {inputMode === 'photo' && <details className="filter-details moisture-options"><summary>수분 측정값 추가 <small>선택{manualMoisture !== '' ? ` · ${manualMoisture}점` : ''}</small></summary><label className="field">직접 입력 · 기존 100점 척도<input type="number" min={0} max={100} step={1} value={manualMoisture} onChange={e => { setMeasurementScope(x => x + 1); clearResult(); setManualMoisture(e.target.value) }} placeholder="0–100" /><small>기존 0~100 수동 입력용입니다. 새 0~60 센서 지수는 측정기 연결로 자동 반영됩니다.</small></label></details>}
-          <details className="filter-details"><summary>성분 제외 조건</summary><label className="field">직접 제외할 성분<input type="text" value={excluded} maxLength={1500} onChange={e => { clearResult(); setExcluded(e.target.value) }} placeholder="예: 향료, 살리실릭애씨드" /><small>정확한 성분명을 쉼표로 구분해 입력하세요.</small></label><label className="check-row"><input type="checkbox" checked={avoidTriggers} onChange={e => { clearResult(); setAvoidTriggers(e.target.checked) }} />홍조가 ‘개선 필요’이면 프로젝트 주의 성분 제외</label><label className="check-row"><input type="checkbox" checked={avoidDryness} onChange={e => { clearResult(); setAvoidDryness(e.target.checked) }} />수분 부족이면 향료·에탄올·변성알코올 제외</label></details>
+          {inputMode === 'photo' && <details className="filter-details moisture-options"><summary>수분 측정값 추가 <small>선택{manualMoisture !== '' ? ` · ${manualMoisture}/60` : ''}</small></summary><label className="field">수분 지수 직접 입력 (0–60)<input type="number" min={0} max={60} step={1} value={manualMoisture} onChange={e => { setMeasurementScope(x => x + 1); clearResult(); setManualMoisture(e.target.value) }} placeholder="0–60" /><small>측정기와 같은 수분 판정 기준을 사용해요. 입력할 값이 없으면 비워 두세요.</small></label></details>}
+          <details className="filter-details"><summary>성분 제외 조건</summary><label className="field">직접 제외할 성분<input type="text" value={excluded} maxLength={1500} onChange={e => { clearResult(); setExcluded(e.target.value) }} placeholder="예: 향료, 살리실릭애씨드" /><small>정확한 성분명을 쉼표로 구분해 입력하세요.</small></label><label className="check-row"><input type="checkbox" checked={avoidTriggers} aria-describedby="redness-filter-help" onChange={e => { clearResult(); setAvoidTriggers(e.target.checked) }} />홍조가 높을 때 향료 등 주의 성분이 든 제품 숨기기</label><small id="redness-filter-help">끄면 해당 제품도 추천 후보에 포함될 수 있어요. 판테놀 우선 표시는 유지돼요.</small><label className="check-row"><input type="checkbox" checked={avoidDryness} onChange={e => { clearResult(); setAvoidDryness(e.target.checked) }} />수분 부족이면 향료·에탄올·변성알코올 제외</label></details>
           <div className={`analysis-actionbar${inputMode === 'photo' && !!photo && !result ? ' floating-action' : ''}`}>
             <div><strong>{loading ? stage === 'analysis' ? '사진 분석 중' : '추천 제품 조회 중' : photo ? '사진 입력 완료' : inputMode === 'photo' ? '사진을 입력하세요' : '추천 조회'}</strong><small>{loading ? '완료될 때까지 기다려 주세요.' : '원본 사진은 보관하지 않습니다.'}</small></div>
             <button className="recommend-button" type="submit" disabled={loading || (inputMode === 'photo' && !photo)}>{loading ? '처리 중…' : inputMode === 'photo' ? '분석 시작' : '추천 제품 확인하기'}<Icon name="arrow" size={18} /></button>
@@ -274,11 +275,11 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
       {error && <p role="alert" className="error-box">{error}</p>}
       <div aria-live="polite" aria-busy={loading || pendingCategory !== null}>
         {result && <section className="recommendation-results" aria-labelledby="results-title">
-          <div className="results-heading"><h3 id="results-title" className="section-target" tabIndex={-1}>{dailyCare ? '일상 관리용 제품' : '화장품 추천 결과'}</h3><span>{category ? categoryNames[category] : '전체'} · {result.recommendations.length}개 제품{!dailyCare && ` · 개선 대상 ${result.target_count}개 지표`}</span></div>
+          <div className="results-heading"><h3 id="results-title" className="section-target" tabIndex={-1}>{rednessCare ? '홍조를 고려한 보습 관리' : dailyCare ? '일상 관리용 제품' : '화장품 추천 결과'}</h3><span>{category ? categoryNames[category] : '전체'} · {result.recommendations.length}개 제품{!dailyCare && ` · 개선 대상 ${result.target_count}개 지표`}</span></div>
           {result.hydration_policy && result.hydration_policy.strategy!==result.recommendation_notice && <p className="result-explanation">{result.hydration_policy.strategy}</p>}
           <p className="section-kicker">01 / 피부 지표</p><MetricScores moisture={relativeMoisture} scores={result.assessments.map(a => ({ metric_code: a.code, metric_name: a.name, score: a.score, category_name: a.category, higher_is_better: !['redness', 'trouble'].includes(a.code) }))} />
           {result.sensor_auxiliary && <p className="result-explanation">{result.sensor_auxiliary.applied ? '센서 상대 지수를 추천에 보조 반영했습니다. 기존 조건이 같은 후보 안에서만 보습 성분을 우선합니다.' : '별도 수분 점수가 있어 센서 지수를 중복 반영하지 않았습니다.'}</p>}
-          {dailyCare ? <p className="result-explanation">{result.recommendation_notice}</p>
+          {dailyCare ? <p className="result-explanation">{rednessCare ? '홍조가 높게 측정되어 같은 세트 조건의 후보 중 판테놀 함유 보습 제품을 우선 표시해요.' : result.recommendation_notice}</p>
             : <p className="result-explanation">성분을 기준으로 조회한 제품입니다. 매칭 점수는 제품 효과를 뜻하지 않습니다.</p>}
           <div className="result-category-panel">
             <p className="section-kicker">02 / 추천 제품</p><p id="category-filter-label">제품 종류</p>
@@ -296,7 +297,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
           {result.tie_groups.map(group => <section className="tie-group" key={group.key} aria-label="같은 정렬 조건의 제품">
           <p className="tie-group-summary">같은 추천 조건의 제품 {group.total}개 중 {result.recommendations.filter(p => p.ranking_group === group.key).length}개 표시</p>
           <ul className="product-list">{result.recommendations.filter(p => p.ranking_group === group.key).map(product =>
-            <CosmeticProductCard key={product.product_id} product={product} dailyCare={dailyCare} scorableTargetCount={result.scorable_target_count} />)}</ul>
+            <CosmeticProductCard key={product.product_id} product={product} dailyCare={dailyCare} rednessCare={rednessCare} scorableTargetCount={result.scorable_target_count} />)}</ul>
           {group.next_offset !== null && <button className="tie-more-button" type="button" disabled={pendingCategory !== null || loadingGroup !== null || stale}
             onClick={() => loadMore(group)}>{loadingGroup === group.key ? '제품을 불러오는 중…' : `같은 조건 제품 ${Math.min(5, group.total - group.next_offset)}개 더보기`}</button>}
           </section>)}
@@ -305,7 +306,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
           {result.deferred_metrics.some(code => ['brightness', 'uniformity', 'trouble'].includes(code)) && <p>사진의 밝기·명도 편차·붉은 반점으로는 색소침착이나 모공 막힘을 확인할 수 없어 관련 성분 매칭을 보류합니다.</p>}
           {result.deferred_metrics.includes('redness') && <p>홍조 가점은 근거 검토 중으로 보류합니다. 홍조는 조건부 배제에만 사용합니다.</p>}
           </details>
-          <details className="method-details"><summary>추천 범위와 제한 확인</summary><p>전체 {result.stats.total_products.toLocaleString()}개 중 조건을 충족한 제품은 {result.stats.eligible_products.toLocaleString()}개입니다.</p><ul><li>종류 조건 제외: {result.stats.unsupported_category}</li><li>전성분 확인 미완료: {result.stats.incomplete_ingredients}</li><li>사용 방식 조건 제외: {result.stats.excluded_by_usage}</li><li>제외 성분 포함: {result.stats.excluded_by_ingredient}</li>{dailyCare ? <li>일상 관리 성분 기준 미충족: {result.stats.no_daily_care_ingredient ?? 0}</li> : <li>개선 지표 매칭 없음: {result.stats.no_matching_metric}</li>}</ul>{result.notices.filter(note => !note.startsWith('정렬 기준:') && !note.startsWith('제품명·종류로')).map(note => <p key={note}>{note}</p>)}<small>{result.rule_version}</small></details>
+          <details className="method-details"><summary>추천 범위와 제한 확인</summary>{rednessCare && <p>{result.recommendation_notice}</p>}<p>전체 {result.stats.total_products.toLocaleString()}개 중 조건을 충족한 제품은 {result.stats.eligible_products.toLocaleString()}개입니다.</p><ul><li>종류 조건 제외: {result.stats.unsupported_category}</li><li>전성분 확인 미완료: {result.stats.incomplete_ingredients}</li><li>사용 방식 조건 제외: {result.stats.excluded_by_usage}</li><li>제외 성분 포함: {result.stats.excluded_by_ingredient}</li>{dailyCare ? <li>일상 관리 성분 기준 미충족: {result.stats.no_daily_care_ingredient ?? 0}</li> : <li>개선 지표 매칭 없음: {result.stats.no_matching_metric}</li>}</ul>{result.notices.filter(note => !note.startsWith('정렬 기준:') && !note.startsWith('제품명·종류로')).map(note => <p key={note}>{note}</p>)}<small>{result.rule_version}</small></details>
           <div className="result-return"><a className="button" href="#/results">이번 분석 결과 모아보기</a><SectionJump targetId="skin-input-title">입력·추천 조건으로 돌아가기</SectionJump></div>
         </section>}
       </div>

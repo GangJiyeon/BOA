@@ -27,16 +27,23 @@ class RankedCandidate:
     tie_count: int
 
 
-def rank_daily_care_candidates(candidates: list[CosmeticRecommendationItem]) -> list[RankedCandidate]:
+def rank_daily_care_candidates(candidates: list[CosmeticRecommendationItem],
+                               *, prioritize_redness_care: bool = False) -> list[RankedCandidate]:
     """함유 여부로 후보를 고르되 성분 수나 미측정 피부 상태에 가점을 주지 않는다."""
     if len({p.product_id for p in candidates}) != len(candidates):
         raise ValueError("중복 제품 ID")
     for item in candidates:
         if item.matches or item.match_count or not item.daily_care_ingredients or not item.daily_care_rules:
             raise ValueError("일상 관리 후보는 개선 점수 없이 별도 성분 근거가 필요합니다.")
-    ties = Counter(p.bundle_suspected for p in candidates)
-    ordered = sorted(candidates, key=lambda p: (p.bundle_suspected, p.product_id))
-    return [RankedCandidate(p, i, 0, False, ties[p.bundle_suspected])
+    def care_key(item):
+        has_priority_ingredient = prioritize_redness_care and any(
+            rule.ingredient == "판테놀" for rule in item.daily_care_rules
+        )
+        return item.bundle_suspected, not has_priority_ingredient
+
+    ties = Counter(care_key(p) for p in candidates)
+    ordered = sorted(candidates, key=lambda p: (*care_key(p), p.product_id))
+    return [RankedCandidate(p, i, 0, False, ties[care_key(p)])
             for i, p in enumerate(ordered, 1)]
 
 
