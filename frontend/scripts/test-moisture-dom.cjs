@@ -24,8 +24,8 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
  assert.equal(completed.length,0,'no early result');assert(document.querySelector('progress[aria-label="3초 측정 진행률"]'))
  host=captureStart+3000;await act(async()=>await new Promise(resolve=>setTimeout(resolve,35)))
  assert.equal(completed.length,1,'timer closes at 3s without waiting for another packet')
- assert(document.body.textContent.includes('측정 완료 · 수분 3/60'))
- assert.equal(document.querySelector('.moisture-reading strong').textContent,'3/ 60')
+ assert(document.body.textContent.includes('측정 완료 · 수분 18/60'))
+ assert.equal(document.querySelector('.moisture-reading strong').textContent,'18/ 60')
  assert.equal(document.querySelectorAll('.moisture-panel details').length,1)
  assert(!document.querySelector('.moisture-reading').textContent.includes('%'))
  assert(!document.body.textContent.includes('신호 안정화 대기'))
@@ -35,7 +35,7 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
  assert.equal(completed.length,1,'hold/release/recontact do not restart')
  await click('다시 측정');for(let i=0;i<25;i++)await act(async()=>send(2540));for(let i=0;i<31;i++)await act(async()=>send(2500))
  assert.equal(completed.length,2)
- await click('연결 해제');assert(document.body.textContent.includes('측정 완료 · 수분 3/60'))
+ await click('연결 해제');assert(document.body.textContent.includes('측정 완료 · 수분 18/60'))
  // Actual new sensor trace through the real BLE decoder, not a mocked summary.
  await act(async()=>root.render(null));await render({key:'actual-fixed'});await click('측정기 연결')
  const trace=JSON.parse(fs.readFileSync(path.join(__dirname,'../../fixtures/skin-audit-fine.json'),'utf8'))
@@ -46,7 +46,7 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
   v.setUint16(12,ref.baseline,true);v.setUint16(14,m.raw_value,true);v.setUint16(16,Math.floor(Math.max(0,ref.baseline-m.raw_value)*100/ref.baseline),true)
   measurement.value=v;await act(async()=>measurement.dispatchEvent(new dom.window.Event('characteristicvaluechanged')))
  }
- assert.equal(completed.length,before+1);assert(document.body.textContent.includes('측정 완료 · 수분 3/60'))
+ assert.equal(completed.length,before+1);assert(document.body.textContent.includes('측정 완료 · 수분 16/60'))
  assert.equal(completed.at(-1).window_end_uptime_ms-completed.at(-1).samples[0].uptime_ms,3000)
  // No post-completion recording or repeated callback.
  await act(async()=>root.render(null));let unexpected=0
@@ -70,7 +70,7 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
  const flow=active=>act(async()=>flowRoot.render(React.createElement(CosmeticPreview,{active,onAnalysis:v=>analyses.push(v)})))
  await flow(true);await click('측정기 연결');await act(async()=>send(2540,0));await click('기준값 보정')
  for(let i=0;i<25;i++)await act(async()=>send(2540));for(let i=0;i<31;i++)await act(async()=>send(2500))
- assert(document.body.textContent.includes('수분 3/60'))
+ assert(document.body.textContent.includes('수분 18/60'))
  const selectPhoto=async name=>{const input=document.querySelector('input[type=file]');Object.defineProperty(input,'files',{value:[new File(['image'],name,{type:'image/jpeg'})],configurable:true});await act(async()=>input.dispatchEvent(new dom.window.Event('change',{bubbles:true})))}
  const dryness=[...document.querySelectorAll('input[type=checkbox]')].find(e=>e.parentElement.textContent.includes('수분 부족이면 향료'));assert(dryness);await act(async()=>dryness.click())
  await selectPhoto('first.jpg');requests=[]
@@ -80,18 +80,18 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
  const save=requests.find(r=>r.url==='/api/skin/moisture/results');assert(save)
  const body=JSON.parse(save.init.body);assert.equal(body.analysis_id,77);assert.equal(body.result.algorithm_version,'skin-fixed-3s-v1')
  await flow(false);assert(!save.init.signal.aborted)
- await act(async()=>save.resolve(new Response(JSON.stringify({measurement_id:body.result.measurement_id,analysis_id:77,algorithm_version:'skin-fixed-3s-v1',relative_percent:1,baseline:2540,mean_count:2500,persisted:true,normalized_score:3,score_max:60,moisture_level:1,moisture_level_label:'매우 부족',estimated_state:'low',estimated_state_label:'부족',estimation_version:'boa-moisture-60-sqrt-v2',normalization_version:'boa-moisture-60-sqrt-v2',used_for_scoring:true,calibrated_score:null,score_category:'개선 필요',score_metric_name:'수분',scoring_status:'experimental_estimate',recommendation_eligible:false}))))
- assert.equal(analyses.at(-1).scores.find(s=>s.metric_code==='moisture').score,3)
+ await act(async()=>save.resolve(new Response(JSON.stringify({measurement_id:body.result.measurement_id,analysis_id:77,algorithm_version:'skin-fixed-3s-v1',relative_percent:1,baseline:2540,mean_count:2500,persisted:true,normalized_score:18,score_max:60,moisture_level:2,moisture_level_label:'임시 보정 · 부족',estimated_state:'low',estimated_state_label:'부족',estimation_version:'boa-moisture-60-provisional-gain10-v1',normalization_version:'boa-moisture-60-provisional-gain10-v1',used_for_scoring:true,calibrated_score:null,score_category:'개선 필요',score_metric_name:'수분',scoring_status:'experimental_estimate',recommendation_eligible:false}))))
+ assert.equal(analyses.at(-1).scores.find(s=>s.metric_code==='moisture').score,18)
  const recommendation=requests.find(r=>r.url!=='/api/skin/analyses/debug'&&r!==save);assert(recommendation)
  const preview={recommendation_mode:'targeted',recommendation_notice:'test',snapshot_token:'old',missing_metrics:[],recommendations:[],tie_groups:[],target_count:0,scorable_target_count:0,assessments:[],stats:{total_products:0,eligible_products:0},applied_exclusions:[],exclusion_details:[],notices:[],deferred_metrics:[]}
  await act(async()=>recommendation.resolve(new Response(JSON.stringify(preview))))
  const refreshed=requests.filter(r=>r.url===recommendation.url).at(-1);assert.notEqual(refreshed,recommendation)
- const payload=JSON.parse(refreshed.init.body);assert.equal(payload.scores.find(s=>s.metric_code==='moisture').score,3);assert.equal(payload.scores.length,5)
+ const payload=JSON.parse(refreshed.init.body);assert.equal(payload.scores.find(s=>s.metric_code==='moisture').score,18);assert.equal(payload.scores.length,5)
  assert.equal(payload.moisture_measurement_id,body.result.measurement_id,'recommendation uses the persisted sensor classification');assert.equal(payload.moisture_analysis_id,77)
  assert.equal(payload.avoid_dryness_triggers,true,'dryness option survives photo analysis and recommendation refresh')
  await act(async()=>refreshed.resolve(new Response(JSON.stringify({...preview,snapshot_token:'new'}))))
  await flow(true);await selectPhoto('replacement.jpg');assert(!document.body.textContent.includes('최근 측정 기록 · 수분'))
  await act(async()=>flowRoot.unmount());assert.deepEqual(warnings,[])
- console.log('DOM: fixed 3-second timer, assumed-profile trace 3/60, one completion, no post recording, compact UI, fixed analysis binding, photo + normalized recommendation path passed')
+ console.log('DOM: fixed 3-second timer, assumed-profile trace 18/60, one completion, no post recording, compact UI, fixed analysis binding, photo + normalized recommendation path passed')
  dom.window.close();fs.rmSync(output,{recursive:true,force:true});process.exit(0)
 })().catch(e=>{console.error(e);process.exit(1)});

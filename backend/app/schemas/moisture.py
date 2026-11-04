@@ -241,7 +241,7 @@ class CompletedReceipt(BaseModel):
         if self.normalization_version in SUPPORTED_VERSIONS:
             if self.normalized_score is None:
                 raise ValueError('0..60 receipt requires the canonical score')
-            expected = classification(self.normalized_score)
+            expected = classification(self.normalized_score, self.normalization_version)
             for key in ('score_max', 'moisture_level', 'moisture_level_label', 'estimated_state'):
                 if getattr(self, key) != expected[key]:
                     raise ValueError('0..60 score and six-level classification must agree')

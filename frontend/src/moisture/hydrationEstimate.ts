@@ -3,7 +3,14 @@ export const ESTIMATION_VERSION = 'hydration-estimate-pnj-2023-v1' as const
 export const LEGACY_DISPLAY_VERSION = 'boa-capacitance-display-v2' as const
 export const LINEAR60_VERSION = 'boa-moisture-60-v1' as const
 export const DISPLAY_VERSION = 'boa-moisture-60-sqrt-v2' as const
-export const SCORE60_VERSIONS: readonly string[] = [LINEAR60_VERSION, DISPLAY_VERSION]
+export const PROVISIONAL_GAINS: Record<string, number> = {
+  'boa-moisture-60-provisional-gain5-v1': 5,
+  'boa-moisture-60-provisional-gain10-v1': 10,
+  'boa-moisture-60-provisional-gain20-v1': 20,
+}
+// Temporary sensitivity preset, not reference-device calibration.
+export const ACTIVE_VERSION = 'boa-moisture-60-provisional-gain10-v1'
+export const SCORE60_VERSIONS: readonly string[] = [LINEAR60_VERSION, DISPLAY_VERSION, ...Object.keys(PROVISIONAL_GAINS)]
 export const SUPPORTED_NORMALIZATIONS: readonly string[] = [ESTIMATION_VERSION, LEGACY_DISPLAY_VERSION, ...SCORE60_VERSIONS]
 export const REFERENCE_DIVIDER = 11 // legacy driver x10 argument becomes 0x200B
 export type SensorProfile = { reference_divider: 11 | 22 | 44; output_gain: 16; offset: 170; sensor_divider: 2; verified: true; drive_current_code?:number }
@@ -13,7 +20,7 @@ export function estimateHydration(baseline:number,count:number,divider:number,no
   const air=(baseline+170)*REFERENCE_DIVIDER/divider-170,contact=(count+170)*REFERENCE_DIVIDER/divider-170
   if(air<=0||contact<0)throw new Error('공개 기준의 계산 범위를 벗어났습니다.')
   const response=Math.max(0,Math.min(100,100*(air-contact)/air)),index=Math.floor(response+1e-9)
-  const score60 = scoreFromResponse(response, SCORE60_VERSIONS.includes(normalizationVersion)?normalizationVersion:LINEAR60_VERSION), grade = classification60(score60)
+  const score60 = scoreFromResponse(response, SCORE60_VERSIONS.includes(normalizationVersion)?normalizationVersion:LINEAR60_VERSION), grade = classification60(score60, normalizationVersion)
   const state=index<=22?'low':index<=45?'normal':'sufficient'
   const [lo,hi,start,end]=state==='low'?[0,23,1,33]:state==='normal'?[23,46,34,66]:[46,100,67,100]
   return { estimated_state:state as 'low'|'normal'|'sufficient',estimated_state_label:{low:'부족',normal:'보통',sufficient:'충분'}[state],
@@ -32,16 +39,17 @@ export const LEVEL_LABELS = ['매우 부족','부족','보통 중 낮음','보�
 export function scoreFromResponse(input:number,version:string=DISPLAY_VERSION):number {
   if (!SCORE60_VERSIONS.includes(version)) throw new Error('지원하지 않는 0~60 척도')
   if(!Number.isFinite(input)||input<0||input>100)throw new Error('수분 반응 지수 범위 오류')
+  input = Math.min(100, input * (PROVISIONAL_GAINS[version] ?? 1))
   const nearest=Math.round(input),response=Math.abs(input-nearest)<1e-9?nearest:input
   if(response===100)return 60
   const band=SOURCE_BREAKS.findIndex((hi,i)=>i>0&&response<hi)-1
   const fraction=(response-SOURCE_BREAKS[band]!)/(SOURCE_BREAKS[band+1]!-SOURCE_BREAKS[band]!)
-  return band*10+Math.min(9,Math.floor(10*(version===DISPLAY_VERSION?Math.sqrt(fraction):fraction)))
+  return band*10+Math.min(9,Math.floor(10*(version!==LINEAR60_VERSION?Math.sqrt(fraction):fraction)))
 }
-export function classification60(score:number) {
+export function classification60(score:number, version:string=DISPLAY_VERSION) {
   if(!Number.isInteger(score)||score<0||score>60)throw new Error('수분 점수는 0~60 정수여야 합니다.')
   const level=Math.min(6,Math.floor(score/10)+1),state=level<=2?'low':level<=5?'normal':'sufficient'
-  return {score_max:60,moisture_level:level,moisture_level_label:LEVEL_LABELS[level-1]!,
+  return {score_max:60,moisture_level:level,moisture_level_label:(PROVISIONAL_GAINS[version] ? '임시 보정 · ' : '') + LEVEL_LABELS[level-1]!,
     estimated_state:state as 'low'|'normal'|'sufficient',
     estimated_state_label:{low:'부족',normal:'보통',sufficient:'충분'}[state]}
 }
