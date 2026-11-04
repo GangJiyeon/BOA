@@ -13,15 +13,17 @@ function ProductImage({ url, name }: { url: string | null; name: string }) {
     : <div className="product-image image-placeholder" aria-label="제품 이미지 없음"><span>boa.</span><small>제품 이미지 준비 중</small></div>
 }
 
-export default function CosmeticProductCard({ product, dailyCare, scorableTargetCount }: {
+export default function CosmeticProductCard({ product, dailyCare, rednessCare = false, scorableTargetCount }: {
   product: PreviewResponse['recommendations'][number]
   dailyCare: boolean
+  rednessCare?: boolean
   scorableTargetCount: number
 }) {
+  const prioritized = rednessCare && product.daily_care_rules?.some(rule => rule.ingredient === '판테놀')
   return <li className="product-card">
     <div className="product-visual"><span className="product-type">{cosmeticCategoryNames[product.category]}</span><ProductImage key={`${product.product_id}-${product.image_url}`} url={product.image_url} name={product.product_name} /></div>
     <div className="product-content"><p className="brand-name">{product.brand_name}</p><h4>{product.product_name}</h4>
-      {dailyCare ? <p className="daily-care-badge">일상 관리용 · 개선 점수 없음</p>
+      {dailyCare ? <p className="daily-care-badge">{prioritized ? '판테놀 함유 · 우선 표시' : rednessCare ? '보습 관리용' : '일상 관리용 · 개선 점수 없음'}</p>
         : <p className="match-score">{product.match_count}<span> / {scorableTargetCount}개 지표 성분 매칭</span></p>}
       <div className="ingredient-tags">{[...new Set(dailyCare ? product.daily_care_ingredients ?? [] : product.matches.flatMap(match => match.ingredients))].slice(0, 6).map(name => <span key={name}>{name}</span>)}</div>
       <p className="recommendation-reason">{product.recommendation_reason}</p>

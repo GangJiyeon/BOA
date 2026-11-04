@@ -149,6 +149,7 @@ def recommend(
     # 제품 부족/배제 조건을 우회하는 대체 추천이 아니다.
     # 개선 매칭 규칙 자체가 없는 경우에만 별도 탐색 경로를 사용한다.
     daily_care = not matching_rules
+    redness_care = daily_care and "redness" in targets
     if daily_care and hydration_policy['state'] in ('normal','sufficient'):
         daily_rules=[r for r in active if r.metric=='moisture' and r.effect=='maintain']
     else:
@@ -162,6 +163,9 @@ def recommend(
     if hydration_policy['state']=='low':
         ranking_basis+=' → 동일 조건 안에서 보습·수분 손실 억제 기능군 함유 우선'
     policy_version = DAILY_CARE_POLICY_VERSION if daily_care else POLICY_VERSION
+    if redness_care:
+        ranking_basis = "세트 의심 후순위 → 판테놀 함유 관리 후보 우선 → 제품 ID (홍조 개선 점수 아님)"
+        policy_version += "+redness-care-v1"
     recommendation_notice = (
         ("현재 측정값에 개선 필요 지표가 없어 일상 관리용 제품을 제안합니다. " if not targets else
          "개선 지표에 적용할 성분 매칭 규칙이 없어, 해당 고민 개선 추천과 별도로 일상 관리용 제품을 제안합니다. ")
@@ -169,6 +173,8 @@ def recommend(
     ) if daily_care else "개선 필요 지표에 연결된 성분을 함유한 후보 제품입니다."
     if daily_care and not targets and hydration_policy['state'] in ('normal','sufficient'):
         recommendation_notice=hydration_policy['strategy']
+    if redness_care:
+        recommendation_notice += " 홍조 개선 가점은 보류하며, 판테놀 함유 보습 관리 후보를 같은 세트 조건 안에서 우선 표시합니다."
     if request.normalized_scores.moisture is None and not sensor_hydration:
         recommendation_notice += (" 보정된 수분 점수가 없어, 건조하거나 충분하다고 추정하지 않습니다." if sensor_auxiliary else " 수분은 미측정이며, 건조하거나 충분하다고 추정하지 않습니다.")
     if auxiliary_enabled:
@@ -261,7 +267,7 @@ def recommend(
                                    " / ".join(f"{m.metric_name}: {', '.join(m.ingredients)} 함유" for m in matches)),
             bundle_suspected=bundle, usage_mode=usage_mode, usage_basis=usage_basis,
         ))
-    ordered = (rank_daily_care_candidates(ranked) if daily_care else
+    ordered = (rank_daily_care_candidates(ranked, prioritize_redness_care=redness_care) if daily_care else
                rank_candidates(ranked, request.ranking_policy,
                                priority=request.priority_metric, scorable_metrics=scorable))
     if hydration_policy['state']=='low':
@@ -300,5 +306,5 @@ def recommend(
         empty_reason=("추천할 제품 데이터가 아직 없습니다." if not products else
                       "일상 관리 후보에 사용할 활성 보습 성분 규칙이 없습니다." if daily_care and not daily_rules else
                       "제품 종류·제외 성분·전성분 확인 조건과 일상 관리 성분 기준을 충족하는 제품이 없습니다." if daily_care else
-                      "필터와 초기 성분 규칙을 충족하는 제품이 없습니다.") if not results else None,
+                      "적용 가능한 개선 규칙은 있으나 필터를 통과한 성분 매칭 제품이 없습니다.") if not results else None,
     )

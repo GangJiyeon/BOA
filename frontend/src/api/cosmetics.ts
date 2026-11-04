@@ -41,6 +41,7 @@ export type PreviewResponse = {
   recommendation_mode?: 'improvement' | 'daily_care'
   daily_care_reason?: 'no_improvement_targets' | 'no_supported_matching_rules' | null
   recommendation_notice?: string
+  ranking_policy_version?: string
   ranking_basis?: string
   snapshot_token: string
   tie_groups: { key: string; total: number; next_offset: number | null }[]
