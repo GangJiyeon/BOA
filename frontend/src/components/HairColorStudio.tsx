@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { type HairRender, type HairRenderBase } from '../api/studio'
 import { PALETTE, type HairBase, type HairColor } from '../studio/palette'
+import type { HairColorRecommendation } from '../studio/hairColorRecommendations'
 import { hexToRgb, loadPixels, prepareBase, renderColor, rgbToLab, type PreparedBase } from '../studio/recolor'
 
 // 원래 머리색 칸의 베이스 기준 (palette.ts 기준과 같음)
@@ -15,7 +16,11 @@ async function prepare(base: HairRenderBase, size: readonly [number, number] | n
 }
 
 // 합성 결과 위에서 프리셋으로 머리색만 바꿔봄
-export default function HairColorStudio({ render, styleName }: { render: HairRender; styleName: string }) {
+export default function HairColorStudio({ render, styleName, recommendedColors = [] }: {
+  render: HairRender
+  styleName: string
+  recommendedColors?: HairColorRecommendation[]
+}) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const out = useRef<ImageData | null>(null)
   const [bases, setBases] = useState<Partial<Record<HairBase, PreparedBase>>>({})
@@ -96,6 +101,10 @@ export default function HairColorStudio({ render, styleName }: { render: HairRen
     </div>
     <div className="color-studio-palette">
       <div className="color-studio-current"><span className="eyebrow">HAIR COLOR</span><strong>{color?.name ?? '기본 (어두운 갈색)'}</strong></div>
+      {recommendedColors.length > 0 && <fieldset className="swatch-group" disabled={!ready}>
+        <legend>피부 명도 기반 추천</legend>
+        <div className="swatches">{recommendedColors.map(({ color }) => swatch(color))}</div>
+      </fieldset>}
       {original && <fieldset className="swatch-group" disabled={!ready}>
         <legend>내 사진</legend>
         <div className="swatches">{swatch(original)}</div>

@@ -205,6 +205,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
         score_semantics: inputMode === 'development' ? 'development_assumption' : 'photo_v1',
         scores: analysisScores ?? { ...scores, moisture: hasMoisture ? scores.moisture : null },
         category: null, avoid_redness_triggers: avoidTriggers, avoid_dryness_triggers:avoidDryness,
+        ranking_policy: 'care_context',
         excluded_ingredients: excluded.split(',').map(s => s.trim()).filter(Boolean),
       }
       setStage('recommendation')
@@ -278,6 +279,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
           <div className="results-heading"><h3 id="results-title" className="section-target" tabIndex={-1}>{rednessCare ? '홍조를 고려한 보습 관리' : dailyCare ? '일상 관리용 제품' : '화장품 추천 결과'}</h3><span>{category ? categoryNames[category] : '전체'} · {result.recommendations.length}개 제품{!dailyCare && ` · 개선 대상 ${result.target_count}개 지표`}</span></div>
           {result.hydration_policy && result.hydration_policy.strategy!==result.recommendation_notice && <p className="result-explanation">{result.hydration_policy.strategy}</p>}
           <p className="section-kicker">01 / 피부 지표</p><MetricScores moisture={relativeMoisture} scores={result.assessments.map(a => ({ metric_code: a.code, metric_name: a.name, score: a.score, category_name: a.category, higher_is_better: !['redness', 'trouble'].includes(a.code) }))} />
+          {!!result.metric_strategies?.length && <div className="result-explanation"><strong>지표별 추천 반영</strong><ul>{result.metric_strategies.map(strategy => <li key={strategy.metric_code}>{strategy.description}</li>)}</ul></div>}
           {result.sensor_auxiliary && <p className="result-explanation">{result.sensor_auxiliary.applied ? '센서 상대 지수를 추천에 보조 반영했습니다. 기존 조건이 같은 후보 안에서만 보습 성분을 우선합니다.' : '별도 수분 점수가 있어 센서 지수를 중복 반영하지 않았습니다.'}</p>}
           {dailyCare ? <p className="result-explanation">{rednessCare ? '홍조가 높게 측정되어 같은 세트 조건의 후보 중 판테놀 함유 보습 제품을 우선 표시해요.' : result.recommendation_notice}</p>
             : <p className="result-explanation">성분을 기준으로 조회한 제품입니다. 매칭 점수는 제품 효과를 뜻하지 않습니다.</p>}
@@ -301,10 +303,10 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
           {group.next_offset !== null && <button className="tie-more-button" type="button" disabled={pendingCategory !== null || loadingGroup !== null || stale}
             onClick={() => loadMore(group)}>{loadingGroup === group.key ? '제품을 불러오는 중…' : `같은 조건 제품 ${Math.min(5, group.total - group.next_offset)}개 더보기`}</button>}
           </section>)}
-          <details className="scope-details"><summary>추천 기준과 분석 한계</summary>{!dailyCare && <p>성분 매칭은 효과의 크기나 확률이 아닙니다. 개선 대상 {result.target_count}개 중 현재 규칙으로 매칭 가능한 지표는 {result.scorable_target_count}개입니다. 같은 지표에 여러 성분이 있어도 1점입니다.</p>}<p>{dailyCare ? '활성 보습 성분 규칙에 해당하는 성분이 포함된 제품을 고릅니다. 개선 점수는 부여하지 않으며, 기획·세트 의심 제품은 후순위로 표시합니다.' : '매칭 지표 수를 우선하며 기획·세트 의심 제품은 후순위로 표시합니다.'} 같은 정렬 조건 안의 표시 순서는 효과의 우열을 뜻하지 않습니다.</p>
+          <details className="scope-details"><summary>추천 기준과 분석 한계</summary>{!dailyCare && <p>성분 매칭은 효과의 크기나 확률이 아닙니다. 개선 대상 {result.target_count}개 중 현재 규칙으로 매칭 가능한 지표는 {result.scorable_target_count}개입니다. 같은 지표에 여러 성분이 있어도 1점입니다.</p>}<p>{dailyCare ? '활성 보습 성분 규칙에 해당하는 성분이 포함된 제품을 고릅니다. 개선 점수는 부여하지 않으며, 기획·세트 의심 제품은 후순위로 표시합니다.' : '여러 고민을 함께 충족하는 제품을 우선하며, 밝기와 균일도는 하나의 톤 고민으로 묶습니다.'} 같은 정렬 조건 안의 표시 순서는 효과의 우열을 뜻하지 않습니다.</p>
           <p>{result.ranking_basis}</p>
           {result.deferred_metrics.some(code => ['brightness', 'uniformity', 'trouble'].includes(code)) && <p>사진의 밝기·명도 편차·붉은 반점으로는 색소침착이나 모공 막힘을 확인할 수 없어 관련 성분 매칭을 보류합니다.</p>}
-          {result.deferred_metrics.includes('redness') && <p>홍조 가점은 근거 검토 중으로 보류합니다. 홍조는 조건부 배제에만 사용합니다.</p>}
+          {result.deferred_metrics.includes('redness') && <p>현재 규칙에서는 홍조 개선 매칭을 보류하며 조건부 배제와 보습 관리 후보 우선 표시에 반영합니다.</p>}
           </details>
           <details className="method-details"><summary>추천 범위와 제한 확인</summary>{rednessCare && <p>{result.recommendation_notice}</p>}<p>전체 {result.stats.total_products.toLocaleString()}개 중 조건을 충족한 제품은 {result.stats.eligible_products.toLocaleString()}개입니다.</p><ul><li>종류 조건 제외: {result.stats.unsupported_category}</li><li>전성분 확인 미완료: {result.stats.incomplete_ingredients}</li><li>사용 방식 조건 제외: {result.stats.excluded_by_usage}</li><li>제외 성분 포함: {result.stats.excluded_by_ingredient}</li>{dailyCare ? <li>일상 관리 성분 기준 미충족: {result.stats.no_daily_care_ingredient ?? 0}</li> : <li>개선 지표 매칭 없음: {result.stats.no_matching_metric}</li>}</ul>{result.notices.filter(note => !note.startsWith('정렬 기준:') && !note.startsWith('제품명·종류로')).map(note => <p key={note}>{note}</p>)}<small>{result.rule_version}</small></details>
           <div className="result-return"><a className="button" href="#/results">이번 분석 결과 모아보기</a><SectionJump targetId="skin-input-title">입력·추천 조건으로 돌아가기</SectionJump></div>

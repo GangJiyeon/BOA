@@ -7,7 +7,7 @@ from app.services.cosmetic_usage import UsageMode
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 MetricCode = Literal["moisture", "redness", "brightness", "trouble", "uniformity"]
-RankingMode = Literal["metric_count", "concern_groups", "explicit_priority"]
+RankingMode = Literal["metric_count", "concern_groups", "explicit_priority", "care_context"]
 ProductCategory = Literal["moisturizer", "serum", "toner"]
 RecommendationMode = Literal["improvement", "daily_care"]
 Score = Annotated[int, Field(strict=True, ge=0, le=100)]
@@ -126,6 +126,9 @@ class SharedEvidenceGroup(BaseModel):
 
 
 class CosmeticRecommendationItem(BaseModel):
+    product_name_claims: dict[str, list[str]] = Field(default_factory=dict)
+    context_cautions: list[str] = Field(default_factory=list)
+    redness_care_ingredients: list[str] = Field(default_factory=list)
     hydration_support: list[str] = Field(default_factory=list)
     rank: int
     product_id: int
@@ -170,7 +173,15 @@ class RankingTieGroup(BaseModel):
     next_offset: int | None
 
 
+class MetricStrategy(BaseModel):
+    metric_code: MetricCode
+    category: str | None
+    action: Literal["candidate", "maintain", "no_extra", "deferred", "unmeasured"]
+    description: str
+
+
 class CosmeticPreviewResponse(BaseModel):
+    metric_strategies: list[MetricStrategy] = Field(default_factory=list)
     hydration_policy: dict | None = None
     recommendation_mode: RecommendationMode = "improvement"
     daily_care_reason: Literal["no_improvement_targets", "no_supported_matching_rules"] | None = None

@@ -46,12 +46,12 @@ class QualityTests(unittest.TestCase):
         result = run([products[0], products[-1]])
         self.assertEqual([p.ranking_tie_count for p in result.recommendations], [1, 1])
 
-    def test_redness_only_explains_rule_gap_not_product_failure(self):
+    def test_redness_only_uses_reviewed_care_match(self):
         result = run([product()], scenarios()["redness_only"])
-        self.assertIn("해당 고민 개선 추천과 별도로", result.recommendation_notice)
-        self.assertEqual(result.daily_care_reason, "no_supported_matching_rules")
+        self.assertEqual(result.recommendation_mode, "improvement")
+        self.assertIsNone(result.daily_care_reason)
         self.assertIsNone(result.empty_reason)
-        self.assertEqual(result.scorable_target_count, 0)
+        self.assertEqual(result.scorable_target_count, 1)
 
     def test_same_band_severity_does_not_invent_weight(self):
         products = [product(1), product(2, ingredients=("글리세린",))]
@@ -69,7 +69,7 @@ class QualityTests(unittest.TestCase):
     def test_audit_reconstructs_all_candidates_not_only_top_five(self):
         products = [product(i) for i in reversed(range(1, 13))]
         report = audit_scenario(request(), products, KNOWN, {i: str(i) for i in range(1, 13)}, load_seed_bundle())
-        self.assertEqual(report["score_histogram"], {4: 12})
+        self.assertEqual(report["score_histogram"], {5: 12})
         self.assertEqual(report["ranking_groups"][0]["products"], 12)
         self.assertEqual([p["source_product_id"] for p in report["top5"]], ["1", "2", "3", "4", "5"])
 

@@ -1,4 +1,6 @@
 import unittest
+from pathlib import Path
+from app.services.cosmetic_rule_types import RuleBundle
 from app.services.cosmetic_ranking import rank_candidates
 from scripts.audit_cosmetic_quality import scenarios
 import test_cosmetic_recommendation as f
@@ -9,7 +11,9 @@ def candidates():
     return f.run([f.product(1, ingredients=("나이아신아마이드",)),
                   f.product(2, ingredients=("글리세린", "살리실릭애씨드")),
                   f.product(3, ingredients=("글리세린",))],
-                 scenarios()["redness_filter_off"]).recommendations
+                 scenarios()["redness_filter_off"], bundle=RuleBundle.model_validate_json(
+                     (Path(__file__).parents[1] / "app/data/cosmetic_rules_hydration_v1.json").read_text()
+                 )).recommendations
 
 
 class RankingTests(unittest.TestCase):

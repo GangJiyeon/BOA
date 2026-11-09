@@ -1511,6 +1511,11 @@ input[type=range] {
   color:#566b4c;
 }
 
+.product-note {
+  display: block;
+  margin-top: 4px;
+}
+
 .ingredient-tags {
   display:flex;
   gap:6px;
@@ -2438,6 +2443,32 @@ main:focus-visible {
 
 .swatch[aria-pressed="true"] {
   box-shadow:0 0 0 3px var(--green);
+}
+
+.hair-color-recommendations {
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px;
+  padding:0;
+  list-style:none;
+}
+
+.hair-color-recommendations li {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.hair-color-recommendations small {
+  display:block;
+  color:var(--muted);
+}
+
+.hair-color-chip {
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  border:1px solid var(--line);
 }
 
 @media (max-width:850px) {
