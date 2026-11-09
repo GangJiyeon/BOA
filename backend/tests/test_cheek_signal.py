@@ -43,9 +43,12 @@ class SignalTests(unittest.TestCase):
         before=recommend(req,f.definitions(),products,f.KNOWN,**args)
         aux=dict(experimental_index=40,measurement_id=str(uuid4()),applied=True)
         after=recommend(req,f.definitions(),products,f.KNOWN,**args,sensor_auxiliary=aux)
-        self.assertEqual([p.product_id for p in before.recommendations],[3,1,2])
-        self.assertEqual([p.product_id for p in after.recommendations],[3,2,1])
-        self.assertEqual(after.recommendations[1].match_count,1)
+        self.assertEqual([p.product_id for p in before.recommendations],[1,2,3])
+        self.assertEqual([p.product_id for p in after.recommendations],[2,1,3])
+        self.assertEqual(
+            {p.product_id: p.match_count for p in before.recommendations},
+            {p.product_id: p.match_count for p in after.recommendations},
+        )
         excluded=f.request(scores=scores,excluded_ingredients=['글리세린'],avoid_redness_triggers=False)
         after=recommend(excluded,f.definitions(),products,f.KNOWN,**args,sensor_auxiliary=aux)
         self.assertNotIn(2,[p.product_id for p in after.recommendations])

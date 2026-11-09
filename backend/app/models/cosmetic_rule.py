@@ -1,7 +1,7 @@
 """ERD CATEGORY_INGREDIENT를 버전·근거·보류 상태와 함께 구현한다."""
 from datetime import date
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, ForeignKey, ForeignKeyConstraint, SmallInteger, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Date, ForeignKey, ForeignKeyConstraint, SmallInteger, String, Text, UniqueConstraint, false
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
@@ -50,3 +50,4 @@ class CategoryIngredient(Base):
     usage_scope: Mapped[str] = mapped_column(String(40))
     evidence_code: Mapped[str] = mapped_column(String(80))
     rationale: Mapped[str] = mapped_column(Text)
+    photo_eligible: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())

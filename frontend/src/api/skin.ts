@@ -20,3 +20,9 @@ export function analyzeSkinPhoto(file: File, moisture: number | null, signal?: A
 }
 
 export const getSkinAnalysis = (id: number, signal?: AbortSignal) => api<SkinAnalysis>(`/skin/analyses/${id}`, { signal })
+
+export function measureSkinLightness(file: File, signal?: AbortSignal) {
+  const body = new FormData()
+  body.append('file', file)
+  return api<{ lightness: number }>('/skin/lightness', { method: 'POST', body, signal })
+}

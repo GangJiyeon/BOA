@@ -20,6 +20,8 @@ export type PreviewRequest = {
   avoid_redness_triggers: boolean
   avoid_dryness_triggers?: boolean
   excluded_ingredients: string[]
+  ranking_policy?: 'metric_count' | 'concern_groups' | 'explicit_priority' | 'care_context'
+  priority_metric?: MetricCode
   tie_group?: string
   tie_offset?: number
   snapshot_token?: string
@@ -36,6 +38,7 @@ export type RuleExplanation = {
 }
 
 export type PreviewResponse = {
+  metric_strategies?: { metric_code: MetricCode; category: string | null; action: 'candidate' | 'maintain' | 'no_extra' | 'deferred' | 'unmeasured'; description: string }[]
   hydration_policy?: { score_max?:number; normalized_score?:number; moisture_level?:number; moisture_level_label?:string; version:string; state:'low'|'normal'|'sufficient'|'unmeasured'; basis:'supplied_moisture_category'|'persisted_sensor_estimate'; estimation_version?:string; validation_level?:string; strategy:string; dryness_exclusion_enabled:boolean }
   sensor_auxiliary?: { measurement_id: string; experimental_index: number; applied: boolean } | null
   recommendation_mode?: 'improvement' | 'daily_care'
@@ -67,6 +70,9 @@ export type PreviewResponse = {
     sensor_auxiliary_bonus?: number
     sensor_auxiliary_ingredients?: string[]
     hydration_support?: ('humectant'|'water_loss_reduction')[]
+    redness_care_ingredients?: string[]
+    product_name_claims?: Record<string, string[]>
+    context_cautions?: string[]
     match_count: number
     ranking_tie_count: number
     ranking_group: string
