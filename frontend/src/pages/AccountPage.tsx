@@ -1,6 +1,6 @@
 import PageIntro from '../components/PageIntro'
 import { useEffect, useState, type FormEvent } from 'react'
-import { getActor, getMember, logout, refreshLogin, sendCode, signup, startGuest, updateLanguage, verifyCode, type Actor, type GuestSession, type Language, type Member, termNames } from '../api/account'
+import { getActor, getMember, logout, sendCode, signup, startGuest, updateLanguage, verifyCode, type Actor, type GuestSession, type Language, type Member, termNames } from '../api/account'
 import { CaptureConsent, TaskStatus } from '../components/Shared'
 import { useTerms } from '../hooks/useTerms'
 import { useTask } from '../hooks/useTask'
@@ -126,7 +126,6 @@ export default function AccountPage({ actor, onActorChange, onSession, onLogin, 
       {terms.map(term => <label key={term.id} className="check-row"><input type="checkbox" checked={agreed.includes(term.id)} onChange={e => setAgreed(ids => e.target.checked ? [...ids, term.id] : ids.filter(id => id !== term.id))} />{termNames[term.type] ?? term.type} · {term.version} · {term.required ? '필수' : '선택'}</label>)}
       <button type="submit" disabled={task.busy || !requiredReady}>가입하기</button>
     </form>}
-    <div className="actions"><button type="button" disabled={task.busy} className="secondary" onClick={() => void task.run(async signal => { try { await refreshLogin(signal); if (!signal.aborted) setMessage('로그인 상태를 갱신했습니다.') } finally { if (!signal.aborted) await onActorChange() } })}>로그인 세션 갱신</button></div>
     <TaskStatus busy={task.busy} error={task.error} />{message && <p role="status">{message}</p>}
   </section>
 }

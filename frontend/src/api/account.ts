@@ -25,7 +25,6 @@ export const signup = (body: { signup_token: string; language: Language; nationa
 export const getMember = (signal?: AbortSignal) => api<Member>('/me', { signal })
 export const updateLanguage = (language: Language, signal?: AbortSignal) => api<Member>('/me', { method: 'PATCH', body: JSON.stringify({ language }), signal })
 export const logout = (signal?: AbortSignal) => api<void>('/auth/logout', { method: 'POST', signal })
-export const refreshLogin = (signal?: AbortSignal) => api<void>('/auth/refresh', { method: 'POST', signal })
 export const getQrResults = (token: string, signal?: AbortSignal) => api<QrResults>(`/qr/${encodeURIComponent(token)}`, { signal })
 export const claimQrResults = (token: string, signal?: AbortSignal) => api<{ skin_count: number }>(`/qr/${encodeURIComponent(token)}/claim`, { method: 'POST', signal })
 

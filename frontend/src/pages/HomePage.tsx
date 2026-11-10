@@ -1,3 +1,4 @@
+import { SESSION_EXPIRED_EVENT } from '../api/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getHealth, type Health } from '../api/health'
 import { getActor, getQuota, type Actor, type Quota } from '../api/account'
@@ -95,6 +96,18 @@ export default function HomePage() {
     setLatestCosmetics(value); setLatestSkin(value.analysis)
   }, [])
   function clearSession() { setLatestSkin(null); setLatestHair(null); setLatestCosmetics(null); setSessionVersion(value => value + 1) }
+  useEffect(() => {
+    const expired = () => {
+      actorRequest.current?.abort()
+      quotaRequest.current?.abort()
+      setActor(null); setQuota(null); setQuotaError('')
+      clearSession()
+      window.location.hash = '/start'
+      void refreshActor().then(() => setActorError('로그인이 만료되었습니다. 다시 로그인해 주세요.'))
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, expired)
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, expired)
+  }, [refreshActor])
   const startAnalysis = () => { window.location.hash = '/skin' }
   return <div className="app-shell">
     <a className="skip-link" href="#page-content" onClick={event => { event.preventDefault(); document.getElementById('page-content')?.focus() }}>본문으로 이동</a>
