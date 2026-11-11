@@ -35,12 +35,12 @@ REQUIRED_POINTS = [
 # 얼굴형별 "이상적인 비율" 프로필 (MVP 휴리스틱, 실측 데이터로 튜닝 필요)
 # length_width: 세로/가로, forehead_cheek: 이마/광대, jaw_cheek: 턱/광대, lower_face: 하관/전체길이
 FACE_SHAPE_PROFILES = {
-    "계란형":    {"length_width": 1.45, "forehead_cheek": 0.90, "jaw_cheek": 0.80, "lower_face": 0.33},
-    "둥근형":    {"length_width": 1.05, "forehead_cheek": 0.92, "jaw_cheek": 0.92, "lower_face": 0.30},
-    "사각형":    {"length_width": 1.15, "forehead_cheek": 0.97, "jaw_cheek": 0.97, "lower_face": 0.32},
-    "긴형":      {"length_width": 1.70, "forehead_cheek": 0.90, "jaw_cheek": 0.85, "lower_face": 0.36},
-    "하트형":    {"length_width": 1.35, "forehead_cheek": 1.05, "jaw_cheek": 0.68, "lower_face": 0.30},
-    "다이아몬드": {"length_width": 1.40, "forehead_cheek": 0.80, "jaw_cheek": 0.78, "lower_face": 0.32},
+    "계란형":    {"length_width": 1.2677, "forehead_cheek": 0.7292, "jaw_cheek": 0.7806, "lower_face": 0.4014},
+    "둥근형":    {"length_width": 1.1604, "forehead_cheek": 0.7095, "jaw_cheek": 0.7740, "lower_face": 0.3886},
+    "사각형":    {"length_width": 1.2387, "forehead_cheek": 0.7353, "jaw_cheek": 0.8067, "lower_face": 0.4098},
+    "긴형":      {"length_width": 1.2359, "forehead_cheek": 0.7130, "jaw_cheek": 0.7871, "lower_face": 0.4078},
+    "하트형":    {"length_width": 1.2256, "forehead_cheek": 0.7982, "jaw_cheek": 0.7226, "lower_face": 0.3564},
+    "다이아몬드": {"length_width": 1.2679, "forehead_cheek": 0.7689, "jaw_cheek": 0.7397, "lower_face": 0.3762},
 }
 
 

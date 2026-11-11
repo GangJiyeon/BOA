@@ -102,6 +102,7 @@ class QuotaItem(BaseModel):
 class QuotaRead(BaseModel):
     skin: QuotaItem
     hair: QuotaItem
+    studio: QuotaItem
 
 
 class QrResultRead(BaseModel):

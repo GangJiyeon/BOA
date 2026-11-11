@@ -1,0 +1,8 @@
+This product includes software developed by the MikroElektonika.
+Reference: https://github.com/MikroElektronika/Moisture_click
+Port: UNO R4 WiFi Wire1, checked I2C transfers, warning reporting and guarded calibration.
+
+  Copyright (c) 2017, MikroElektonika - http://www.mikroe.com
+
+  All rights reserved.
+

@@ -14,19 +14,21 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import Actor
 from app.core.config import get_settings
-from app.models import GuestSession, HairRecRun, SkinAnalysis
+from app.models import GuestSession, HairRecRun, HairRender, SkinAnalysis
 
-QuotaKind = Literal["skin", "hair"]
+QuotaKind = Literal["skin", "hair", "studio"]
 KST = timezone(timedelta(hours=9))
 
 _skin = SkinAnalysis.__table__
 _hair = HairRecRun.__table__  # 헤어 요청 1번(사진 3장) = 1행
+_studio = HairRender.__table__  # AI 합성 요청 1번 = 1행 (실패 포함)
 _sessions = GuestSession.__table__
 
 # 기능별 (guest_id 칼럼, 생성 시각 칼럼)
 SOURCES = {
     "skin": (_skin.c.guest_id, _skin.c.analyzed_at),
     "hair": (_hair.c.guest_id, _hair.c.created_at),
+    "studio": (_studio.c.guest_id, _studio.c.created_at),
 }
 
 
@@ -46,7 +48,11 @@ def _today_start() -> datetime:
 
 def _limit(kind: QuotaKind) -> int:
     settings = get_settings()
-    return settings.guest_daily_limit_skin if kind == "skin" else settings.guest_daily_limit_hair
+    return {
+        "skin": settings.guest_daily_limit_skin,
+        "hair": settings.guest_daily_limit_hair,
+        "studio": settings.guest_daily_limit_studio,
+    }[kind]
 
 
 def _count(db: Session, kind: QuotaKind, *, guest_id=None, ip_hash: str | None = None) -> int:

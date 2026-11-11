@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { analyzeFace, getHairStyles, recommendHair, type FaceAnalysis, type HairResult, type HairStyle, type Sex } from '../api/hair'
+import { measureSkinLightness } from '../api/skin'
 import { SectionJump, TaskStatus } from '../components/Shared'
 import PhotoUpload from '../components/PhotoUpload'
 import PageIntro, { ProgressSteps } from '../components/PageIntro'
 import Icon from '../components/Icon'
 import { useTask } from '../hooks/useTask'
+import { recommendHairColors } from '../studio/hairColorRecommendations'
 import type { HairSessionResult } from '../types/sessionResults'
 
 export default function HairPage({ onResult }: { onResult: (value: HairSessionResult) => void }) {
   const task = useTask()
+  const colorTask = useTask()
   const [styles, setStyles] = useState<HairStyle[]>([])
   const [catalogError, setCatalogError] = useState('')
   const [catalogLoaded, setCatalogLoaded] = useState(false)
@@ -19,16 +22,23 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
   const [texture, setTexture] = useState('')
   const [analysis, setAnalysis] = useState<FaceAnalysis | null>(null)
   const cache = useRef<FaceAnalysis | null>(null)
-  const [result, setResult] = useState<HairResult | null>(null)
+  const [session, setSession] = useState<HairSessionResult | null>(null)
+  const result = session?.result
   const [stage, setStage] = useState('')
   useEffect(() => {
     const controller = new AbortController()
     getHairStyles(controller.signal).then(value => { if (!controller.signal.aborted) { setStyles(value); setCatalogLoaded(true) } }).catch((err: Error) => { if (!controller.signal.aborted) setCatalogError(err.message) })
     return () => controller.abort()
   }, [revision])
-  function clear(newPhoto: boolean) { task.reset(); setAnalysis(null); setResult(null); setStage(''); if (newPhoto) cache.current = null }
+  function clear(newPhoto: boolean) {
+    task.reset(); colorTask.reset(); setAnalysis(null); setSession(null); setStage('')
+    if (newPhoto) cache.current = null
+  }
   function submit(event: FormEvent) {
-    event.preventDefault(); if (task.busy) return; setResult(null)
+    event.preventDefault()
+    if (task.busy) return
+    colorTask.reset()
+    setSession(null)
     void task.run(async signal => {
       if (![1, 3].includes(photos.length)) throw new Error('얼굴 사진은 1장 또는 3장을 선택해 주세요.')
       if (photos.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type))) throw new Error('JPG, PNG, WEBP 사진을 사용해 주세요.')
@@ -37,7 +47,20 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
       if (signal.aborted) return
       cache.current = face; setAnalysis(face); setStage('헤어 추천 중')
       const value = await recommendHair(face.id, length, texture, signal)
-      if (!signal.aborted) { setResult(value); onResult({ result: value, analysis: face }); setStage('완료') }
+      if (!signal.aborted) {
+        const completed = { result: value, analysis: face, photo: photos[0] }
+        setSession(completed); onResult(completed); setStage('완료')
+      }
+    })
+  }
+  function requestColors() {
+    if (!session || session.recommendedColors) return
+    void colorTask.run(async signal => {
+      const { lightness } = await measureSkinLightness(session.photo, signal)
+      if (signal.aborted) return
+      const updated = { ...session, recommendedColors: recommendHairColors(lightness) }
+      setSession(updated)
+      onResult(updated)
     })
   }
   const available = styles.filter(style => style.sex === sex || style.sex === 'unisex')
@@ -60,7 +83,26 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
     {result && <div className="result-shortcut"><p role="status">헤어 추천 완료 · {result.recommendations.length}개 스타일</p><SectionJump targetId="hair-result-title">결과로 이동</SectionJump></div>}
     {task.busy && <div className="request-progress" role="status"><span className="spinner" /><div><strong>{stage}…</strong><p>완료되면 얼굴형과 추천 스타일을 함께 보여드릴게요.</p></div></div>}<TaskStatus busy={false} error={task.error} />
     {analysis && <div className="face-result"><span className="feature-icon"><Icon name="hair" size={28} /></span><div><span className="eyebrow">YOUR FACE SHAPE</span><h3>{analysis.face_shape}</h3><p>얼굴 분석 #{analysis.id}{analysis.top2 && ` · 차순위 ${analysis.top2}`}</p></div><span className="category-pill">분석 완료</span></div>}
-    {result && <><HairResults result={result} titleId="hair-result-title" /><div className="result-return"><a className="button" href="#/results">이번 분석 결과 모아보기</a><SectionJump targetId="hair-input-title">사진·스타일 조건으로 돌아가기</SectionJump></div></>}
+    {session && <>
+      <section className="form-card" aria-labelledby="hair-color-recommend-title">
+        <h3 id="hair-color-recommend-title">피부 명도 기반 헤어색 추천</h3>
+        <p className="input-note">첫 번째 정면 사진을 기준으로 밝기 대비가 다른 3색을 골라요.</p>
+        {!session.recommendedColors && <button type="button" className="secondary" disabled={colorTask.busy} onClick={requestColors}>
+          {colorTask.busy ? '헤어색을 고르고 있어요…' : '이 사진으로 헤어색 추천받기'}
+        </button>}
+        <div aria-live="polite">
+          {colorTask.error && <p className="error-box">{colorTask.error}</p>}
+          {session.recommendedColors && <ul className="hair-color-recommendations">
+            {session.recommendedColors.map(({ color, label }) => <li key={color.name}>
+              <span className="hair-color-chip" style={{ backgroundColor: color.hex }} aria-hidden="true" />
+              <span><strong>{color.name}</strong><small>{label}</small></span>
+            </li>)}
+          </ul>}
+        </div>
+      </section>
+      <HairResults result={session.result} titleId="hair-result-title" />
+      <div className="result-return"><a className="button" href="#/studio">AI 스튜디오에서 입어보기</a><a className="button secondary" href="#/results">이번 분석 결과 모아보기</a><SectionJump targetId="hair-input-title">사진·스타일 조건으로 돌아가기</SectionJump></div>
+    </>}
   </section>
 }
 export function HairResults({ result, titleId }: { result: HairResult; titleId?: string }) {

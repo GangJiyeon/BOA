@@ -1,5 +1,6 @@
 """실제 API/DB 흐름 검증. 정상 사진 점수는 CV 대역; 손상 사진은 실제 디코더 사용."""
 import asyncio
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import httpx
@@ -33,20 +34,20 @@ class SkinRecommendationFlowTests(unittest.TestCase):
         self.assertEqual(analysis.status_code,201)
         self.assertEqual(result.status_code,200)
         self.assertEqual(result.json()['recommendations'][0]['matches'][0]['metric_code'],'moisture')
-        self.assertEqual(result.json()['deferred_metrics'],['trouble'])
+        self.assertEqual(result.json()['deferred_metrics'],[])
         with Session(self.engine) as db:
             self.assertEqual(db.scalar(select(func.count()).select_from(SkinAnalysis)),1)
 
-    def test_sensorless_photo_scores_unchanged_and_daily_care_separated(self):
+    def test_sensorless_photo_scores_recommend_trouble_care(self):
         scores={'redness':15,'brightness':71,'trouble':92,'uniformity':91}
         with patch('app.api.routes.skin.skin_analysis.analyze_image_detail',return_value=(scores,{})):
             analysis,result=asyncio.run(self.flow())
         self.assertEqual({r['metric_code']:r['score'] for r in analysis.json()['scores']},scores)
         self.assertEqual(result.json()['missing_metrics'],['moisture'])
-        self.assertEqual(result.json()['recommendation_mode'],'daily_care')
-        self.assertEqual(result.json()['recommendations'][0]['matches'],[])
-        self.assertEqual(result.json()['recommendations'][0]['match_count'],0)
-        self.assertEqual(result.json()['deferred_metrics'],['trouble'])
+        self.assertEqual(result.json()['recommendation_mode'],'improvement')
+        self.assertEqual([m['metric_code'] for m in result.json()['recommendations'][0]['matches']],['trouble'])
+        self.assertEqual(result.json()['recommendations'][0]['match_count'],1)
+        self.assertEqual(result.json()['deferred_metrics'],[])
         self.assertEqual(result.json()['target_count'],1)
 
     def test_corrupt_photo_uses_real_decoder_and_no_save(self):
@@ -64,6 +65,17 @@ class SkinRecommendationFlowTests(unittest.TestCase):
         self.assertEqual(analysis.status_code,400)
         self.assertEqual(analysis.json()['detail']['message'],'얼굴을 찾지 못했습니다')
         self.assertIsNone(result)
+
+    def test_debug_analysis_uses_team_camera_profile(self):
+        with patch('app.api.routes.skin.get_settings', return_value=SimpleNamespace(
+            min_face_width_px=250, skin_camera_profile='webcam'
+        )), patch('app.api.routes.skin.skin_analysis.analyze_image_detail',
+                 return_value=({'redness':15,'brightness':71,'trouble':92,'uniformity':91},{})) as analyze:
+            analysis, result = asyncio.run(self.flow())
+        self.assertEqual(analysis.status_code, 201)
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(analyze.call_args.kwargs['camera_profile'], 'webcam')
+        self.assertEqual(analyze.call_args.kwargs['min_face_width'], 250)
 
     def test_app_lifespan_starts_and_stops_scheduler(self):
         async def run():

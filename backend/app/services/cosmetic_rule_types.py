@@ -1,6 +1,7 @@
 """추천 규칙 계약. 파일은 시드/오프라인 검증 전용, API는 DB 규칙을 사용한다."""
 from datetime import date
 import hashlib
+import json
 from pathlib import Path
 from typing import Literal
 
@@ -8,8 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.cosmetic import MetricCode
 
-DEFAULT_RULE_VERSION = "cosmetic-rules-2026-10-05-v1"
-BUNDLE_PATH = Path(__file__).resolve().parents[1] / "data" / "cosmetic_rules_v1.json"
+DEFAULT_RULE_VERSION = "cosmetic-rules-2026-11-06-integrated-v2"
+BUNDLE_PATH = Path(__file__).resolve().parents[1] / "data" / "cosmetic_rules_integrated_v2.json"
 
 
 class StrictModel(BaseModel):
@@ -32,14 +33,15 @@ class Rule(StrictModel):
     metric: MetricCode
     category: str = "개선 필요"
     ingredient: str
-    effect: Literal["match", "exclude", "caution"]
+    effect: Literal["match", "exclude", "caution", "maintain"]
     status: Literal["active", "deferred"]
     match_score: int = Field(ge=0, le=1)
     hard_exclude: bool
-    condition: Literal["always", "redness_opt_in"] = "always"
+    condition: Literal["always", "redness_opt_in", "dryness_opt_in"] = "always"
     usage_scope: Literal["leave_on_candidate"] = "leave_on_candidate"
     evidence_code: str
     rationale: str
+    photo_eligible: bool = False
 
     @model_validator(mode="after")
     def consistent_action(self):
@@ -49,6 +51,10 @@ class Rule(StrictModel):
             raise ValueError("hard_exclude와 effect가 일치해야 합니다.")
         if self.condition == "redness_opt_in" and (self.metric != "redness" or self.effect != "exclude"):
             raise ValueError("홍조 옵션은 홍조 배제 규칙에만 적용합니다.")
+        if self.condition == 'dryness_opt_in' and (self.metric!='moisture' or self.category!='개선 필요' or self.effect!='exclude'):
+            raise ValueError('수분 옵션은 수분 개선 필요 배제 규칙에만 적용합니다.')
+        if self.effect=='maintain' and (self.metric!='moisture' or self.category not in ('보통','양호') or self.condition!='always'):
+            raise ValueError('유지 관리는 수분 보통·양호에만 적용합니다.')
         return self
 
 
@@ -76,7 +82,14 @@ class RuleBundle(StrictModel):
             "evidence": tuple(sorted(self.evidence, key=lambda e: e.code)),
             "rules": tuple(sorted(self.rules, key=lambda r: r.code)),
         })
-        return hashlib.sha256(normalized.model_dump_json().encode()).hexdigest()
+        payload = normalized.model_dump(mode="json")
+        # Older rule versions did not have this field. Preserve their recorded
+        # fingerprints after a schema upgrade and while seeding old versions.
+        for rule in payload["rules"]:
+            if not rule["photo_eligible"]:
+                del rule["photo_eligible"]
+        serialized = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        return hashlib.sha256(serialized.encode()).hexdigest()
 
 
 def load_seed_bundle() -> RuleBundle:

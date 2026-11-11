@@ -91,6 +91,10 @@ class SkinAnalysis(Base):
     # 비회원 분석 결과의 보관 만료 시점 (회원은 NULL)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
+    moisture_observations: Mapped[list["MoistureObservation"]] = relationship(
+        back_populates="analysis", cascade="all, delete-orphan", order_by="desc(MoistureObservation.id)"
+    )
+
     scores: Mapped[list["SkinScore"]] = relationship(
         back_populates="analysis", cascade="all, delete-orphan"
     )

@@ -8,9 +8,9 @@ import AccountPage from './AccountPage'
 import HairPage from './HairPage'
 import ResultsPage from './ResultsPage'
 import KioskPage from './KioskPage'
+import StudioPage from './StudioPage'
 import LandingPage from './LandingPage'
 import Icon, { type IconName } from '../components/Icon'
-import PageIntro from '../components/PageIntro'
 
 const pages = [
   { id: 'home', label: '홈', icon: 'home' },
@@ -100,7 +100,7 @@ export default function HomePage() {
     <a className="skip-link" href="#page-content" onClick={event => { event.preventDefault(); document.getElementById('page-content')?.focus() }}>본문으로 이동</a>
     <aside className="tablet-sidebar">
       <a href="#/home" className="tablet-brand" aria-label="BOA 홈">BOA<span>분석 · 추천</span></a>
-      <nav className="app-nav" aria-label="주요 메뉴">{pages.map(page => <a key={page.id} href={`#/${page.id}`} aria-current={current.page === page.id ? 'page' : undefined}><Icon name={page.icon as IconName} size={23} /><span>{page.label}</span>{page.id === 'studio' && <small>준비 중</small>}</a>)}</nav>
+      <nav className="app-nav" aria-label="주요 메뉴">{pages.map(page => <a key={page.id} href={`#/${page.id}`} aria-current={current.page === page.id ? 'page' : undefined}><Icon name={page.icon as IconName} size={23} /><span>{page.label}</span></a>)}</nav>
     </aside>
     <div className="workspace">
       <header className="tablet-topbar"><span>{pages.find(page => page.id === current.page)?.label}</span><div><span className={`connection-badge ${health?.db ? 'connected' : ''}`}><i />{health?.db ? '연결됨' : '연결 확인 필요'}</span><a href="#/start" className="account-link" aria-label="계정 화면 열기"><Icon name="user" size={20} />{actor ? actorNames[actor.kind] : '계정'}</a></div></header>
@@ -113,9 +113,9 @@ export default function HomePage() {
       {current.page === 'start' && <AccountPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onLogin={clearSession} onLogout={clearSession} onSignup={clearSession} onStart={startAnalysis} />}
       {current.page === 'results' && <ResultsPage key={current.token} latestSkin={latestSkin} latestHair={latestHair} cosmetics={latestCosmetics} hasSharedToken={Boolean(current.token)} />}
       {current.page === 'kiosk' && <KioskPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onEnd={clearSession} onStart={startAnalysis} />}
-      {current.page === 'studio' && <section><PageIntro eyebrow="COMING NEXT" title="AI Studio">추천 스타일을 사진에 적용하는 기능입니다.</PageIntro><div className="studio-placeholder"><span className="feature-icon"><Icon name="sparkles" size={36} /></span><h3>스타일 미리보기</h3><p>아직 사용할 수 없습니다.</p><button disabled>미리보기 생성 · 준비 중</button><a href="#/home">분석 시작 화면으로 →</a></div></section>}
+      {current.page === 'studio' && <StudioPage hair={latestHair} onUsed={() => void refreshQuota()} />}
     </div>
-    <footer className="app-footer"><span>BOA · 분석 및 추천</span><details><summary>연결 상태 확인</summary><ul className="health-status"><li>API: {health?.status ?? '연결 확인 필요'}</li><li>DB: {health?.db ? '연결됨' : '연결 확인 필요'}</li><li>S3: {health?.s3 ? '설정됨' : '미설정'}</li>{quota && <li>횟수 조회 · 피부 {quota.skin.remaining ?? '제한 없음'} / 헤어 {quota.hair.remaining ?? '제한 없음'}</li>}</ul>{quotaError && <p>{quotaError}</p>}<p>중간발표 버전 · 세션별 저장과 사용 횟수 적용은 연결 준비 중입니다.</p><button className="secondary" onClick={() => { void refreshHealth(); void refreshActor() }}>상태 다시 확인</button></details></footer>
+    <footer className="app-footer"><span>BOA · 분석 및 추천</span><details><summary>연결 상태 확인</summary><ul className="health-status"><li>API: {health?.status ?? '연결 확인 필요'}</li><li>DB: {health?.db ? '연결됨' : '연결 확인 필요'}</li><li>S3: {health?.s3 ? '설정됨' : '미설정'}</li>{quota && <li>횟수 조회 · 피부 {quota.skin.remaining ?? '제한 없음'} / 헤어 {quota.hair.remaining ?? '제한 없음'} / AI 스튜디오 {quota.studio?.remaining ?? '제한 없음'}</li>}</ul>{quotaError && <p>{quotaError}</p>}<p>중간발표 버전 · 세션별 저장과 사용 횟수 적용은 연결 준비 중입니다.</p><button className="secondary" onClick={() => { void refreshHealth(); void refreshActor() }}>상태 다시 확인</button></details></footer>
     </main></div>
   </div>
 }

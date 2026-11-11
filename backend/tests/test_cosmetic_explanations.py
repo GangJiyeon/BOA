@@ -64,7 +64,7 @@ class ExplanationApiTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(body["explanation_version"], "cosmetic-explanations-v1")
         product = body["recommendations"][0]
-        self.assertEqual(product["match_count"], 3)
+        self.assertEqual(product["match_count"], 5)
         self.assertEqual(len(product["shared_evidence_groups"]), 1)
         for match in product["matches"]:
             self.assertFalse(match["interpretation"]["product_efficacy_verified"])

@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.models import EmailVerification, GuestSession, RefreshToken
 from app.services.account import RESULT_MODELS
+from app.services.hair_studio import cleanup_renders
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -38,6 +39,7 @@ def cleanup_expired(db: Session) -> dict[str, int]:
         model.__tablename__: run(delete(model).where(model.guest_id.in_(expired_sessions)))
         for model in RESULT_MODELS
     }
+    counts["hair_renders_old"] = cleanup_renders(db)
     counts["guest_sessions"] = run(delete(GuestSession).where(GuestSession.id.in_(expired_sessions)))
     counts["refresh_tokens"] = run(delete(RefreshToken).where(RefreshToken.expires_at < now))
     counts["email_verifications"] = run(

@@ -7,6 +7,7 @@
 재현성 측정: 같은 사람 사진 여러 장을 한 번에 올려 반복 측정 통계를 본다.
 """
 
+from datetime import datetime
 import statistics
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -26,9 +27,11 @@ from app.schemas.skin import (
     RepeatabilityRejected,
     RepeatabilityReport,
     ScoreRead,
+    SkinLightnessRead,
 )
 from app.services import s3, skin_analysis, skin_scoring
 from app.services.errors import ErrorCode
+from app.services.moisture_scale60 import classification
 
 router = APIRouter(prefix="/skin", tags=["skin"])
 
@@ -36,6 +39,7 @@ router = APIRouter(prefix="/skin", tags=["skin"])
 DUMMY_LOGIC_VERSION = f"{skin_scoring.LOGIC_VERSION}-dummy"
 
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+MAX_LIGHTNESS_PHOTO_BYTES = 10 * 1024 * 1024
 
 # ── 재현성 측정 설정 ───────────────────────────────────────────────
 # 한 번에 올릴 수 있는 사진 수 (통계를 내려면 최소 2장)
@@ -82,6 +86,7 @@ def _get_with_scores(db: Session, analysis_id: int) -> SkinAnalysis | None:
         select(SkinAnalysis)
         .where(SkinAnalysis.id == analysis_id)
         .options(
+            selectinload(SkinAnalysis.moisture_observations),
             selectinload(SkinAnalysis.scores).selectinload(SkinScore.metric),
             selectinload(SkinAnalysis.scores).selectinload(SkinScore.category),
         )
@@ -92,22 +97,22 @@ def to_read(analysis: SkinAnalysis) -> AnalysisRead:
     """응답 변환. 지표 코드 순서를 고정해 프론트에서 정렬할 필요가 없게 한다."""
     order = ("moisture", *skin_analysis.PHOTO_METRIC_CODES)
     scores = sorted(analysis.scores, key=lambda s: order.index(s.metric.code))
+    from app.services.moisture import observation_receipt
+    observation = observation_receipt(max(analysis.moisture_observations, key=lambda r: (datetime.fromisoformat(r.payload["measured_at"].replace("Z", "+00:00")), r.id))) if analysis.moisture_observations else None
+    effective = [ScoreRead(metric_code=s.metric.code, metric_name=s.metric.name, score=s.score,
+                           category_name=s.category.name, higher_is_better=s.metric.higher_is_better) for s in scores]
+    if observation and observation.used_for_scoring:
+        effective = [s for s in effective if s.metric_code != 'moisture']
+        effective.insert(0, ScoreRead(metric_code='moisture', metric_name=observation.score_metric_name,
+            score=observation.normalized_score if observation.normalized_score is not None else observation.calibrated_score, category_name=observation.score_category, higher_is_better=True))
     return AnalysisRead(
+        moisture_measurement=observation,
         id=analysis.id,
         analyzed_at=analysis.analyzed_at,
         logic_version=analysis.logic_version,
-        moisture_source=analysis.moisture_source,
+        moisture_source="sensor" if observation and observation.used_for_scoring else analysis.moisture_source,
         image_id=analysis.image_id,
-        scores=[
-            ScoreRead(
-                metric_code=s.metric.code,
-                metric_name=s.metric.name,
-                score=s.score,
-                category_name=s.category.name,
-                higher_is_better=s.metric.higher_is_better,
-            )
-            for s in scores
-        ],
+        scores=effective,
     )
 
 
@@ -192,12 +197,31 @@ def create_analysis(body: AnalysisCreate, db: Session = Depends(get_db)) -> Anal
     )
 
 
+@router.post("/lightness")
+def read_skin_lightness(file: UploadFile = File(...)) -> SkinLightnessRead:
+    """헤어색 추천에 필요한 사진 명도를 기록 저장 없이 계산한다."""
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise _error(400, ErrorCode.UNSUPPORTED_MEDIA_TYPE, "JPG, PNG, WEBP 사진을 사용해 주세요.")
+    photo = file.file.read(MAX_LIGHTNESS_PHOTO_BYTES + 1)
+    if len(photo) > MAX_LIGHTNESS_PHOTO_BYTES:
+        raise HTTPException(413, "사진은 10MB 이하로 올려 주세요.")
+    settings = get_settings()
+    try:
+        lightness = skin_analysis.measure_skin_lightness(
+            photo, min_face_width=settings.min_face_width_px, camera_profile=settings.skin_camera_profile
+        )
+    except skin_analysis.AnalysisError as e:
+        raise _error(400, e.code, str(e), e.detail) from e
+    return SkinLightnessRead(lightness=lightness)
+
+
 @router.post("/analyses/debug", status_code=201)
 def create_analysis_debug(
     file: UploadFile = File(..., description="정면 얼굴 사진 (jpeg/png/webp)"),
     moisture_source: MoistureSource = Form("none"),
     moisture_raw: int | None = Form(None),
     moisture_score: int | None = Form(None),
+    manual_moisture_index: int | None = Form(None, ge=0, le=60),
     db: Session = Depends(get_db),
 ) -> DebugAnalysisRead:
     """사진을 직접 올려 분석한다 (S3를 거치지 않음).
@@ -205,6 +229,22 @@ def create_analysis_debug(
     CV 임계값을 맞출 때 쓰는 개발용 경로다. 원본은 저장하지 않으므로
     image_id는 항상 null이 된다. 응답에는 정규화 전 원시값(raw)이 함께 담긴다.
     """
+    if manual_moisture_index is not None:
+        if moisture_source != "manual" or moisture_score is not None or moisture_raw is not None:
+            raise HTTPException(422, "수동 수분 지수는 다른 수분값과 함께 보낼 수 없습니다.")
+        category = classification(manual_moisture_index)["estimation_category"]
+        metric = skin_scoring._load_metrics(db, {"moisture"}).get("moisture")
+        ranges = skin_scoring._load_categories(db, [metric.id]).get(metric.id, []) if metric else []
+        matched = [r for r in ranges if r.name == category]
+        if len(matched) != 1:
+            raise HTTPException(500, "수분 판정 구간을 확인해 주세요.")
+        # Preserve the sensor category while storing a compatible legacy score.
+        lo, hi = {"개선 필요": (0, 19), "보통": (20, 49), "양호": (50, 60)}[category]
+        band = matched[0]
+        moisture_score = band.min_score + round(
+            (manual_moisture_index - lo) * (band.max_score - band.min_score) / (hi - lo)
+        )
+
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise _error(
             400,

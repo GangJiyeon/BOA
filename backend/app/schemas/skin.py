@@ -5,6 +5,7 @@ from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
+from app.schemas.moisture import CompletedReceipt
 
 MoistureSource = Literal["sensor", "manual", "none"]
 
@@ -52,6 +53,7 @@ class ScoreRead(BaseModel):
 
 
 class AnalysisRead(BaseModel):
+    moisture_measurement: CompletedReceipt | None = None
     id: int
     analyzed_at: datetime
     logic_version: str
@@ -64,6 +66,10 @@ class DebugAnalysisRead(AnalysisRead):
     """디버그 응답. 정규화 전 원시값을 함께 내려 임계값 조정에 쓴다."""
 
     raw: dict[str, float]
+
+
+class SkinLightnessRead(BaseModel):
+    lightness: float = Field(ge=0, le=100)
 
 
 # ── 재현성 측정 (디버그) ─────────────────────────────────────────────

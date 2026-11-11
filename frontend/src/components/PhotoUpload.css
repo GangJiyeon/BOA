@@ -1,0 +1,15 @@
+.photo-input-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+.photo-input-actions .upload-button { margin: 0; }
+.photo-angle {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+}
+.photo-retake { width: 112px; padding: 6px; font-size: 12px; }

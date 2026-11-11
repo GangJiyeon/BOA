@@ -14,18 +14,19 @@ def products():
 
 
 class RankingEngineIntegrationTests(unittest.TestCase):
-    def test_default_preserves_legacy_order(self):
+    def test_default_preserves_metric_count_then_applies_hydration_tie_policy(self):
         r = f.run(products())
         self.assertEqual([p.product_id for p in r.recommendations], [1, 2, 3])
         self.assertEqual(r.ranking_policy, "metric_count")
-        self.assertEqual(r.recommendations[0].match_count, 2)
-        self.assertEqual(r.recommendations[0].matched_group_count, 1)
+        self.assertEqual(r.recommendations[0].match_count, 4)
+        self.assertEqual(r.recommendations[0].matched_group_count, 3)
+        self.assertEqual(r.recommendations[1].matched_group_count, 2)
 
     def test_groups_change_order_without_rewriting_metric_matches(self):
         r = f.run(products(), f.request(ranking_policy="concern_groups"))
-        self.assertEqual([p.product_id for p in r.recommendations], [2, 1, 3])
-        self.assertEqual(r.recommendations[1].match_count, 2)
-        self.assertEqual(r.recommendations[1].ranking_tie_count, 2)
+        self.assertEqual([p.product_id for p in r.recommendations], [1, 2, 3])
+        self.assertEqual(r.recommendations[0].match_count, 4)
+        self.assertEqual(r.recommendations[1].ranking_tie_count, 1)
         self.assertIn("밝기·균일도 통합", r.ranking_basis)
 
     def test_explicit_priority_changes_order(self):
@@ -51,7 +52,7 @@ class RankingEngineIntegrationTests(unittest.TestCase):
     def test_missing_normal_or_deferred_priority_rejected_even_empty_catalog(self):
         for metric, scores in (("moisture", f.request().scores.model_dump() | {"moisture": None}),
                                ("moisture", f.request().scores.model_dump() | {"moisture": 90}),
-                               ("redness", f.request().scores.model_dump())):
+                               ("redness", f.request().scores.model_dump() | {"redness": 10})):
             with self.subTest(metric=metric, scores=scores), self.assertRaises(f.RecommendationInputError):
                 f.run([], f.request(scores=scores, ranking_policy="explicit_priority", priority_metric=metric))
 
@@ -80,16 +81,16 @@ class RankingApiTests(unittest.TestCase):
         status, data = asyncio.run(f.asgi_request(f.request(ranking_policy="concern_groups").model_dump()))
         self.assertEqual(status, 200)
         self.assertEqual(data["ranking_policy"], "concern_groups")
-        self.assertEqual(data["ranking_policy_version"], "cosmetic-ranking-v1")
-        self.assertEqual(data["recommendations"][0]["matched_group_count"], 2)
-        self.assertEqual(data["recommendations"][0]["match_count"], 3)
+        self.assertEqual(data["ranking_policy_version"], "cosmetic-ranking-v1+redness-support-v1")
+        self.assertEqual(data["recommendations"][0]["matched_group_count"], 4)
+        self.assertEqual(data["recommendations"][0]["match_count"], 5)
         self.assertTrue(statements)
         self.assertTrue(all(s.lstrip().upper().startswith("SELECT") for s in statements))
 
-    def test_unavailable_priority_returns_422(self):
+    def test_redness_priority_is_available(self):
         status, data = asyncio.run(f.asgi_request(f.request(ranking_policy="explicit_priority", priority_metric="redness").model_dump()))
-        self.assertEqual(status, 422)
-        self.assertIn("활성 매칭 규칙", data["detail"])
+        self.assertEqual(status, 200)
+        self.assertTrue(data["recommendations"][0]["priority_matched"])
 
     def test_malformed_priority_request_returns_422(self):
         body = f.request().model_dump() | {"ranking_policy": "explicit_priority"}

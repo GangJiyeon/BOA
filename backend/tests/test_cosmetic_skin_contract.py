@@ -16,22 +16,22 @@ def example():
 
 
 class SkinContractTests(unittest.TestCase):
-    def test_example_defers_trouble(self):
+    def test_example_matches_trouble_care(self):
         r = f.run([f.product()], CosmeticPreviewRequest(scores=example()))
-        self.assertEqual((r.target_count, r.scorable_target_count), (1,0))
-        self.assertEqual(r.deferred_metrics, ['trouble'])
-        self.assertEqual(r.recommendation_mode, 'daily_care')
-        self.assertEqual(r.recommendations[0].matches, [])
-        self.assertEqual(r.recommendations[0].match_count, 0)
+        self.assertEqual((r.target_count, r.scorable_target_count), (1,1))
+        self.assertEqual(r.deferred_metrics, [])
+        self.assertEqual(r.recommendation_mode, 'improvement')
+        self.assertEqual([m.metric_code for m in r.recommendations[0].matches], ['trouble'])
+        self.assertEqual(r.recommendations[0].match_count, 1)
 
-    def test_only_moisture_matches_actual_photo_scores(self):
+    def test_all_concerns_match_actual_photo_scores(self):
         rows=example()
         for row in rows:
             if row['metric_code'] in {'moisture','brightness','uniformity'}:
                 row.update(score=20, category_name='개선 필요')
         r=f.run([f.product()], CosmeticPreviewRequest(scores=rows))
-        self.assertEqual([m.metric_code for m in r.recommendations[0].matches], ['moisture'])
-        self.assertEqual(set(r.deferred_metrics), {'brightness','uniformity','trouble'})
+        self.assertEqual([m.metric_code for m in r.recommendations[0].matches], ['moisture','brightness','trouble','uniformity'])
+        self.assertEqual(set(r.deferred_metrics), set())
 
     def test_missing_moisture(self):
         r=f.run([], CosmeticPreviewRequest(scores=example()[1:]))
@@ -58,7 +58,7 @@ class SkinContractTests(unittest.TestCase):
 
     def test_default_object_and_no_array_legacy(self):
         r=f.run([f.product()],CosmeticPreviewRequest(scores=f.request().scores))
-        self.assertEqual(r.recommendations[0].match_count,1)
+        self.assertEqual(r.recommendations[0].match_count,5)
         with self.assertRaises(ValidationError):
             CosmeticPreviewRequest(scores=example(),score_semantics='development_assumption')
 
@@ -70,7 +70,7 @@ class SkinContractApiTests(unittest.TestCase):
         status,data=asyncio.run(f.asgi_request({'scores':example()}))
         self.assertEqual(status,200)
         self.assertEqual(data['score_semantics'],'photo_v1')
-        self.assertEqual(data['deferred_metrics'],['trouble'])
+        self.assertEqual(data['deferred_metrics'],[])
 
     def test_mismatch_api(self):
         rows=example();rows[3]['category_name']='양호'

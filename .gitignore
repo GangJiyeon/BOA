@@ -236,6 +236,12 @@ desktop.ini
 
 # Local cosmetic dataset
 backend/data/*.db
+
+# AI 스튜디오 생성 결과·분할 모델
+backend/static/studio/
+backend/studio_debug/
+backend/ml_assets/
+
 # 소스코드가 아닌 자료 (문서·발표·테스트 사진)
 # 문서·발표 자료
 *.doc

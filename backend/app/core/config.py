@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     moisture_allow_simulation: bool = False
+    moisture_calibration_profile: str = ""
 
     database_url: str
 
@@ -56,6 +57,20 @@ class Settings(BaseSettings):
     google_redirect_uri: str = "postmessage"
     # 개발용 로그인 API(POST /api/auth/dev-login), 배포에서는 false
     dev_login: bool = False
+
+    # AI 스튜디오 (Gemini 이미지 편집, 키 비우면 503)
+    gemini_api_key: str = ""
+    # 헤어스타일 합성용
+    studio_style_model: str = "gemini-3.1-flash-image"
+    guest_daily_limit_studio: int = 2
+    # 결과 저장 폴더 (/static/studio/... 로 제공), 보관 일수
+    studio_dir: str = "static/studio"
+    studio_keep_days: int = 7
+    # 개발용, 원본·AI 원본 결과를 studio_debug_dir에 남김 (합성 조정을 AI 재호출 없이), 배포 시 false
+    studio_debug: bool = False
+    studio_debug_dir: str = "studio_debug"
+    # 머리·피부 분할 모델 (없으면 첫 사용 때 내려받음)
+    hair_seg_model_path: str = "ml_assets/selfie_multiclass_256x256.tflite"
 
     @property
     def cors_origin_list(self) -> list[str]:

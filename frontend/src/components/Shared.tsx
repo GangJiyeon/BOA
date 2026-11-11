@@ -24,6 +24,6 @@ export function CaptureConsent({ terms, face, age, onFace, onAge }: { terms: Ter
 }
 export function SkinSummary({ analysis }: { analysis: SkinAnalysis }) {
   return <section className="form-card"><h3>피부 분석 #{analysis.id}</h3>
-    <MetricScores scores={analysis.scores} />
+    <MetricScores scores={analysis.scores} moisture={analysis.moisture_measurement} />
   </section>
 }

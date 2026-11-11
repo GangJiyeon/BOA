@@ -53,16 +53,21 @@ def main():
         'five_concerns':dict(moisture=25,redness=75,brightness=30,trouble=75,uniformity=30),
         'screenshot':dict(moisture=50,redness=75,brightness=30,trouble=75,uniformity=30),
         'moisture_only':dict(moisture=25,redness=10,brightness=80,trouble=10,uniformity=80),
+        'moisture_low_exclusions':dict(moisture=25,redness=10,brightness=80,trouble=10,uniformity=80),
+        'moisture_normal':dict(moisture=50,redness=10,brightness=80,trouble=10,uniformity=80),
+        'moisture_sufficient_exclusions':dict(moisture=80,redness=10,brightness=80,trouble=10,uniformity=80),
         'all_good':dict(moisture=80,redness=10,brightness=80,trouble=10,uniformity=80),
     }
     results={}
     for name,scores in scenarios.items():
-        request=CosmeticPreviewRequest(scores=scores, score_semantics="development_assumption")
+        request=CosmeticPreviewRequest(scores=scores, score_semantics="development_assumption",
+            avoid_dryness_triggers=name.endswith('_exclusions'))
         with Session(engine) as db:
             actual=preview_from_database(db,request)
         expected=recommend(request,default_definitions(),products,known,rule_bundle=bundle)
         assert actual.model_dump() == expected.model_dump(), name
         results[name]={'stats':actual.stats.model_dump(),'scorable_target_count':actual.scorable_target_count,
+                       'hydration_policy':actual.hydration_policy,'applied_exclusions':actual.applied_exclusions,
                        'top5':[{'id':source_ids[p.product_id],'name':p.product_name,'matches':p.match_count} for p in actual.recommendations]}
     coverage=Counter(name for p in products for name in p.ingredients)
     print(json.dumps({'database':'isolated in-memory SQLite; source read-only','source_counts':counts_before,'dry_run':dry,'applied':applied,'repeat':repeat,'coverage':{r.ingredient:coverage[r.ingredient] for r in bundle.rules},'scenarios':results},ensure_ascii=False,indent=2))
