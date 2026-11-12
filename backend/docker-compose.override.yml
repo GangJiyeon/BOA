@@ -1,0 +1,7 @@
+# 로컬 환경 차이를 덮어쓰는 파일. Docker Compose가 자동으로 함께 읽는다.
+# 이 PC의 PostgreSQL은 5432가 아닌 5433 포트를 쓴다.
+# 개인 환경 설정이므로 커밋하지 않는다.
+services:
+  api:
+    environment:
+      DATABASE_URL: postgresql+psycopg://boa:boa@host.docker.internal:5433/boa
