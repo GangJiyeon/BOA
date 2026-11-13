@@ -6,6 +6,31 @@ from typing import Literal
 
 UsageMode = Literal["leave_on_candidate", "rinse_off", "uncertain"]
 
+# Product-name statements are a selection aid with an explicit source. They
+# are not verified manufacturer instructions or evidence of product efficacy.
+CARE_NAME_TERMS = {
+    "hydration": ("수분", "보습", "장벽", "hydrating", "moisturizing"),
+    "redness": ("진정", "붉은기", "홍조", "민감", "soothing", "calming"),
+    "pigmentation": ("미백", "잡티", "기미", "피부톤", "톤케어", "톤개선", "브라이트닝", "흔적", "brightening"),
+    "blemish": ("트러블", "여드름", "블레미쉬", "blemish"),
+}
+
+
+def care_name_signals(name: str) -> tuple[dict[str, list[str]], list[str]]:
+    """Read explicit purpose words without borrowing claims from gifts."""
+    name = unicodedata.normalize("NFKC", name).casefold()
+    name = re.sub(r"[\[(][^\])]*(?:증정|사은품|샘플)[^\])]*[\])]", " ", name)
+    name = re.split(r"\+|증정|사은품", name, maxsplit=1)[0]
+    compact = re.sub(r"\s+", "", name)
+    claims = {
+        group: [term for term in terms if term in compact]
+        for group, terms in CARE_NAME_TERMS.items()
+    }
+    claims = {group: terms for group, terms in claims.items() if terms}
+    exfoliation = [term for term in ("각질", "필링") if term in compact]
+    exfoliation.extend(re.findall(r"(?<![a-z])(?:aha|bha|pha)(?![a-z])", name))
+    return claims, sorted(set(exfoliation))
+
 
 def classify_usage(name: str) -> tuple[UsageMode, str]:
     name = unicodedata.normalize("NFKC", name).casefold()

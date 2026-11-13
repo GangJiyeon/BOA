@@ -10,10 +10,18 @@ METRIC_ASSUMPTIONS: dict[MetricCode, str] = {
 }
 
 
-def explain_match(metric: MetricCode) -> MatchInterpretation:
+def explain_match(metric: MetricCode, *, photo_based: bool = False) -> MatchInterpretation:
+    assumption = METRIC_ASSUMPTIONS[metric]
+    if photo_based and metric != "moisture":
+        assumption = {
+            "brightness": "사진의 낮은 밝기를 톤 관리 후보 탐색의 보조 조건으로 사용합니다. 촬영 조명·원래 피부색·색소침착의 원인을 구분한 값은 아닙니다.",
+            "uniformity": "사진의 명도 편차를 톤 관리 후보 탐색의 보조 조건으로 사용합니다. 색소 원인을 확정하지 않으며 밝기와 같은 고민 그룹입니다.",
+            "redness": "사진의 붉은 정도를 붉은기 관리 후보 탐색의 보조 조건으로 사용합니다. 홍조의 원인이나 질환을 진단하지 않습니다.",
+            "trouble": "사진의 붉은 반점을 트러블성 피부 관리 후보 탐색의 보조 조건으로 사용합니다. 여드름·모공 막힘을 진단하지 않습니다.",
+        }[metric]
     return MatchInterpretation(
         match_basis="저장된 정규화 성분명과 활성 규칙의 성분명이 일치했습니다. 제조사 최신 전성분을 재검증한 결과는 아닙니다.",
-        metric_assumption=METRIC_ASSUMPTIONS[metric],
+        metric_assumption=assumption,
         unverified_items=[
             "함량 표기와 연구 농도의 대응은 이번 추천에서 평가하지 않았습니다. 미표기는 0%를 뜻하지 않습니다.",
             "완제품의 제형·성분 특성·사용 조건이 연구 조건과 같은지 확인하지 않았습니다.",

@@ -1,6 +1,6 @@
 import type { Measurement } from './protocol'
 import { sensorReadiness } from './protocol'
-import { estimateHydration, SUPPORTED_NORMALIZATIONS, DISPLAY_VERSION, type SensorProfile } from './hydrationEstimate'
+import { estimateHydration, SUPPORTED_NORMALIZATIONS, ACTIVE_VERSION as DISPLAY_VERSION, type SensorProfile } from './hydrationEstimate'
 
 // Fixed acquisition duration and protocol/data availability checks.
 export const AUTO_CONFIG = Object.freeze({ version: 'skin-fixed-3s-v1' as const,

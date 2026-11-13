@@ -1,0 +1,72 @@
+# BOA CI: push / PR 때마다 백엔드·프론트엔드 테스트를 GitHub 서버에서 자동 실행
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:        # Actions 탭에서 수동 실행 버튼
+
+jobs:
+  # ── 백엔드: FastAPI unittest ──
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend   # tests 폴더를 찾도록 backend에서 실행
+    env:
+      DATABASE_URL: "sqlite://"      # 테스트는 SQLite 메모리 DB 사용 (실제 DB 불필요)
+    steps:
+      - uses: actions/checkout@v4
+
+      # OpenCV/MediaPipe 런타임 라이브러리 (Dockerfile과 동일)
+      - name: 시스템 라이브러리 설치
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
+
+      # uv + Python 3.12 설치 (uv.lock 기준 캐시)
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: 의존성 설치
+        run: uv sync --frozen
+
+      - name: unittest 실행
+        run: uv run python -m unittest discover -s tests -v
+
+  # ── 프론트엔드: 스크립트 테스트 + 타입검사/빌드 + 린트 ──
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm 버전은 package.json의 packageManager 값을 따름
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+
+      # Node 버전은 .nvmrc 기준, pnpm 캐시 사용
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: 의존성 설치
+        run: pnpm install --frozen-lockfile
+
+      - name: API 클라이언트 테스트
+        run: node scripts/test-api-client.mjs
+
+      - name: 수분 센서 테스트
+        run: node scripts/test-moisture.mjs
+
+      - name: 린트
+        run: pnpm lint
+
+      - name: 타입검사 + 빌드
+        run: pnpm build

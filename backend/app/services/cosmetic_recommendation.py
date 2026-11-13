@@ -6,16 +6,16 @@ from urllib.parse import urlparse
 
 from app.schemas.cosmetic import (
     CosmeticPreviewRequest, CosmeticPreviewResponse, CosmeticRecommendationItem,
-    IngredientMatch, MetricAssessment, RecommendationStats, RuleExplanation,
+    IngredientMatch, MetricAssessment, MetricStrategy, RecommendationStats, RuleExplanation,
 )
 from app.services.cosmetic_rules import METRICS, NOTICES, ENGINE_VERSION, SUPPORTED_CATEGORIES, normalize_name
 from app.services.cosmetic_rule_types import RuleBundle
 
-from app.services.cosmetic_usage import classify_usage
+from app.services.cosmetic_usage import care_name_signals, classify_usage
 from app.services.cosmetic_explanations import explain_match, shared_evidence
 from app.services.cosmetic_ranking import (
-    rank_candidates, rank_daily_care_candidates, POLICY_VERSION, RANKING_BASES,
-    DAILY_CARE_POLICY_VERSION, DAILY_CARE_RANKING_BASIS,
+    GROUPS, rank_candidates, rank_daily_care_candidates, POLICY_VERSION, RANKING_BASES,
+    DAILY_CARE_POLICY_VERSION, DAILY_CARE_RANKING_BASIS, apply_redness_tiebreak,
 )
 from app.services.cosmetic_pagination import paginate_ties
 
@@ -134,14 +134,15 @@ def recommend(
         return (rule.condition=='always' or
                 rule.condition=='redness_opt_in' and request.avoid_redness_triggers or
                 rule.condition=='dryness_opt_in' and request.avoid_dryness_triggers)
-    active = [r for r in sorted(rule_bundle.rules, key=lambda r: r.code) if r.status == "active"
-              and r.metric in by_metric and r.category == by_metric[r.metric].category and enabled(r)]
+    state_rules = [r for r in sorted(rule_bundle.rules, key=lambda r: r.code) if r.status == "active"
+                   and r.metric in by_metric and r.category == by_metric[r.metric].category]
+    active = [r for r in state_rules if enabled(r)]
     if request.score_semantics == "photo_v1":
         # 평균 명도/명도 편차/붉은 반점 비율은 색소침착·면포 검출값이 아니다.
-        unsupported = {"brightness", "uniformity", "trouble"}
-        active = [r for r in active if r.metric not in unsupported]
-        notices.append("사진의 밝기·명도 균일도·붉은 반점 점수는 색소침착·모공 막힘을 확인하지 않아 해당 성분 매칭을 보류합니다.")
+        active = [r for r in active if r.metric == "moisture" or r.effect == "exclude" or r.photo_eligible]
+        notices.append("사진 지표는 톤·붉은기·반점 관련 관리 후보를 고르는 보조 정보입니다. 피부색의 원인·색소침착·여드름을 진단하거나 제품의 개선 효과를 확인한 값은 아닙니다.")
     matching_rules = [r for r in active if r.effect == "match" and r.metric in targets]
+    automatic_exclusions = [r for r in active if r.effect == "exclude"]
     deferred = sorted(set(targets) - {r.metric for r in matching_rules})
     scorable = frozenset(set(targets) - set(deferred))
     if request.priority_metric is not None and request.priority_metric not in scorable:
@@ -149,12 +150,40 @@ def recommend(
     # 제품 부족/배제 조건을 우회하는 대체 추천이 아니다.
     # 개선 매칭 규칙 자체가 없는 경우에만 별도 탐색 경로를 사용한다.
     daily_care = not matching_rules
+    redness_care = daily_care and "redness" in targets
     if daily_care and hydration_policy['state'] in ('normal','sufficient'):
         daily_rules=[r for r in active if r.metric=='moisture' and r.effect=='maintain']
     else:
         daily_rules = [r for r in sorted(rule_bundle.rules, key=lambda r: r.code)
                        if r.status == "active" and r.metric == "moisture"
                        and r.category == "개선 필요" and r.effect == "match" and r.condition == "always"] if daily_care else []
+    metric_strategies = []
+    for code, (name, _) in METRICS.items():
+        item = by_metric.get(code)
+        parts = [f"{name} {item.category}" if item else f"{name} 미측정"]
+        if item is None:
+            action = "unmeasured"
+        elif code in deferred:
+            action = "deferred"
+            parts.append("적용 가능한 성분 규칙 없음")
+        elif item.needs_improvement:
+            action = "candidate"
+            ingredients = sorted({r.ingredient for r in matching_rules if r.metric == code})
+            parts.append("매칭 기준: " + ", ".join(ingredients))
+        else:
+            action = "maintain" if item.category == "보통" else "no_extra"
+            parts.append("개선 가점 없음")
+        if code == "moisture" and daily_rules:
+            parts.append("일상 보습 후보: " + ", ".join(sorted({r.ingredient for r in daily_rules})))
+        excluded = sorted({r.ingredient for r in automatic_exclusions if r.metric == code})
+        if excluded:
+            parts.append("자동 제외: " + ", ".join(excluded))
+        elif any(r.metric == code and r.effect == "exclude" for r in state_rules):
+            parts.append("자동 제외 꺼짐")
+        metric_strategies.append(MetricStrategy(
+            metric_code=code, category=item.category if item else None,
+            action=action, description=" · ".join(parts),
+        ))
     auxiliary_rules = [r for r in rule_bundle.rules if r.status == 'active' and r.metric == 'moisture'
                        and r.effect == 'match' and r.condition == 'always' and r.category == '개선 필요']
     auxiliary_enabled = bool(sensor_auxiliary and sensor_auxiliary['applied'])
@@ -162,6 +191,15 @@ def recommend(
     if hydration_policy['state']=='low':
         ranking_basis+=' → 동일 조건 안에서 보습·수분 손실 억제 기능군 함유 우선'
     policy_version = DAILY_CARE_POLICY_VERSION if daily_care else POLICY_VERSION
+    if not daily_care and request.ranking_policy == "care_context":
+        policy_version += "+care-context-v1"
+        notices.append("제품명 표기는 정렬 참고용입니다. 제조사 사용법과 제품 효능은 미확인입니다.")
+    if redness_care:
+        ranking_basis = "세트 의심 후순위 → 판테놀 함유 관리 후보 우선 → 제품 ID (홍조 개선 점수 아님)"
+        policy_version += "+redness-care-v1"
+    if "redness" in targets and not redness_care:
+        ranking_basis += " → 동일 조건 안에서 판테놀 함유 보습 관리 후보 우선"
+        policy_version += "+redness-support-v1"
     recommendation_notice = (
         ("현재 측정값에 개선 필요 지표가 없어 일상 관리용 제품을 제안합니다. " if not targets else
          "개선 지표에 적용할 성분 매칭 규칙이 없어, 해당 고민 개선 추천과 별도로 일상 관리용 제품을 제안합니다. ")
@@ -169,6 +207,8 @@ def recommend(
     ) if daily_care else "개선 필요 지표에 연결된 성분을 함유한 후보 제품입니다."
     if daily_care and not targets and hydration_policy['state'] in ('normal','sufficient'):
         recommendation_notice=hydration_policy['strategy']
+    if redness_care:
+        recommendation_notice += " 홍조 개선 가점은 보류하며, 판테놀 함유 보습 관리 후보를 같은 세트 조건 안에서 우선 표시합니다."
     if request.normalized_scores.moisture is None and not sensor_hydration:
         recommendation_notice += (" 보정된 수분 점수가 없어, 건조하거나 충분하다고 추정하지 않습니다." if sensor_auxiliary else " 수분은 미측정이며, 건조하거나 충분하다고 추정하지 않습니다.")
     if auxiliary_enabled:
@@ -193,13 +233,17 @@ def recommend(
                                evidence_url=source.url, evidence_summary=source.summary,
                                limitations=source.limitations, rationale=rule.rationale)
 
-    automatic_exclusions = [r for r in active if r.effect == "exclude"]
     exclusion_names.update(r.ingredient for r in automatic_exclusions)
     if any(r.metric=='redness' for r in automatic_exclusions):
         notices.append("조건부 배제는 주사 피부 관리 안내를 참고한 프로젝트 정책입니다. 홍조 점수로 질환을 진단하지 않습니다.")
     if any(r.metric=='moisture' for r in automatic_exclusions):
         notices.append('수분 부족과 자극 회피 옵션에 따라 향료·에탄올·변성알코올을 제외했습니다. 세틸·스테아릴알코올은 해당하지 않습니다.')
     exclusions = {normalize_name(n) for n in exclusion_names}
+    caution_conditions = []
+    if hydration_policy["state"] == "low":
+        caution_conditions.append("수분 부족")
+    if "redness" in targets:
+        caution_conditions.append("홍조 개선 필요")
     stats = RecommendationStats(total_products=len(products))
     ranked = []
     for product in products:
@@ -229,7 +273,7 @@ def recommend(
                     ingredients=sorted({ingredient_names[normalize_name(r.ingredient)] for r in rules}),
                     evidence_urls=sorted({evidence[r.evidence_code].url for r in rules}),
                     rule_details=[explain(r) for r in sorted(rules, key=lambda r: r.code)],
-                    interpretation=explain_match(code),
+                    interpretation=explain_match(code, photo_based=request.score_semantics == "photo_v1"),
                 ))
         matched_moisture={rule.ingredient for m in matches if m.metric_code=='moisture' for rule in m.rule_details}
         support=[]
@@ -246,7 +290,21 @@ def recommend(
             continue
         bundle = bool(re.search(r"세트|기획|듀오|더블|\d\s*\+\s*\d", product.product_name))
         auxiliary_ingredients = sorted({ingredient_names[normalize_name(r.ingredient)] for r in auxiliary_rules if r.usage_scope == usage_mode and normalize_name(r.ingredient) in ingredient_names}) if auxiliary_enabled else []
+        product_name_claims = {}
+        context_cautions = []
+        if request.ranking_policy == "care_context":
+            claims, exfoliation = care_name_signals(product.product_name)
+            matched_groups = {GROUPS[match.metric_code] for match in matches}
+            product_name_claims = {group: terms for group, terms in claims.items() if group in matched_groups}
+            if exfoliation and caution_conditions:
+                context_cautions.append(
+                    f"사용법 확인 · {' 및 '.join(caution_conditions)} · 제품명에 {', '.join(exfoliation)} 표기"
+                )
         ranked.append(CosmeticRecommendationItem(
+            product_name_claims=product_name_claims,
+            context_cautions=context_cautions,
+            redness_care_ingredients=([ingredient_names[normalize_name("판테놀")]]
+                                      if "redness" in targets and normalize_name("판테놀") in ingredient_names else []),
             hydration_support=support,
             rank=0, product_id=product.product_id, product_name=product.product_name,
             brand_name=product.brand_name, category=product.category,
@@ -261,12 +319,14 @@ def recommend(
                                    " / ".join(f"{m.metric_name}: {', '.join(m.ingredients)} 함유" for m in matches)),
             bundle_suspected=bundle, usage_mode=usage_mode, usage_basis=usage_basis,
         ))
-    ordered = (rank_daily_care_candidates(ranked) if daily_care else
+    ordered = (rank_daily_care_candidates(ranked, prioritize_redness_care=redness_care) if daily_care else
                rank_candidates(ranked, request.ranking_policy,
                                priority=request.priority_metric, scorable_metrics=scorable))
     if hydration_policy['state']=='low':
         from app.services.cosmetic_ranking import apply_hydration_tiebreak
         ordered=apply_hydration_tiebreak(ordered)
+    if "redness" in targets:
+        ordered = apply_redness_tiebreak(ordered)
     if auxiliary_enabled:
         from app.services.cosmetic_ranking import apply_sensor_tiebreak
         ordered = apply_sensor_tiebreak(ordered)
@@ -281,6 +341,7 @@ def recommend(
     if request.priority_metric is not None and ranked and not any(r.priority_matched for r in ordered):
         notices.append("지정한 우선 고민에 매칭되는 후보가 없어 나머지 고민 그룹 기준으로 정렬했습니다.")
     return CosmeticPreviewResponse(
+        metric_strategies=metric_strategies,
         hydration_policy=hydration_policy,
         recommendation_mode="daily_care" if daily_care else "improvement",
         daily_care_reason=("no_improvement_targets" if not targets else "no_supported_matching_rules") if daily_care else None,
@@ -300,5 +361,5 @@ def recommend(
         empty_reason=("추천할 제품 데이터가 아직 없습니다." if not products else
                       "일상 관리 후보에 사용할 활성 보습 성분 규칙이 없습니다." if daily_care and not daily_rules else
                       "제품 종류·제외 성분·전성분 확인 조건과 일상 관리 성분 기준을 충족하는 제품이 없습니다." if daily_care else
-                      "필터와 초기 성분 규칙을 충족하는 제품이 없습니다.") if not results else None,
+                      "적용 가능한 개선 규칙은 있으나 필터를 통과한 성분 매칭 제품이 없습니다.") if not results else None,
     )

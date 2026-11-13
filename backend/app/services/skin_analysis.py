@@ -703,26 +703,27 @@ def _prepare_face(
     )
 
 
-# ── 공개 함수 ───────────────────────────────────────────────────────
+class SkinLightnessSample(NamedTuple):
+    face: PreparedFace
+    skin: np.ndarray
+    regions: dict[str, np.ndarray]
+    coverage: dict[str, float]
+    brightness: int
+    mean_l: float
+    saturated_ratio: float
+    cheek_ratio: float | None
 
 
-def analyze_image_detail(
+def _sample_skin_lightness(
     image_bytes: bytes,
     *,
-    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
-    camera_profile: str = DEFAULT_CAMERA_PROFILE,
-) -> tuple[dict[str, int], dict[str, float]]:
-    """지표 점수 4개와, 정규화 전 원시값을 함께 돌려준다.
-
-    원시값에는 부위별 측정치도 담긴다. 정규화 구간을 조정할 때와,
-    "볼이 유독 붉다" 같은 부위별 안내를 만들 때 쓴다.
-    """
-    profile = get_camera_profile(camera_profile)  # 기기별 보정값 (색 보정·홍조 범위)
+    min_face_width: int,
+    profile: CameraProfile,
+) -> SkinLightnessSample:
     face = _prepare_face(
         image_bytes, min_face_width=min_face_width, channel_gains=profile.channel_gains
     )
-    image, landmarks, balanced, lab = face.image, face.landmarks, face.balanced, face.lab
-    face_width = face.face_width  # 분석 해상도 기준 (최대 ANALYSIS_FACE_WIDTH)
+    image, landmarks, lab = face.image, face.landmarks, face.lab
 
     # 부위별 패치 → 머리카락으로 가려진 부분 제외 → 그늘·하이라이트 정제
     # 가려진 부위는 통째로 빠지므로, 이마를 깐 사람만 이마가 포함된다
@@ -731,13 +732,6 @@ def analyze_image_detail(
     skin = np.zeros(image.shape[:2], dtype=np.uint8)
     for mask in regions.values():
         skin = cv2.bitwise_or(skin, mask)
-
-    red_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-    for name in REDNESS_REGIONS:
-        if name in regions:
-            red_mask = cv2.bitwise_or(red_mask, regions[name])
-    if int(np.count_nonzero(red_mask)) < 100:
-        red_mask = skin  # 볼·이마가 모두 가려졌으면 전체로 대체
 
     brightness, mean_l = _brightness(lab, skin)
 
@@ -790,6 +784,49 @@ def analyze_image_detail(
                 "required_min": MIN_CHEEK_L_RATIO,
             },
         )
+
+    return SkinLightnessSample(face, skin, regions, coverage, brightness, mean_l, saturated_ratio, cheek_ratio)
+
+
+# ── 공개 함수 ───────────────────────────────────────────────────────
+
+
+def measure_skin_lightness(
+    image_bytes: bytes,
+    *,
+    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
+    camera_profile: str = DEFAULT_CAMERA_PROFILE,
+) -> float:
+    """촬영 품질을 통과한 피부 영역의 CIELAB 명도(L*, 0~100)."""
+    sample = _sample_skin_lightness(
+        image_bytes, min_face_width=min_face_width, profile=get_camera_profile(camera_profile)
+    )
+    return round(sample.mean_l * 100 / 255, 2)
+
+
+def analyze_image_detail(
+    image_bytes: bytes,
+    *,
+    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
+    camera_profile: str = DEFAULT_CAMERA_PROFILE,
+) -> tuple[dict[str, int], dict[str, float]]:
+    """지표 점수 4개와, 정규화 전 원시값을 함께 돌려준다.
+
+    원시값에는 부위별 측정치도 담긴다. 정규화 구간을 조정할 때와,
+    "볼이 유독 붉다" 같은 부위별 안내를 만들 때 쓴다.
+    """
+    profile = get_camera_profile(camera_profile)  # 기기별 보정값 (색 보정·홍조 범위)
+    sample = _sample_skin_lightness(image_bytes, min_face_width=min_face_width, profile=profile)
+    face, skin, regions, coverage, brightness, mean_l, saturated_ratio, cheek_ratio = sample
+    image, landmarks, balanced, lab = face.image, face.landmarks, face.balanced, face.lab
+    face_width = face.face_width
+
+    red_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    for name in REDNESS_REGIONS:
+        if name in regions:
+            red_mask = cv2.bitwise_or(red_mask, regions[name])
+    if int(np.count_nonzero(red_mask)) < 100:
+        red_mask = skin  # 볼·이마가 모두 가려졌으면 전체로 대체
 
     index_map = _redness_index(balanced)
     redness, mean_index = _redness(index_map, red_mask, profile.redness_range)

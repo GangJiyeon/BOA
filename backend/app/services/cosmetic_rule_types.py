@@ -1,6 +1,7 @@
 """추천 규칙 계약. 파일은 시드/오프라인 검증 전용, API는 DB 규칙을 사용한다."""
 from datetime import date
 import hashlib
+import json
 from pathlib import Path
 from typing import Literal
 
@@ -8,8 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.cosmetic import MetricCode
 
-DEFAULT_RULE_VERSION = "cosmetic-rules-2026-10-28-hydration-v1"
-BUNDLE_PATH = Path(__file__).resolve().parents[1] / "data" / "cosmetic_rules_hydration_v1.json"
+DEFAULT_RULE_VERSION = "cosmetic-rules-2026-11-06-integrated-v2"
+BUNDLE_PATH = Path(__file__).resolve().parents[1] / "data" / "cosmetic_rules_integrated_v2.json"
 
 
 class StrictModel(BaseModel):
@@ -40,6 +41,7 @@ class Rule(StrictModel):
     usage_scope: Literal["leave_on_candidate"] = "leave_on_candidate"
     evidence_code: str
     rationale: str
+    photo_eligible: bool = False
 
     @model_validator(mode="after")
     def consistent_action(self):
@@ -80,7 +82,14 @@ class RuleBundle(StrictModel):
             "evidence": tuple(sorted(self.evidence, key=lambda e: e.code)),
             "rules": tuple(sorted(self.rules, key=lambda r: r.code)),
         })
-        return hashlib.sha256(normalized.model_dump_json().encode()).hexdigest()
+        payload = normalized.model_dump(mode="json")
+        # Older rule versions did not have this field. Preserve their recorded
+        # fingerprints after a schema upgrade and while seeding old versions.
+        for rule in payload["rules"]:
+            if not rule["photo_eligible"]:
+                del rule["photo_eligible"]
+        serialized = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        return hashlib.sha256(serialized.encode()).hexdigest()
 
 
 def load_seed_bundle() -> RuleBundle:

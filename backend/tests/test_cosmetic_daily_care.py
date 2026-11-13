@@ -39,11 +39,11 @@ class DailyCareTests(unittest.TestCase):
                 self.assertEqual(r.recommendation_mode, "daily_care")
                 self.assertEqual(r.recommendations[0].match_count, 0)
 
-    def test_deferred_photo_concerns_not_claimed_as_improved(self):
+    def test_photo_concerns_have_care_matches_without_efficacy_claims(self):
         r = f.run([f.product()], request(scores=GOOD | dict(brightness=20, trouble=92, uniformity=20)))
-        self.assertEqual(r.daily_care_reason, "no_supported_matching_rules")
-        self.assertEqual(set(r.deferred_metrics), {"brightness", "trouble", "uniformity"})
-        self.assertEqual(r.recommendations[0].matches, [])
+        self.assertIsNone(r.daily_care_reason)
+        self.assertEqual(set(r.deferred_metrics), set())
+        self.assertEqual({m.metric_code for m in r.recommendations[0].matches}, {"brightness", "trouble", "uniformity"})
 
     def test_measured_dryness_keeps_existing_improvement_path(self):
         r = f.run([f.product()], request(scores=GOOD | {"moisture": 20}))
@@ -64,12 +64,12 @@ class DailyCareTests(unittest.TestCase):
         self.assertEqual(r.stats.no_daily_care_ingredient, 1)
 
     def test_redness_opt_in_applies_to_daily_care(self):
-        p = f.product(ingredients=("판테놀", "향료"))
+        p = f.product(ingredients=("판테놀", "나이아신아마이드", "향료"))
         for red, enabled, count in ((80, True, 0), (80, False, 1), (10, True, 1)):
             with self.subTest(red=red, enabled=enabled):
                 r = f.run([p], request(scores=GOOD | {"redness": red}, avoid_redness_triggers=enabled))
                 self.assertEqual(len(r.recommendations), count)
-                self.assertEqual(r.recommendation_mode, "daily_care")
+                self.assertEqual(r.recommendation_mode, "improvement" if red == 80 else "daily_care")
                 if count == 0:
                     self.assertEqual(r.stats.excluded_by_ingredient, 1)
 
