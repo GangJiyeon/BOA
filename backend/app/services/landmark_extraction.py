@@ -1,5 +1,5 @@
 """
-MediaPipe Face Mesh(solutions API, mediapipe==0.10.21 기준)를 이용한
+MediaPipe Face Mesh(구버전 solutions API, mediapipe==0.10.21 기준)를 이용한
 얼굴 랜드마크 추출.
 
 face_shape_analysis.py가 요구하는 11개 포인트(REQUIRED_POINTS)를
@@ -35,6 +35,15 @@ LANDMARK_INDEX_MAP = {
     "top": 10,
     "chin": 152,
     "nose_base": 2,
+    # ------------------------------------------------------------------
+    # 정면 메이크업 쉐딩용 코 모양 축 판정(nose_shape_analysis.py)에서 쓰는 포인트.
+    # 아래 11개(기존)와 마찬가지로 "참고용 근사치"임 — verify_landmarks.py로
+    # 실제 사진에 점 찍어서 코끝/콧망울/콧대 위치에 제대로 맞는지 꼭 확인할 것.
+    # ------------------------------------------------------------------
+    "nose_tip": 4,
+    "nose_bridge_top": 6,
+    "nostril_left": 129,
+    "nostril_right": 358,
 }
 
 _mp_face_mesh = mp.solutions.face_mesh
