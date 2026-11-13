@@ -6,7 +6,7 @@
 
 import unicodedata
 
-ENGINE_VERSION = "cosmetic-preview-v3.4"
+ENGINE_VERSION = "cosmetic-preview-v4.1"
 METRICS = {
     "moisture": ("수분", True),
     "redness": ("홍조", False),

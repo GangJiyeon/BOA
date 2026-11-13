@@ -48,7 +48,8 @@ class TiePaginationTests(unittest.TestCase):
         self.assertIsNone(page.tie_groups[0].next_offset)
 
     def test_equal_score_same_hydration_function_different_ingredients_stay_tied(self):
-        result = f.run([f.product(1, ingredients=("글리세린",)), f.product(2, ingredients=("판테놀",))])
+        result = f.run([f.product(1, ingredients=("글리세린",)), f.product(2, ingredients=("판테놀",))],
+                       f.request(scores=f.request().scores.model_dump() | {"redness": 10}))
         self.assertEqual(len(result.tie_groups), 1)
         self.assertEqual(result.tie_groups[0].total, 2)
 

@@ -35,7 +35,7 @@ export default function StudioPage({hair,onUsed}:{hair:HairSessionResult|null;on
   const [catalogId,setCatalogId]=useState('')
   const [recommendedId,setRecommendedId]=useState(hair?.result.recommendations[0]?.style_id??'')
   const [sex,setSex]=useState(''),[length,setLength]=useState(''),[texture,setTexture]=useState('')
-  const [render,setRender]=useState<{value:HairRender;styleName:string}|null>(null)
+  const [render,setRender]=useState<{value:HairRender;styleName:string;photo:File}|null>(null)
   useEffect(()=>{
     if(activeMode!=='catalog')return
     const controller=new AbortController()
@@ -79,7 +79,7 @@ export default function StudioPage({hair,onUsed}:{hair:HairSessionResult|null;on
       }
       if(signal.aborted)return
       if(value.status==='failed')throw new Error(value.error??'합성에 실패했습니다.')
-      setRender({value,styleName:style.name})
+      setRender({value,styleName:style.name,photo:submittedPhoto})
     })
   }
   return <section><PageIntro eyebrow="AI STUDIO" title="AI 헤어 스튜디오">사진과 스타일을 골라 합성하고, 32가지 머리색을 바꿔 보세요.</PageIntro>
@@ -123,6 +123,6 @@ export default function StudioPage({hair,onUsed}:{hair:HairSessionResult|null;on
     </section>
     {task.busy&&<div className="request-progress" role="status"><span className="spinner"/><div><strong>{selected?.name} 합성 중…</strong><p>잠시만 기다려 주세요.</p></div></div>}
     <TaskStatus busy={false} error={task.error}/>
-    {render&&<section className="form-card"><div className="card-heading"><span className="step-number">03</span><div><h3>머리색 바꿔보기</h3><p>{render.styleName} · 색을 누르면 바로 바뀌어요.</p></div></div><HairColorStudio render={render.value} styleName={render.styleName}/></section>}
+    {render&&<section className="form-card"><div className="card-heading"><span className="step-number">03</span><div><h3>머리색 바꿔보기</h3><p>{render.styleName} · 색을 누르면 바로 바뀌어요.</p></div></div><HairColorStudio render={render.value} styleName={render.styleName} recommendedColors={activeMode==='recommendation'&&render.photo===hair?.photo?hair.recommendedColors:undefined}/></section>}
   </section>
 }

@@ -236,7 +236,25 @@ desktop.ini
 
 # Local cosmetic dataset
 backend/data/*.db
+
 # AI 스튜디오 생성 결과·분할 모델
 backend/static/studio/
 backend/studio_debug/
 backend/ml_assets/
+
+# 소스코드가 아닌 자료 (문서·발표·테스트 사진)
+# 문서·발표 자료
+*.doc
+*.docx
+*.ppt
+*.pptx
+*.xls
+*.xlsx
+*.pdf
+*.hwp
+*.hwpx
+~$*
+# 피부 분석 테스트 사진 (개인 얼굴 사진, 진단 스크립트 결과 이미지 포함)
+backend/photos/
+# Claude 작업 결과물
+Claude outputs/

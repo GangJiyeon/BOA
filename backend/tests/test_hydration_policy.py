@@ -58,7 +58,7 @@ class HydrationPolicyTests(unittest.TestCase):
 
     def test_redness_and_dryness_options_are_independent(self):
         scores=dict(moisture=80,redness=80,brightness=90,trouble=10,uniformity=90)
-        p=f.product(1,ingredients=('글리세린','향료'))
+        p=f.product(1,ingredients=('글리세린','나이아신아마이드','향료'))
         r=f.run([p],f.request(scores=scores,avoid_redness_triggers=True,avoid_dryness_triggers=False))
         self.assertEqual(r.stats.excluded_by_ingredient,1)
         r=f.run([p],f.request(scores=scores,avoid_redness_triggers=False,avoid_dryness_triggers=True))
@@ -80,7 +80,7 @@ class HydrationApiTests(unittest.TestCase):
         self.assertEqual(status,200,data)
         self.assertEqual(data['hydration_policy']['state'],'low')
         self.assertEqual(set(data['applied_exclusions']),{'향료','에탄올','변성알코올'})
-        self.assertEqual(data['rule_version'],'cosmetic-rules-2026-10-28-hydration-v1')
+        self.assertEqual(data['rule_version'],'cosmetic-rules-2026-11-06-integrated-v2')
         self.assertTrue(all(s.lstrip().upper().startswith('SELECT') for s in sql))
 
 
@@ -106,11 +106,13 @@ class HydrationMigrationTests(unittest.TestCase):
             result=importlib.util.module_from_spec(spec);spec.loader.exec_module(result);return result
         old=migration('2026_10_05_0000-c0510a1b2c3d_create_cosmetic_rule_tables.py')
         new=migration('2026_10_28_0000-f0910a1b2c3d_hydration_policy.py')
+        photo=migration('2026_11_06_0000-f1110a1b2c3d_cosmetic_photo_rules.py')
         engine=create_engine('sqlite://')
         try:
             Base.metadata.create_all(engine,tables=[SkinMetric.__table__,SkinMetricCategory.__table__,Ingredient.__table__])
             with engine.begin() as conn:
                 with patch.object(old,'op',Operations(MigrationContext.configure(conn))):old.upgrade()
+                with patch.object(photo,'op',Operations(MigrationContext.configure(conn))):photo.upgrade()
             legacy=RuleBundle.model_validate_json((root/'app/data/cosmetic_rules_v1.json').read_text())
             with Session(engine) as db,db.begin():
                 seed_metrics(db)
@@ -120,7 +122,8 @@ class HydrationMigrationTests(unittest.TestCase):
                 with patch.object(new,'op',Operations(MigrationContext.configure(conn))):new.upgrade()
             with Session(engine) as db,db.begin():
                 self.assertEqual(load_database_rules(db,legacy.version).fingerprint(),legacy.fingerprint())
-                seed_rule_bundle(db,load_seed_bundle(),apply=True)
+                hydration=RuleBundle.model_validate_json((root/'app/data/cosmetic_rules_hydration_v1.json').read_text())
+                seed_rule_bundle(db,hydration,apply=True)
                 self.assertEqual(db.scalar(select(func.count()).select_from(CategoryIngredient)),55)
             with self.assertRaisesRegex(RuntimeError,'lossy downgrade'):
                 with engine.begin() as conn:

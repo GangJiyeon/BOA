@@ -51,14 +51,14 @@ def product(product_id=1, ingredients=("글리세린", "판테놀", "나이아�
 KNOWN = {"글리세린", "판테놀", "나이아신아마이드", "살리실릭애씨드", "향료", "세틸알코올", "에탄올", "변성알코올", "멘톨", "판테닐에틸에터"}
 
 
-def run(products, body=None, defs=None):
-    return recommend(body or request(), defs or definitions(), products, KNOWN, rule_bundle=load_seed_bundle())
+def run(products, body=None, defs=None, bundle=None):
+    return recommend(body or request(), defs or definitions(), products, KNOWN, rule_bundle=bundle or load_seed_bundle())
 
 
 class EngineTests(unittest.TestCase):
     def test_multiple_ingredients_for_same_metric_count_once(self):
         result = run([product()])
-        self.assertEqual(result.recommendations[0].match_count, 4)
+        self.assertEqual(result.recommendations[0].match_count, 5)
         self.assertEqual(result.recommendations[0].matches[0].ingredients, ["글리세린", "판테놀"])
 
     def test_exclusion_overrides_matches(self):
@@ -116,7 +116,7 @@ class EngineTests(unittest.TestCase):
         result = run([product()], request(scores=request().scores.model_dump() | {"moisture": None}))
         self.assertEqual(result.target_count, 4)
         self.assertEqual(result.missing_metrics, ["moisture"])
-        self.assertEqual(result.recommendations[0].match_count, 3)
+        self.assertEqual(result.recommendations[0].match_count, 4)
 
     def test_good_scores_return_daily_care_without_improvement_points(self):
         result = run([product()], request(scores={"moisture": 90, "redness": 10, "brightness": 90, "trouble": 10, "uniformity": 90}))
@@ -165,14 +165,14 @@ class EngineTests(unittest.TestCase):
         self.assertIsNone(result.image_url)
         self.assertIsNone(result.source_url)
 
-    def test_redness_only_has_no_supported_bonus(self):
-        result = run([product(ingredients=("판테놀",))], request(scores={"moisture": 90, "redness": 80, "brightness": 90, "trouble": 10, "uniformity": 90}))
+    def test_redness_only_matches_reviewed_care_rule(self):
+        result = run([product(ingredients=("나이아신아마이드",))], request(scores={"moisture": 90, "redness": 80, "brightness": 90, "trouble": 10, "uniformity": 90}))
         self.assertEqual(result.target_count, 1)
-        self.assertEqual(result.scorable_target_count, 0)
-        self.assertEqual(result.deferred_metrics, ["redness"])
-        self.assertEqual(result.recommendation_mode, "daily_care")
-        self.assertEqual(result.recommendations[0].match_count, 0)
-        self.assertEqual(result.recommendations[0].matches, [])
+        self.assertEqual(result.scorable_target_count, 1)
+        self.assertEqual(result.deferred_metrics, [])
+        self.assertEqual(result.recommendation_mode, "improvement")
+        self.assertEqual(result.recommendations[0].match_count, 1)
+        self.assertEqual(result.recommendations[0].matches[0].metric_code, "redness")
 
     def test_acid_policy_conditions_and_exact_matching(self):
         for acid in ("글라이콜릭애씨드", "락틱애씨드"):
@@ -266,7 +266,7 @@ class ApiDatabaseTests(unittest.TestCase):
         event.listen(self.engine, "before_cursor_execute", lambda conn, cursor, statement, parameters, context, executemany: statements.append(statement))
         status, data = asyncio.run(asgi_request(request().model_dump()))
         self.assertEqual(status, 200)
-        self.assertEqual(data["recommendations"][0]["match_count"], 3)
+        self.assertEqual(data["recommendations"][0]["match_count"], 5)
         self.assertEqual(data["recommendations"][0]["brand_name"], "테스트 브랜드")
         self.assertTrue(all(s.lstrip().upper().startswith("SELECT") for s in statements))
         with Session(self.engine) as db:

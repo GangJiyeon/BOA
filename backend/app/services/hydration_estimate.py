@@ -53,7 +53,7 @@ def estimate(baseline: int, count: float, divider: int, normalization_version: s
 
     if normalization_version in SCORE60_VERSIONS:
         score = score_from_response(response, normalization_version)
-        result.update(classification(score), normalized_score=score,
+        result.update(classification(score, normalization_version), normalized_score=score,
                       estimation_version=normalization_version, unit='boa_moisture_score',
                       estimation_basis='pnj_integer_bands_adapted_0_60')
     return result

@@ -74,6 +74,7 @@ class StudioIntegrationTests(unittest.TestCase):
             Base.metadata.create_all(engine,tables=[t for t in Base.metadata.sorted_tables if t.name!='hair_renders'])
             with Session(engine) as db:seed_style(db)
             with engine.begin() as db:
+                db.execute(text('ALTER TABLE category_ingredients DROP COLUMN photo_eligible'))
                 db.execute(text('CREATE TABLE alembic_version (version_num VARCHAR(32) PRIMARY KEY)'))
                 db.execute(text("INSERT INTO alembic_version VALUES ('f0910a1b2c3d')"))
             config=Config(str(Path(__file__).parents[1]/'alembic.ini'))
@@ -81,7 +82,7 @@ class StudioIntegrationTests(unittest.TestCase):
                 command.upgrade(config,'heads')
             self.assertIn('hair_renders',inspect(engine).get_table_names())
             with engine.connect() as db:
-                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f1010a1b2c3d'})
+                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f1110a1b2c3d'})
                 self.assertEqual(db.scalar(text('SELECT count(*) FROM hair_style_catalog')),1)
             engine.dispose()
 
@@ -95,6 +96,7 @@ class StudioIntegrationTests(unittest.TestCase):
                 db.add(HairRender(style_id='bob', status='done', asset_dir='existing-team-render', hair_hex='#342820'))
                 db.commit()
             with engine.begin() as db:
+                db.execute(text('ALTER TABLE category_ingredients DROP COLUMN photo_eligible'))
                 db.execute(text('CREATE TABLE alembic_version (version_num VARCHAR(32) PRIMARY KEY)'))
                 db.execute(text("INSERT INTO alembic_version VALUES ('b2c3d4e5f6a7')"))
             config=Config(str(Path(__file__).parents[1]/'alembic.ini'))
@@ -103,7 +105,7 @@ class StudioIntegrationTests(unittest.TestCase):
                 command.upgrade(config,'head')
             self.assertIn('moisture_observations',inspect(engine).get_table_names())
             with engine.connect() as db:
-                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f1010a1b2c3d'})
+                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f1110a1b2c3d'})
                 self.assertEqual(db.scalar(text('SELECT hair_hex FROM hair_renders')),'#342820')
                 self.assertEqual(db.scalar(text('SELECT count(*) FROM hair_style_catalog')),1)
             engine.dispose()

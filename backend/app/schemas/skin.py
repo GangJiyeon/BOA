@@ -68,6 +68,10 @@ class DebugAnalysisRead(AnalysisRead):
     raw: dict[str, float]
 
 
+class SkinLightnessRead(BaseModel):
+    lightness: float = Field(ge=0, le=100)
+
+
 # ── 재현성 측정 (디버그) ─────────────────────────────────────────────
 
 

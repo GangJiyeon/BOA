@@ -12,6 +12,7 @@ POLICY_VERSION = "cosmetic-ranking-v1"
 DAILY_CARE_POLICY_VERSION = "cosmetic-daily-care-v1"
 DAILY_CARE_RANKING_BASIS = "일상 관리 성분 함유 후보 중 세트 의심 후순위 → 제품 ID (적합도 순위 아님)"
 RANKING_BASES = {
+    "care_context": "매칭 고민 그룹 수(밝기·균일도 통합) → 같은 그룹 수에서 수분 부족·홍조와 각질 관리 용도 조합 확인 → 매칭 성분과 연결된 제품명 목적 표기 → 세트 의심 후순위 → 제품 ID",
     "metric_count": "매칭 지표 수 → 세트 의심 후순위 → 제품 ID",
     "concern_groups": "매칭 고민 그룹 수(밝기·균일도 통합) → 세트 의심 후순위 → 제품 ID",
     "explicit_priority": "지정 고민 매칭 여부 → 매칭 고민 그룹 수(밝기·균일도 통합) → 세트 의심 후순위 → 제품 ID",
@@ -27,16 +28,23 @@ class RankedCandidate:
     tie_count: int
 
 
-def rank_daily_care_candidates(candidates: list[CosmeticRecommendationItem]) -> list[RankedCandidate]:
+def rank_daily_care_candidates(candidates: list[CosmeticRecommendationItem],
+                               *, prioritize_redness_care: bool = False) -> list[RankedCandidate]:
     """함유 여부로 후보를 고르되 성분 수나 미측정 피부 상태에 가점을 주지 않는다."""
     if len({p.product_id for p in candidates}) != len(candidates):
         raise ValueError("중복 제품 ID")
     for item in candidates:
         if item.matches or item.match_count or not item.daily_care_ingredients or not item.daily_care_rules:
             raise ValueError("일상 관리 후보는 개선 점수 없이 별도 성분 근거가 필요합니다.")
-    ties = Counter(p.bundle_suspected for p in candidates)
-    ordered = sorted(candidates, key=lambda p: (p.bundle_suspected, p.product_id))
-    return [RankedCandidate(p, i, 0, False, ties[p.bundle_suspected])
+    def care_key(item):
+        has_priority_ingredient = prioritize_redness_care and any(
+            rule.ingredient == "판테놀" for rule in item.daily_care_rules
+        )
+        return item.bundle_suspected, not has_priority_ingredient
+
+    ties = Counter(care_key(p) for p in candidates)
+    ordered = sorted(candidates, key=lambda p: (*care_key(p), p.product_id))
+    return [RankedCandidate(p, i, 0, False, ties[care_key(p)])
             for i, p in enumerate(ordered, 1)]
 
 
@@ -50,7 +58,7 @@ def rank_candidates(candidates: list[CosmeticRecommendationItem], mode: RankingM
     그 외는 그룹 수, 세트 여부, ID 순. 자동으로 가장 심각한 지표를 추측하지 않는다.
     호출자는 반드시 동일 요청의 필터를 통과한 전체 후보를 전달해야 한다.
     """
-    if mode not in {"metric_count", "concern_groups", "explicit_priority"}:
+    if mode not in RANKING_BASES:
         raise ValueError("알 수 없는 순위 정책")
     if mode == "explicit_priority":
         if priority not in GROUPS or priority not in scorable_metrics:
@@ -66,8 +74,16 @@ def rank_candidates(candidates: list[CosmeticRecommendationItem], mode: RankingM
             raise ValueError("후보의 매칭 지표/점수가 일치하지 않습니다.")
         groups = len({GROUPS[m] for m in metrics})
         preferred = priority in metrics if priority is not None else False
-        key = ((-item.match_count,) if mode == "metric_count" else
-               (-groups,) if mode == "concern_groups" else (-int(preferred), -groups))
+        if mode == "metric_count":
+            key = (-item.match_count,)
+        elif mode == "explicit_priority":
+            key = (-int(preferred), -groups)
+        else:
+            key = (-groups,)
+        if mode == "care_context":
+            # Count relevant purpose groups once, never the number of words or
+            # ingredients. Missing purpose text is unknown, not a failed claim.
+            key += (bool(item.context_cautions), -len(item.product_name_claims))
         features[item.product_id] = (key + (item.bundle_suspected,), groups, preferred)
     ties = Counter(f[0] for f in features.values())
     ordered = sorted(candidates, key=lambda p: (*features[p.product_id][0], p.product_id))
@@ -105,4 +121,23 @@ def apply_hydration_tiebreak(ordered: list[RankedCandidate]) -> list[RankedCandi
         for row in rows:
             result.append(RankedCandidate(row.product,len(result)+1,row.group_count,row.priority_matched,ties[len(row.product.hydration_support)]))
         start+=size
+    return result
+
+
+def apply_redness_tiebreak(ordered: list[RankedCandidate]) -> list[RankedCandidate]:
+    """Keep panthenol care support within ties, including dry + red cases."""
+    result = []
+    start = 0
+    while start < len(ordered):
+        size = ordered[start].tie_count
+        rows = sorted(ordered[start:start + size], key=lambda row: (
+            not bool(row.product.redness_care_ingredients), row.product.product_id,
+        ))
+        ties = Counter(bool(row.product.redness_care_ingredients) for row in rows)
+        for row in rows:
+            result.append(RankedCandidate(
+                row.product, len(result) + 1, row.group_count,
+                row.priority_matched, ties[bool(row.product.redness_care_ingredients)],
+            ))
+        start += size
     return result
