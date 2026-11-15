@@ -1,0 +1,87 @@
+.makeup-season-note { margin:8px 0 0; }
+.makeup-import { width:100%; margin-top:20px; }
+.makeup-workspace { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(320px,1fr); gap:28px; align-items:start; margin:0; }
+.makeup-result { position:sticky; top:96px; min-width:0; }
+.makeup-editor { min-width:0; padding-left:28px; border-left:1px solid var(--line); align-self:stretch; }
+.makeup-result-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:20px; }
+.makeup-result-heading .card-heading { margin-bottom:0; }.makeup-result-heading > .category-pill { white-space:nowrap; }
+.makeup-result-stage { display:flex; align-items:center; justify-content:center; min-height:420px; background:var(--tint); border-radius:14px; padding:14px; overflow:hidden; }
+.makeup-result-stage canvas { display:block; width:100%; max-height:68vh; object-fit:contain; border-radius:10px; }
+.makeup-result-stage canvas[hidden] { display:none; }
+.makeup-result-empty { text-align:center; padding:36px 20px; }.makeup-result-empty strong { font-size:15px; }.makeup-result-empty p { color:var(--muted); font-size:13px; line-height:1.8; margin:8px 0 0; }
+.makeup-result .color-studio-actions { margin-top:14px; }
+.makeup-editor-overview { margin-bottom:4px; }.makeup-editor-overview .card-heading { margin-bottom:8px; }
+.makeup-part-tabs { margin:4px 0 20px; padding-bottom:18px; border-bottom:1px solid var(--line); }
+.category-filters.makeup-part-tabs button[aria-selected="true"] { background:var(--green); color:#fff; border-color:var(--green); }
+.makeup-part-tabs button:focus-visible { outline:2px solid var(--green); outline-offset:3px; }
+.makeup-brows > h3 { margin:0 0 14px; font-size:1rem; }
+.makeup-panel-note,.makeup-brows > p { color:var(--muted); font-size:.79rem; line-height:1.65; }
+.makeup-amount { display:grid; grid-template-columns:auto minmax(0,1fr) 3.5em; align-items:center; gap:10px; margin-top:12px; font-size:.82rem; }
+.makeup-amount input { min-width:0; width:100%; }.makeup-amount span { text-align:right; font-variant-numeric:tabular-nums; font-size:.77rem; }
+.makeup-toggle { display:inline-flex; align-items:center; gap:7px; font-weight:700; font-size:.88rem; cursor:pointer; }
+.makeup-controls details { margin:16px 0; }.makeup-controls summary { cursor:pointer; font-weight:600; font-size:.82rem; }.makeup-controls details > button { margin-top:12px; }
+.makeup-occasion { border:0; padding:0; margin:0 0 18px; min-width:0; }.makeup-occasion legend { padding:0; font-size:.86rem; font-weight:700; margin-bottom:10px; }
+.makeup-occasion-options { gap:8px; }
+.makeup-occasion p { color:var(--muted); font-size:.77rem; margin:10px 0 0; line-height:1.6; }
+.makeup-look-grid { display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:16px; }
+.makeup-look-card { display:grid; grid-template-columns:66px minmax(0,1fr); align-items:start; gap:3px 12px; padding:12px; background:var(--paper); color:var(--ink); border:1px solid var(--line); border-radius:12px; text-align:left; }
+.makeup-look-card[aria-pressed="true"] { background:var(--tint); border-color:var(--green); box-shadow:inset 0 0 0 1px var(--green); }
+.makeup-look-card:hover:not(:disabled),.makeup-brow-grid button:hover:not(:disabled) { background:var(--tint); border-color:var(--green); }
+.makeup-look-card canvas { grid-row:1 / span 5; width:66px; height:66px; background:var(--line); border-radius:7px; }.makeup-look-card > strong { font-size:.9rem; }.makeup-look-card .eyebrow { font-size:.62rem; }.makeup-look-card > span:not(.eyebrow) { font-size:.74rem; line-height:1.5; }
+.makeup-look-colors { display:flex; gap:5px; }.makeup-look-colors > span { width:14px; height:14px; border-radius:50%; border:1px solid #0002; }
+.makeup-brows > h3 span { color:var(--muted); font-size:.76rem; font-weight:400; }.makeup-brows fieldset { border:0; padding:0; margin:0; min-width:0; }.makeup-brows legend { padding:0; }
+.makeup-brow-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:12px 0 18px; }
+.makeup-brow-grid button { min-width:0; padding:9px; display:flex; flex-direction:column; gap:5px; align-items:flex-start; background:var(--paper); color:var(--ink); border:1px solid var(--line); border-radius:10px; text-align:left; }.makeup-brow-grid button[aria-pressed="true"] { background:var(--tint); border-color:var(--green); box-shadow:inset 0 0 0 1px var(--green); }
+.makeup-brow-thumb { display:flex; align-items:center; justify-content:center; width:100%; height:50px; overflow:hidden; background:var(--warm); border-radius:5px; }.makeup-brow-thumb img { width:100%; object-fit:contain; }
+.makeup-brow-grid button > span:not(.makeup-brow-thumb) { font-size:.78rem; }.makeup-brow-grid small { color:var(--muted); font-size:.68rem; }
+.makeup-brow-color { display:flex; align-items:center; gap:12px; margin:14px 0; font-size:.82rem; }.makeup-brow-color input { width:44px; height:30px; padding:2px; }
+@media(max-width:900px) {.makeup-workspace { grid-template-columns:1fr; }.makeup-editor { padding:22px 0 0; border-left:0; border-top:1px solid var(--line); }.makeup-result { position:static; }.makeup-result-stage { min-height:260px; }.makeup-result-stage canvas { max-height:56vh; } }
+.makeup-look-intensity { margin:0 0 16px; padding:12px 14px; border-radius:10px; background:var(--tint); }
+.makeup-look-intensity .makeup-amount { margin-top:0; font-weight:600; }
+
+/* Compact recommendations leave all strength sliders visible together. */
+.makeup-editor .makeup-look-grid { grid-auto-flow:column; grid-auto-columns:155px; grid-template-columns:none; overflow-x:auto; padding:2px 2px 10px; scroll-snap-type:x proximity; }
+.makeup-editor .makeup-look-card { display:flex; flex-direction:column; gap:6px; scroll-snap-align:start; }
+.makeup-editor .makeup-look-card canvas { width:48px; height:48px; }
+.makeup-editor .makeup-look-card > span:not(.eyebrow):not(.makeup-look-colors) { display:none; }
+.makeup-strengths { margin-top:18px; padding-top:20px; border-top:1px solid var(--line); }
+.makeup-strengths-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.makeup-strengths-heading h3 { margin:0; font-size:1rem; }
+.makeup-strengths-heading button { padding:7px 10px; font-size:.75rem; }
+.makeup-strengths .makeup-amount { grid-template-columns:76px minmax(0,1fr) 3.5em; }
+.makeup-liner-options { margin:10px 0 0 86px; gap:5px; }
+.makeup-liner-options button { padding:6px 9px; font-size:.72rem; }
+.makeup-foldout { padding:16px 0; border-top:1px solid var(--line); }
+.makeup-controls .makeup-foldout { margin:16px 0 0; }
+.makeup-foldout summary { cursor:pointer; font-size:.86rem; font-weight:700; }
+.makeup-foldout summary > span { float:right; color:var(--muted); font-size:.74rem; font-weight:400; }
+.makeup-brow-settings .makeup-brows { padding-top:18px; }
+.makeup-brow-settings .makeup-brows > h3 { margin-top:0; }
+/* 추천 룩: 내 얼굴 맞춤 요약 */
+.makeup-fit-summary { margin:0 0 14px; padding:10px 14px 10px 28px; border-radius:10px; background:var(--tint); color:var(--muted); font-size:.78rem; line-height:1.7; }
+.makeup-mode-tabs { margin-bottom:16px; padding-bottom:14px; }
+/* 직접 꾸미기: 부위 카드 · 색 칩 */
+.makeup-custom-part { margin-top:8px; }
+.makeup-custom-part summary { display:flex; align-items:center; gap:8px; }
+.makeup-custom-part summary .makeup-toggle { margin:0; }
+.makeup-custom-part .makeup-liner-options { margin:10px 0 0; }
+.makeup-custom-chip { width:14px; height:14px; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(0,0,0,.15); }
+.makeup-swatches { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:12px; }
+.makeup-swatches button { width:26px; height:26px; min-height:0; padding:0; border-radius:50%; border:2px solid transparent; box-shadow:inset 0 0 0 1px rgba(0,0,0,.15); cursor:pointer; }
+.makeup-swatches button[aria-pressed="true"] { border-color:var(--green); box-shadow:0 0 0 2px #fff inset; }
+.makeup-swatches button:disabled { opacity:.4; cursor:default; }
+.makeup-swatch-picker { display:inline-flex; }
+.makeup-swatch-picker input { width:28px; height:28px; padding:0; border:1px dashed var(--line); border-radius:50%; background:none; cursor:pointer; }
+.makeup-controls .makeup-custom-part { margin:0; padding:12px 0; }
+/* 피부톤 분석 결과 카드 */
+.makeup-tone-result { margin:14px 0 4px; padding:14px 16px; background:var(--tint); border:1px solid var(--line); border-radius:12px; font-size:13px; line-height:1.7; }
+.makeup-tone-result p { margin:0 0 6px; }
+.makeup-tone-name { display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:15px; }
+.makeup-tone-low, .makeup-tone-manual { font-size:11px; padding:1px 8px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+.makeup-tone-result dl { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; margin:8px 0; }
+.makeup-tone-result dl > div { display:contents; }
+.makeup-tone-result dt { color:var(--muted); }
+.makeup-tone-result dd { margin:0; color:var(--ink); }
+.makeup-tone-result button { margin:4px 0 6px; }
+.makeup-tone-notices { margin:6px 0 0; padding-left:16px; color:var(--muted); font-size:12px; }
+.makeup-tone-error { color:#b3261e; }

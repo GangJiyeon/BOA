@@ -80,11 +80,17 @@ def calculate_nose_ratios(points: Dict[str, Point]) -> Dict[str, float]:
     tip_width = _distance(points["nostril_left"], points["nostril_right"])
     tip_height = _distance(points["nose_tip"], points["nose_base"])
 
-    eye_mid_x = (points["left_eye"][0] + points["right_eye"][0]) / 2
-    symmetry_deviation = abs(points["nose_tip"][0] - eye_mid_x) / face_width
-
-    nostril_mid_y = (points["nostril_left"][1] + points["nostril_right"][1]) / 2
-    upturn = (nostril_mid_y - points["nose_tip"][1]) / tip_width if tip_width else 0.0
+    # 들림·대칭은 사진의 x/y축 대신 두 눈을 기준으로 한 얼굴 좌표계에서 계산.
+    lx, ly = points["left_eye"]
+    rx, ry = points["right_eye"]
+    angle = math.atan2(ry - ly, rx - lx)
+    cosine, sine = math.cos(angle), math.sin(angle)
+    eye_mid = ((lx + rx) / 2, (ly + ry) / 2)
+    dx, dy = points["nose_tip"][0] - eye_mid[0], points["nose_tip"][1] - eye_mid[1]
+    symmetry_deviation = abs(dx * cosine + dy * sine) / face_width
+    nostril_mid = tuple((points["nostril_left"][i] + points["nostril_right"][i]) / 2 for i in (0, 1))
+    dx, dy = nostril_mid[0] - points["nose_tip"][0], nostril_mid[1] - points["nose_tip"][1]
+    upturn = (-dx * sine + dy * cosine) / tip_width if tip_width else 0.0
 
     return {
         "width_ratio": round(tip_width / face_width, 4),
@@ -132,4 +138,17 @@ def analyze_nose_shape(points: Dict[str, Point]) -> Dict[str, object]:
     return {
         "nose_tags": tags,
         "ratios": ratios,
+    }
+
+def makeup_nose_strengths(ratios: Dict[str, float]) -> Dict[str, float]:
+    """분류 경계부터 연속 보정. 넓은 콧볼과 둥근 코끝을 별도로 다룬다."""
+    def ramp(value: float) -> float:
+        t = min(1.0, max(0.0, value))
+        return t * t * (3 - 2 * t)
+
+    return {
+        "wide_wings": ramp((ratios["width_ratio"] - THRESHOLDS["width_wide"]) / .06),
+        "round_tip": ramp((ratios["bulbous_ratio"] - THRESHOLDS["bulbous_ratio"]) / 1.2),
+        "upturned": ramp((ratios["upturn"] - THRESHOLDS["upturn_high"]) / .06),
+        "drooping": ramp((THRESHOLDS["upturn_low"] - ratios["upturn"]) / .08),
     }
