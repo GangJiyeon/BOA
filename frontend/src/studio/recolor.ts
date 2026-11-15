@@ -44,6 +44,12 @@ export function hexToRgb(hex: string): [number, number, number] {
   return [n >> 16 & 255, n >> 8 & 255, n & 255]
 }
 
+export function labToHex(lightness: number, a: number, b: number): string {
+  const rgb = new Uint8ClampedArray(3)
+  labToRgb(lightness, a, b, rgb, 0)
+  return '#' + Array.from(rgb, channel => channel.toString(16).padStart(2, '0')).join('')
+}
+
 // image·mask 픽셀(RGBA)로 Lab 값과 머리 평균색 미리 계산
 export function prepareBase(image: ImageData, maskPixels: Uint8ClampedArray): PreparedBase {
   const { width, height, data } = image

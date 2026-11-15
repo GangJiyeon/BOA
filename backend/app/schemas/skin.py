@@ -72,6 +72,11 @@ class SkinLightnessRead(BaseModel):
     lightness: float = Field(ge=0, le=100)
 
 
+class SkinColorRead(SkinLightnessRead):
+    a: float = Field(ge=-128, le=127)
+    b: float = Field(ge=-128, le=127)
+
+
 # ── 재현성 측정 (디버그) ─────────────────────────────────────────────
 
 
