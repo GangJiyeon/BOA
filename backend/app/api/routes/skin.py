@@ -27,6 +27,7 @@ from app.schemas.skin import (
     RepeatabilityRejected,
     RepeatabilityReport,
     ScoreRead,
+    SkinColorRead,
     SkinLightnessRead,
 )
 from app.services import s3, skin_analysis, skin_scoring
@@ -199,7 +200,13 @@ def create_analysis(body: AnalysisCreate, db: Session = Depends(get_db)) -> Anal
 
 @router.post("/lightness")
 def read_skin_lightness(file: UploadFile = File(...)) -> SkinLightnessRead:
-    """헤어색 추천에 필요한 사진 명도를 기록 저장 없이 계산한다."""
+    color = read_skin_color(file)
+    return SkinLightnessRead(lightness=color.lightness)
+
+
+@router.post("/color")
+def read_skin_color(file: UploadFile = File(...)) -> SkinColorRead:
+    """헤어색 추천에 쓰는 사진의 피부색을 기록 저장 없이 계산한다."""
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise _error(400, ErrorCode.UNSUPPORTED_MEDIA_TYPE, "JPG, PNG, WEBP 사진을 사용해 주세요.")
     photo = file.file.read(MAX_LIGHTNESS_PHOTO_BYTES + 1)
@@ -207,12 +214,12 @@ def read_skin_lightness(file: UploadFile = File(...)) -> SkinLightnessRead:
         raise HTTPException(413, "사진은 10MB 이하로 올려 주세요.")
     settings = get_settings()
     try:
-        lightness = skin_analysis.measure_skin_lightness(
+        color = skin_analysis.measure_skin_color(
             photo, min_face_width=settings.min_face_width_px, camera_profile=settings.skin_camera_profile
         )
     except skin_analysis.AnalysisError as e:
         raise _error(400, e.code, str(e), e.detail) from e
-    return SkinLightnessRead(lightness=lightness)
+    return SkinColorRead(**color)
 
 
 @router.post("/analyses/debug", status_code=201)

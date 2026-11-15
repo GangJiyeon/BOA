@@ -4,7 +4,7 @@ import { getHairResult, type HairResult } from '../api/hair'
 import { getSkinAnalysis, type SkinAnalysis } from '../api/skin'
 import { SkinSummary, SectionJump, TaskStatus } from '../components/Shared'
 import { useTask } from '../hooks/useTask'
-import { HairResults } from './HairPage'
+import { HairColorSwatches, HairResults } from './HairPage'
 import MetricScores from '../components/MetricScores'
 import CosmeticProductCard from '../components/CosmeticProductCard'
 import { cosmeticCategoryNames } from '../utils/cosmeticLabels'
@@ -70,6 +70,11 @@ export default function ResultsPage({ latestSkin, latestHair, cosmetics, hasShar
         <div className="results-heading"><h3 id="session-hair-title" className="section-target" tabIndex={-1}>얼굴형 · 헤어</h3><a className="text-action" href="#/hair">사진·스타일 조건 변경 →</a></div>
         {latestHair ? <>
           <div className="form-card"><h4>얼굴형: {latestHair.analysis.face_shape}</h4>{latestHair.analysis.top2 && <p>차순위 얼굴형: {latestHair.analysis.top2}</p>}</div>
+          {latestHair.recommendedColors && <div className="form-card">
+            <h4>피부색에 맞춘 헤어색</h4>
+            {latestHair.hairColorBasis && <p className="input-note">{latestHair.hairColorBasis}</p>}
+            <HairColorSwatches colors={latestHair.recommendedColors} />
+          </div>}
           <HairResults result={latestHair.result} />
         </> : <div className="empty-box"><p>아직 헤어 추천을 진행하지 않았습니다.</p><a className="text-action" href="#/hair">헤어 추천 시작 →</a></div>}
       </section>

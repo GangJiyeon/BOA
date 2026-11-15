@@ -62,9 +62,8 @@ export default function HairColorStudio({ render, styleName, recommendedColors =
     setColor(item)
   }
 
-  // 중간 베이스가 없는 예전 결과는 밝은 베이스로
-  const baseOf = (item: HairColor): HairBase => item.base === 'brown' && !render.brown ? 'light' : item.base
-  const base = bases[color ? baseOf(color) : 'mid']
+  // 일부 베이스가 없는 예전 합성 결과에서도 색을 적용할 수 있게 한다.
+  const base = color ? bases[color.base] ?? bases.brown ?? bases.light ?? bases.mid : bases.mid
   useEffect(() => {
     const el = canvas.current, image = out.current
     if (!el || !base || !image) return
@@ -102,7 +101,7 @@ export default function HairColorStudio({ render, styleName, recommendedColors =
     <div className="color-studio-palette">
       <div className="color-studio-current"><span className="eyebrow">HAIR COLOR</span><strong>{color?.name ?? '기본 (어두운 갈색)'}</strong></div>
       {recommendedColors.length > 0 && <fieldset className="swatch-group" disabled={!ready}>
-        <legend>피부 명도 기반 추천</legend>
+        <legend>추천 헤어색</legend>
         <div className="swatches">{recommendedColors.map(({ color }) => swatch(color))}</div>
       </fieldset>}
       {original && <fieldset className="swatch-group" disabled={!ready}>
