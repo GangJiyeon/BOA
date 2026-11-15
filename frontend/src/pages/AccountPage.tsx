@@ -1,9 +1,15 @@
 import PageIntro from '../components/PageIntro'
 import { useEffect, useState, type FormEvent } from 'react'
-import { getActor, getMember, logout, sendCode, signup, startGuest, updateLanguage, verifyCode, type Actor, type GuestSession, type Language, type Member, termNames } from '../api/account'
+import { getActor, getMember, googleLogin, logout, sendCode, signup, startGuest, updateLanguage, verifyCode, type Actor, type GuestSession, type Language, type Member, termNames } from '../api/account'
 import { CaptureConsent, TaskStatus } from '../components/Shared'
 import { useTerms } from '../hooks/useTerms'
 import { useTask } from '../hooks/useTask'
+import GoogleLoginButton from '../components/GoogleLoginButton'
+import AccountPreferences from '../components/AccountPreferences'
+import AccountHistory from '../components/AccountHistory'
+import Icon from '../components/Icon'
+
+function settingsView() { return new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('view') === 'settings' }
 
 type Props = { actor: Actor | null; onActorChange: () => Promise<void>; onSession: (session: GuestSession) => void; onLogin: () => void; onLogout: () => void; onSignup: () => void; onStart: () => void }
 export default function AccountPage({ actor, onActorChange, onSession, onLogin, onLogout, onSignup, onStart }: Props) {
@@ -24,6 +30,13 @@ export default function AccountPage({ actor, onActorChange, onSession, onLogin, 
   const [agreed, setAgreed] = useState<number[]>([])
   const [member, setMember] = useState<Member | null>(null)
   const [message, setMessage] = useState('')
+  const [showSettings, setShowSettings] = useState(settingsView)
+  useEffect(() => {
+    const update = () => { setShowSettings(settingsView()); setMessage(''); task.reset() }
+    window.addEventListener('hashchange', update)
+    return () => window.removeEventListener('hashchange', update)
+    // hash 주소에 따라 설정 화면을 전환하고 진행 중인 화면 작업은 취소한다.
+  }, [])
   useEffect(() => {
     if (resendUntil <= Date.now()) return
     const timer = setInterval(() => setNow(Date.now()), 1000)
@@ -57,6 +70,19 @@ export default function AccountPage({ actor, onActorChange, onSession, onLogin, 
         if (!value.signup_token) throw new Error('가입 토큰이 응답에 없습니다. 다시 인증해 주세요.')
         setSignupToken(value.signup_token); setMessage('이메일 확인 완료. 가입 정보를 입력해 주세요.')
       } else { onLogin(); setSignupToken(null); setCode(''); setDevCode(null); setMessage('로그인했습니다.'); await onActorChange() }
+    })
+  }
+  function loginWithGoogle(googleCode: string) {
+    setMessage('')
+    void task.run(async signal => {
+      const value = await googleLogin(googleCode, signal)
+      if (signal.aborted) return
+      // 이메일 인증 진행 상태 정리
+      setSentEmail(''); setCode(''); setDevCode(null)
+      if (value.signup_required) {
+        if (!value.signup_token) throw new Error('가입 토큰이 응답에 없습니다. 다시 로그인해 주세요.')
+        setSignupToken(value.signup_token); setMessage('구글 계정 확인 완료. 가입 정보를 입력해 주세요.')
+      } else { onLogin(); setSignupToken(null); setMessage('로그인했습니다.'); await onActorChange() }
     })
   }
   function join(event: FormEvent) {
@@ -95,13 +121,34 @@ export default function AccountPage({ actor, onActorChange, onSession, onLogin, 
       if (!signal.aborted) { setMessage('비회원 세션을 시작했습니다.'); onStart() }
     })
   }
-  return <section><PageIntro eyebrow="WELCOME TO BOA" title="시작하기 · 계정">비회원으로 시작하거나 이메일 인증 후 로그인하세요.</PageIntro>
-    {termsError && <p role="alert" className="error-box">{termsError} <button type="button" onClick={() => { setFace(false); setAge(false); setAgreed([]); retry() }}>약관 다시 조회</button></p>}
-    {actor?.kind === 'member' ? <section className="form-card"><h3>내 계정</h3>
-      {member && <><p>{member.email} · {member.nationality ?? '국적 미설정'}</p><label className="field">사용 언어<LanguageSelect value={language} onChange={setLanguage} /></label>
-        <button disabled={task.busy} onClick={() => void task.run(async signal => { const value = await updateLanguage(language, signal); if (!signal.aborted) { setMember(value); setMessage('언어 설정을 저장했습니다.') } })}>언어 저장</button></>}
-      <div className="actions"><button onClick={onStart}>피부 분석으로 이동</button><button disabled={task.busy} onClick={() => void task.run(async signal => { await logout(signal); if (signal.aborted) return; onLogout(); setMember(null); setMessage('로그아웃했습니다.'); await onActorChange() })}>로그아웃</button></div>
-    </section> : <div className="form-columns">
+  return <section className="account-page"><PageIntro eyebrow={actor?.kind === 'member' ? 'MY ACCOUNT' : 'WELCOME TO BOA'} title={actor?.kind === 'member' ? (showSettings ? '계정 설정' : '내 계정') : '시작하기 · 계정'}>{actor?.kind === 'member' ? (showSettings ? '약관 동의와 계정 이용 설정을 관리하세요.' : '내 정보와 저장된 분석 기록을 확인하세요.') : '비회원으로 시작하거나 이메일 인증 후 로그인하세요.'}</PageIntro>
+    {actor?.kind !== 'member' && termsError && <p role="alert" className="error-box">{termsError} <button type="button" onClick={() => { setFace(false); setAge(false); setAgreed([]); retry() }}>약관 다시 조회</button></p>}
+    {actor?.kind === 'member' ? showSettings ? <>
+      <a className="account-back" href="#/start" aria-disabled={task.busy} onClick={event => { if (task.busy) event.preventDefault() }}>← 내 계정으로</a>
+      <section className="form-card account-settings">
+        <AccountPreferences task={task} onMessage={setMessage} onDeleted={async () => {
+          // 서버 삭제 성공 후에만 계정 정보와 이번 이용의 입력·결과를 비운다.
+          onLogout(); setMember(null); setSignupToken(null); setSentEmail(''); setEmail(''); setCode(''); setDevCode(null)
+          setFace(false); setAge(false); setAgreed([]); setResendUntil(0)
+          setMessage('회원 탈퇴가 완료되었습니다.')
+          await onActorChange()
+        }} />
+      </section>
+    </> : <>
+      <section className="form-card account-profile" aria-label="회원 정보">
+        <div className="account-profile-top">
+          <div className="account-identity"><span className="account-avatar"><Icon name="user" size={24} /></span><div><span className="account-caption">로그인 계정</span><strong className="account-email">{member?.email ?? '계정 정보를 불러오는 중입니다.'}</strong>{member?.nationality && <span className="account-nationality">국적 {member.nationality}</span>}</div></div>
+          <div className="account-profile-actions"><button type="button" disabled={task.busy} onClick={onStart}>피부 분석으로 이동</button><button type="button" className="text-button" disabled={task.busy} onClick={() => void task.run(async signal => { await logout(signal); if (signal.aborted) return; onLogout(); setMember(null); setMessage('로그아웃했습니다.'); await onActorChange() })}>로그아웃</button></div>
+        </div>
+        <div className="account-profile-bottom">
+          {member && <form className="account-language" onSubmit={event => { event.preventDefault(); setMessage(''); void task.run(async signal => { const value = await updateLanguage(language, signal); if (!signal.aborted) { setMember(value); setMessage('언어 설정을 저장했습니다.') } }) }}>
+            <label htmlFor="account-language">사용 언어</label><LanguageSelect id="account-language" value={language} onChange={setLanguage} disabled={task.busy} /><button type="submit" className="secondary" aria-label="언어 저장" disabled={task.busy || language === member.language}>저장</button>
+          </form>}
+          <a className="account-settings-link" href="#/start?view=settings" aria-disabled={task.busy} onClick={event => { if (task.busy) event.preventDefault() }}>약관 및 계정 관리 <span aria-hidden="true">→</span></a>
+        </div>
+      </section>
+      {member && <section className="form-card account-history-card"><AccountHistory disabled={task.busy} /></section>}
+    </> : <div className="form-columns">
       <form className="form-card" onSubmit={beginGuest}>
         <h3>비회원 시작</h3>
         {actor?.kind === 'kiosk' ? <p>이 기기는 키오스크입니다. 키오스크 메뉴에서 사용자를 시작해 주세요.</p> : <>
@@ -115,7 +162,7 @@ export default function AccountPage({ actor, onActorChange, onSession, onLogin, 
           <button type="submit" disabled={task.busy || seconds > 0}>{seconds ? `${seconds}초 후 재요청` : '인증 코드 요청'}</button></form>
         {sentEmail && !signupToken && <form onSubmit={verify}><label className="field">인증 코드<input required inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value)} /></label>
           {devCode && <p>개발 환경 인증 코드: <strong>{devCode}</strong></p>}<button type="submit" disabled={task.busy}>코드 확인</button></form>}
-        <button type="button" disabled className="secondary">Google 로그인 · 프런트 연결 준비 중</button></>}
+        <GoogleLoginButton disabled={task.busy} onCode={loginWithGoogle} onError={setMessage} /></>}
       </section>
     </div>}
     {signupToken && <form className="form-card" onSubmit={join}><h3>가입 정보</h3><div className="form-grid">
@@ -129,6 +176,6 @@ export default function AccountPage({ actor, onActorChange, onSession, onLogin, 
     <TaskStatus busy={task.busy} error={task.error} />{message && <p role="status">{message}</p>}
   </section>
 }
-function LanguageSelect({ value, onChange }: { value: Language; onChange: (value: Language) => void }) {
-  return <select value={value} onChange={e => onChange(e.target.value as Language)}><option value="ko">한국어</option><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select>
+function LanguageSelect({ value, onChange, id, disabled }: { value: Language; onChange: (value: Language) => void; id?: string; disabled?: boolean }) {
+  return <select id={id} disabled={disabled} value={value} onChange={e => onChange(e.target.value as Language)}><option value="ko">한국어</option><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select>
 }

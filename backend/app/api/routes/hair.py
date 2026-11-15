@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from sqlalchemy import select
+from sqlalchemy import case, select
 from sqlalchemy.orm import Session
 
+from app.api.deps import Actor, require_analysis_actor, require_owned_result
+from app.services import quota
 from app.db.session import get_db
 from app.models.hair import (
     FaceAnalysis,
@@ -31,8 +33,9 @@ router = APIRouter(prefix="/hair", tags=["hair"])
 # ------------------------------------------------------------------
 
 @router.post("/face-analysis", status_code=201)
-def create_face_analysis(body: FaceAnalysisRequest, db: Session = Depends(get_db)) -> FaceAnalysisResult:
+def create_face_analysis(body: FaceAnalysisRequest, actor: Actor = Depends(require_analysis_actor), db: Session = Depends(get_db)) -> FaceAnalysisResult:
     """사진 1장 또는 3장의 랜드마크를 받아 얼굴형을 분석하고 저장한다."""
+    quota.check_quota(db, actor, "hair")
     landmark_sets = [
         {key: (point.x, point.y) for key, point in landmark_set.items()}
         for landmark_set in body.landmark_sets
@@ -45,8 +48,8 @@ def create_face_analysis(body: FaceAnalysisRequest, db: Session = Depends(get_db
         raise HTTPException(422, str(e))
 
     analysis = FaceAnalysis(
-        user_id=body.user_id,
-        guest_id=body.guest_id,
+        user_id=actor.user_id,
+        guest_id=actor.guest_id,
         image_id=body.image_id,
         sex=body.sex,
         face_shape=result["face_shape"],
@@ -74,8 +77,7 @@ def create_face_analysis(body: FaceAnalysisRequest, db: Session = Depends(get_db
 async def create_face_analysis_from_photos(
     photos: list[UploadFile] = File(..., description="1장(빠른 분석) 또는 3장(정밀 분석)"),
     sex: Sex = Form(..., description="사용자가 직접 선택한 성별"),
-    user_id: int | None = Form(None),
-    guest_id: str | None = Form(None),
+    actor: Actor = Depends(require_analysis_actor),
     image_id: int | None = Form(None),
     db: Session = Depends(get_db),
 ) -> FaceAnalysisResult:
@@ -87,6 +89,7 @@ async def create_face_analysis_from_photos(
     sex는 추천 시 헤어스타일 카탈로그를 성별로 필터링하는 데 쓰인다.
     (남자 얼굴에 여자 헤어스타일이 추천되는 것을 막기 위함)
     """
+    quota.check_quota(db, actor, "hair")
     if not 1 <= len(photos) <= 3:
         raise HTTPException(422, "사진은 1장 또는 3장만 업로드할 수 있습니다.")
 
@@ -106,8 +109,8 @@ async def create_face_analysis_from_photos(
         raise HTTPException(422, str(e))
 
     analysis = FaceAnalysis(
-        user_id=user_id,
-        guest_id=guest_id,
+        user_id=actor.user_id,
+        guest_id=actor.guest_id,
         image_id=image_id,
         sex=sex,
         face_shape=result["face_shape"],
@@ -132,8 +135,9 @@ async def create_face_analysis_from_photos(
 
 
 @router.get("/face-analysis/{analysis_id}")
-def get_face_analysis(analysis_id: int, db: Session = Depends(get_db)) -> FaceAnalysisResult:
+def get_face_analysis(analysis_id: int, actor: Actor = Depends(require_analysis_actor), db: Session = Depends(get_db)) -> FaceAnalysisResult:
     analysis = db.get(FaceAnalysis, analysis_id)
+    require_owned_result(analysis, actor)
     if analysis is None:
         raise HTTPException(404, "얼굴형 분석 결과를 찾을 수 없습니다.")
     return FaceAnalysisResult(
@@ -154,7 +158,11 @@ def get_face_analysis(analysis_id: int, db: Session = Depends(get_db)) -> FaceAn
 
 @router.get("/styles")
 def list_styles(db: Session = Depends(get_db)) -> list[HairStyleRead]:
-    styles = db.scalars(select(HairStyleCatalog)).all()
+    # DB의 물리적 행 순서는 수정 후 바뀔 수 있으므로 카탈로그 번호로 고정한다.
+    styles = db.scalars(select(HairStyleCatalog).order_by(
+        case((HairStyleCatalog.sex == Sex.MALE, 0), (HairStyleCatalog.sex == Sex.FEMALE, 1), else_=2),
+        HairStyleCatalog.style_id,
+    )).all()
     return [HairStyleRead.model_validate(s, from_attributes=True) for s in styles]
 
 
@@ -172,9 +180,11 @@ def create_style(body: HairStyleCreate, db: Session = Depends(get_db)) -> HairSt
 # ------------------------------------------------------------------
 
 @router.post("/recommend", status_code=201)
-def create_recommendation(body: HairRecommendRequest, db: Session = Depends(get_db)) -> HairRecommendResult:
+def create_recommendation(body: HairRecommendRequest, actor: Actor = Depends(require_analysis_actor), db: Session = Depends(get_db)) -> HairRecommendResult:
     """얼굴형 분석 결과 + 선호 조건으로 헤어스타일을 추천하고 결과를 저장한다."""
     face_analysis = db.get(FaceAnalysis, body.face_analysis_id)
+    require_owned_result(face_analysis, actor)
+    quota.check_quota(db, actor, "hair")
     if face_analysis is None:
         raise HTTPException(404, "참조한 얼굴형 분석 결과를 찾을 수 없습니다.")
 
@@ -208,8 +218,8 @@ def create_recommendation(body: HairRecommendRequest, db: Session = Depends(get_
     )
 
     run = HairRecRun(
-        user_id=body.user_id,
-        guest_id=body.guest_id,
+        user_id=actor.user_id,
+        guest_id=actor.guest_id,
         face_analysis_id=body.face_analysis_id,
         preferred_length=body.preferred_length,
         preferred_texture=body.preferred_texture,
@@ -244,9 +254,10 @@ def create_recommendation(body: HairRecommendRequest, db: Session = Depends(get_
 
 
 @router.get("/recommend/{run_id}")
-def get_recommendation(run_id: int, db: Session = Depends(get_db)) -> HairRecommendResult:
+def get_recommendation(run_id: int, actor: Actor = Depends(require_analysis_actor), db: Session = Depends(get_db)) -> HairRecommendResult:
     """특정 run의 추천 결과 + 그 당시 조건을 복원한다."""
     run = db.get(HairRecRun, run_id)
+    require_owned_result(run, actor)
     if run is None:
         raise HTTPException(404, "추천 이력을 찾을 수 없습니다.")
 
