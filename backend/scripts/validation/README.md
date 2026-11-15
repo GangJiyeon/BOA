@@ -11,6 +11,7 @@
 |---|---|
 | `manipulation_report.py` | 반복 촬영으로 측정 잡음(MDC) 계산, 조작 실험(파운데이션·블러셔·립틴트 점·따뜻한 수건) 전후 비교, 지표 간 간섭, 장소 강건성 |
 | `synthetic_trouble.py` | 크기·붉은 정도를 아는 점을 사진에 합성해 트러블 검출률과 최소 검출 크기 측정 (사람 불필요) |
+| `calibrate_profile.py` | 새 장소·기기 사진으로 카메라 프로필 권장 값(균일도 범위, 홍조 범위 확인, 피부톤 분포·정답 일치) 계산 |
 | `skin_tone_probe.py` | 피부톤(ITA°·색상각) 시험 계산, 보정 방식(없음·그레이월드·흰자위) 비교, 가상 조명 변화에 대한 안정성 |
 | `_common.py` | 공용 도구 (분석 호출, 통계, CSV) |
 
@@ -21,6 +22,9 @@
 .venv\Scripts\python scripts/validation/manipulation_report.py 실험사진폴더
 # 이미 분석한 결과로 표만 다시 보기
 .venv\Scripts\python scripts/validation/manipulation_report.py --from-csv scripts/validation/output/manipulation_raw.csv
+
+# 시연 장소 재보정 (사진 1장당 1초 내외)
+.venv\Scripts\python scripts/validation/calibrate_profile.py 사진폴더 --profile galaxybook
 
 # 피부톤 시험 (사진 1장당 1초 미만)
 .venv\Scripts\python scripts/validation/skin_tone_probe.py 사진폴더

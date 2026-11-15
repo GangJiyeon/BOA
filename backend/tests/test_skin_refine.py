@@ -50,5 +50,36 @@ class RefineSkinDarkToleranceTest(unittest.TestCase):
         self.assertTrue(np.array_equal(base, narrow))
 
 
+
+class UniformityRegionsAndProfileTest(unittest.TestCase):
+    """균일도 측정 부위와 카메라 프로필별 범위."""
+
+    def test_uniformity_excludes_nose_and_chin(self):
+        # 코(굴곡·반사)와 턱(수염·그늘)은 균일도에서 뺀다
+        self.assertNotIn("nose", sa.UNIFORMITY_REGIONS)
+        self.assertNotIn("chin", sa.UNIFORMITY_REGIONS)
+        self.assertEqual(set(sa.UNIFORMITY_REGIONS), set(sa.REDNESS_REGIONS))
+
+    def test_every_profile_has_valid_uniformity_range(self):
+        for name, profile in sa.CAMERA_PROFILES.items():
+            with self.subTest(profile=name):
+                lo, hi = profile.uniformity_std_range
+                self.assertLess(0, lo)
+                self.assertLess(lo, hi)
+
+    def test_galaxybook_profile_exists(self):
+        self.assertIn("galaxybook", sa.CAMERA_PROFILES)
+
+    def test_uniformity_uses_given_range(self):
+        # 같은 편차라도 범위에 따라 점수가 달라져야 한다
+        lab = np.full((60, 60, 3), 128, dtype=np.uint8)
+        rng = np.random.default_rng(0)
+        lab[:, :, 0] = np.clip(150 + rng.normal(0, 2.0, (60, 60)), 0, 255).astype(np.uint8)
+        mask = np.full((60, 60), 255, dtype=np.uint8)
+        wide = sa._uniformity(lab, mask, 300.0, (1.0, 10.0))[0]
+        narrow = sa._uniformity(lab, mask, 300.0, (0.5, 1.5))[0]
+        self.assertGreater(wide, narrow)
+
+
 if __name__ == "__main__":
     unittest.main()

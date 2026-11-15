@@ -62,10 +62,12 @@ DEFAULT_MIN_FACE_WIDTH = 250
 BRIGHTNESS_RANGE = (100.0, 210.0)    # 피부 영역 L 채널 평균 (0~255)
 REDNESS_RANGE = (6.0, 14.0)          # 볼·이마의 홍조 지수 (R/G 로그비). 기본(phone) 프로필 값
 TROUBLE_RANGE = (0.0, 0.028)         # 반점으로 탐지된 픽셀 비율
-# 균일도: 조명 흐름(큰 그늘)을 뺀 뒤 남은 국소 밝기 편차 (낮을수록 균일).
-# 잠정값이다. 피부가 깨끗한 휴대폰 사진 2.8~3.1, 여드름 많은 얼굴 4.4, 웹캠 1.7~2.1이 나왔다.
-# 실제 시연 기기(갤럭시북 웹캠) 표본으로 다시 맞춰야 한다.
-UNIFORMITY_STD_RANGE = (2.5, 5.0)
+# 균일도: 조명 흐름(큰 그늘)을 뺀 뒤 남은 국소 밝기 편차 (낮을수록 균일). 기본(phone) 프로필 값.
+# 측정 부위를 이마·양볼(UNIFORMITY_REGIONS)로 바꾸면서 값이 약 0.77배로 줄어,
+# 예전 범위(2.5, 5.0)에 0.77을 곱해 옮겼다. 같은 휴대폰 사진은 예전과 거의 같은 점수가 나온다
+# (같은위치사진 5장: 예전 74~89점 → 새 방식에서도 같은 구간).
+# 여드름 많은 얼굴은 이마·양볼에서 비율이 0.90으로 덜 줄어, 깨끗한 피부와의 차이가 더 벌어졌다.
+UNIFORMITY_STD_RANGE = (1.9, 3.9)
 
 # 홍조 지수를 uint8로 옮길 때 쓰는 배율.
 # 지수 1단위를 16단계로 쪼개므로 국소 중앙값 계산의 양자화 오차가 작다.
@@ -181,6 +183,14 @@ REGIONS = (
 
 # 홍조는 볼과 이마로만 판단한다 (코·턱은 원래 붉은기가 있어 과대평가된다)
 REDNESS_REGIONS = ("forehead", "left_cheek", "right_cheek")
+
+# 균일도도 이마·양볼로만 판단한다.
+# 코는 굴곡·반사 때문에 누구나 볼의 2~3배 편차가 나오고, 턱은 수염 자국·턱 아래 그늘이 섞인다.
+# 이 둘이 섞이면 피부가 고른지보다 코 모양·수염 여부를 재게 된다.
+# (갤럭시북 4명의 부위별 편차: 양볼 1.0~1.6, 코 2.2~3.6, 턱 1.8~4.4.
+#  수염 자국이 있는 사람은 턱 하나로 전체 편차가 1.72 → 2.17로 올랐다)
+# 코·턱은 트러블 탐지(TROUBLE_REGIONS)에는 계속 쓴다.
+UNIFORMITY_REGIONS = ("forehead", "left_cheek", "right_cheek")
 
 # ── 트러블 분석 영역 ─────────────────────────────────────────────────
 # 기존 패치(REGIONS)는 얼굴의 약 4%만 덮어서 볼 아래쪽처럼 트러블이 잘 생기는 곳이 빠진다.
@@ -491,6 +501,8 @@ class CameraProfile:
     channel_gains: tuple[float, float, float]  # 고정 색 보정 이득 (B, G, R)
     redness_range: tuple[float, float]         # 홍조 지수 lo → 0점, hi → 100점
     color_check: bool                          # 홍조 지수가 지나치게 낮으면 측정 불가로 돌려보낼지
+    # 균일도 편차 lo → 100점, hi → 0점. 기기마다 피부결을 매끈하게 처리하는 정도가 달라 따로 둔다.
+    uniformity_std_range: tuple[float, float] = UNIFORMITY_STD_RANGE
 
 
 CAMERA_PROFILES: dict[str, CameraProfile] = {
@@ -509,6 +521,19 @@ CAMERA_PROFILES: dict[str, CameraProfile] = {
         channel_gains=(1.0, 1.0, 1.0),
         redness_range=(1.5, 3.5),
         color_check=True,
+    ),
+    # 실제 시연 기기 (갤럭시북4 내장 웹캠). 표본: 서로 다른 4명, 같은 장소, 1인 1장.
+    # 시연 장소에서 찍은 사진으로 scripts/validation/calibrate_profile.py를 돌려 다시 맞춘다.
+    #  - 색 보정·홍조: 휴대폰과 색감이 비슷해(홍조 지수 10.6~11.9) 휴대폰 값을 그대로 쓴다.
+    #  - 균일도: 웹캠이 피부를 매끈하게 처리해 편차가 휴대폰의 약 0.55배로 작다
+    #    (깨끗한 피부 중앙값: 휴대폰 2.16, 갤럭시북 1.19). 휴대폰 범위에 0.55를 곱했다.
+    #    "4명의 피부 상태가 휴대폰 표본과 비슷하다"는 가정에 기댄 임시값이다.
+    "galaxybook": CameraProfile(
+        description="갤럭시북4 내장 웹캠 (시연 기기, 4명 1장씩 기준 임시값)",
+        channel_gains=DEVICE_CHANNEL_GAINS,
+        redness_range=REDNESS_RANGE,
+        color_check=True,
+        uniformity_std_range=(1.05, 2.15),
     ),
 }
 DEFAULT_CAMERA_PROFILE = "phone"
@@ -658,7 +683,10 @@ def _cheek_l_ratio(lab: np.ndarray, regions: dict[str, np.ndarray]) -> float | N
 
 
 def _uniformity(
-    lab: np.ndarray, skin: np.ndarray, face_width: float
+    lab: np.ndarray,
+    skin: np.ndarray,
+    face_width: float,
+    std_range: tuple[float, float] = UNIFORMITY_STD_RANGE,
 ) -> tuple[int, float, float]:
     """조명 흐름을 뺀 국소 밝기 편차의 역방향 점수. 고를수록 높다.
 
@@ -682,7 +710,7 @@ def _uniformity(
     std_flat = float(residual.std())
     std_raw = float(lightness[skin > 0].std())  # 예전 방식 (비교용으로만 기록)
 
-    unevenness = _linear_score(std_flat, *UNIFORMITY_STD_RANGE)
+    unevenness = _linear_score(std_flat, *std_range)
     return _clamp(100 - unevenness), std_flat, std_raw
 
 
@@ -887,7 +915,16 @@ def analyze_image_detail(
     # 트러블은 볼을 크게 잡은 넓은 패치에서 찾는다
     trouble_skin = _trouble_area(image, lab, landmarks)
     trouble, blemish_ratio, trouble_threshold = _trouble(index_map, trouble_skin, face_width)
-    uniformity, std_l, std_l_raw = _uniformity(lab, skin, face_width)
+    # 균일도는 이마·양볼만 (코 굴곡·턱 수염 제외). 셋 다 가려졌으면 전체 피부로 대체
+    uniformity_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    for name in UNIFORMITY_REGIONS:
+        if name in regions:
+            uniformity_mask = cv2.bitwise_or(uniformity_mask, regions[name])
+    if int(np.count_nonzero(uniformity_mask)) < 100:
+        uniformity_mask = skin
+    uniformity, std_l, std_l_raw = _uniformity(
+        lab, uniformity_mask, face_width, profile.uniformity_std_range
+    )
 
     scores = {
         "redness": redness,
@@ -901,11 +938,12 @@ def analyze_image_detail(
         "saturated_ratio": round(saturated_ratio, 3),
         "blemish_ratio": round(blemish_ratio, 5),  # TROUBLE_RANGE 기준
         "trouble_threshold": round(trouble_threshold, 2),  # 적용된 임계값 (TROUBLE_THRESHOLD)
-        "std_l_skin": round(std_l, 2),             # 조명 흐름 제거 후 편차 (UNIFORMITY_STD_RANGE 기준)
+        "std_l_skin": round(std_l, 2),             # 조명 흐름 제거 후 편차 (프로필의 uniformity_std_range 기준, 이마·양볼)
         "std_l_skin_raw": round(std_l_raw, 2),     # 참고: 예전 방식 편차 (조명 포함)
         "face_width_px": round(face.preview_face_width, 1),  # 축소본 기준 (최소 크기 검사용)
         "source_face_width_px": round(face.source_face_width, 1),  # 원본 사진에서의 얼굴 너비
-        "skin_px": int(np.count_nonzero(skin)),                   # 패치(밝기·균일도·홍조) 픽셀
+        "skin_px": int(np.count_nonzero(skin)),                   # 패치(밝기) 픽셀
+        "uniformity_px": int(np.count_nonzero(uniformity_mask)),  # 균일도 분석 픽셀 (이마·양볼)
         "trouble_skin_px": int(np.count_nonzero(trouble_skin)),   # 트러블 분석 영역 픽셀
         "regions_used": len(regions),              # 분석에 쓰인 부위 수 (최대 5)
     }

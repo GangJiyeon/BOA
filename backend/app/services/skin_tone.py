@@ -31,10 +31,16 @@ import numpy as np
 from app.services import skin_analysis as sa
 from app.services.errors import ErrorCode
 
-# 피부톤을 잴 부위. 볼은 홍조가 섞여 색상각이 쿨(붉은 기) 쪽으로 치우치므로 뺀다.
-TONE_REGIONS = ("forehead", "nose", "chin")
-# 위 부위가 모두 가려진 경우(앞머리 등)에만 볼로 대체한다
-TONE_FALLBACK = ("left_cheek", "right_cheek")
+# 피부톤을 잴 부위: 이마·양볼 (균일도·홍조와 같은 부위).
+# 처음에는 볼을 홍조 때문에 빼고 이마·코·턱을 썼지만, 실측 결과가 반대였다.
+#  - 코가 볼보다 더 붉었다 (갤럭시북 4명 a*: 코 13.8~17.1, 볼 12.6~14.6)
+#  - 턱은 그늘·수염 자국 때문에 ITA°가 -5~-3°까지 떨어져 밝기 단계를 끌어내렸다
+#    (턱 하나 때문에 같은 밝기의 사람이 '어두운 편'으로 판정됨)
+#  - 이마는 4명 중 3명이 앞머리로 가려져, 실제로는 코·턱만으로 판정되고 있었다
+# 한계: 볼 홍조가 심한 사람은 쿨 쪽으로 약간 치우칠 수 있다.
+TONE_REGIONS = ("forehead", "left_cheek", "right_cheek")
+# 위 부위가 모두 가려진 경우에만 코·턱으로 대체한다
+TONE_FALLBACK = ("nose", "chin")
 
 # b*(노란 기)가 이보다 작으면 측정 불가로 돌려보낸다.
 # ITA°는 b*로 나누는 식이라 b*가 0에 가까우면 ±90°로 튄다 (색이 바랜 웹캠 사진에서 발생).
@@ -46,9 +52,10 @@ TONE_MIN_CHEEK_L_RATIO = 0.85
 
 
 # ── 분류 경계 (잠정값) ───────────────────────────────────────────────
-# 근거: skin_tone_probe.py 실측 — 같은 사람 휴대폰 사진에서 h° 46~48, ITA° 53~55,
-# 같은 사람 갤럭시북 웹캠에서 h° 41, ITA° 36. 기기마다 색 기록이 달라 경계도
-# 카메라 프로필별로 둔다. 표본 4명 촬영 후 재보정 예정.
+# 밝기 단계는 피부과 ITA° 분류(>41° 밝음, 28~41° 중간)를 따른다.
+# 언더톤 경계(색상각)는 정답 데이터가 없어 잠정값이다.
+# 기기마다 색 기록이 달라 경계도 카메라 프로필별로 둔다.
+# 정답(쓰는 파운데이션 호수·톤)을 확보하면 calibrate_profile.py 결과와 비교해 보정한다.
 @dataclass(frozen=True)
 class ToneThresholds:
     """카메라 프로필별 분류 경계."""
@@ -64,6 +71,9 @@ TONE_THRESHOLDS: dict[str, ToneThresholds] = {
     "phone": ToneThresholds(bright_min_ita=41.0, medium_min_ita=28.0, warm_min_hue=50.0, cool_max_hue=40.0),
     # 웹캠: 색이 바래 h°·ITA°가 전반적으로 낮게 나온다. 표본 확보 전 잠정값.
     "webcam": ToneThresholds(bright_min_ita=38.0, medium_min_ita=25.0, warm_min_hue=46.0, cool_max_hue=37.0),
+    # 갤럭시북: 정답 데이터 확보 전까지 휴대폰 기준을 그대로 쓴다 (색감이 휴대폰과 비슷함).
+    # 4명 모두 색상각 34~39°로 쿨 판정이 나오므로, 정답과 비교해 언더톤 경계 확인이 필요하다.
+    "galaxybook": ToneThresholds(bright_min_ita=41.0, medium_min_ita=28.0, warm_min_hue=50.0, cool_max_hue=40.0),
 }
 DEFAULT_THRESHOLDS = TONE_THRESHOLDS["phone"]
 
@@ -132,7 +142,7 @@ def measure_tone(
     names = [n for n in TONE_REGIONS if n in regions] or [n for n in TONE_FALLBACK if n in regions]
     if not names:
         raise sa.AnalysisError(
-            "피부톤을 잴 부위(이마·코·턱·볼)를 찾지 못했습니다",
+            "피부톤을 잴 부위(이마·볼·코·턱)를 찾지 못했습니다",
             code=ErrorCode.SKIN_AREA_TOO_SMALL,
         )
     mask = np.zeros(face.image.shape[:2], dtype=np.uint8)
