@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from app.api.deps import Actor, require_analysis_actor, require_owned_result
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.models import Image, SkinAnalysis, SkinScore
@@ -30,7 +31,7 @@ from app.schemas.skin import (
     SkinColorRead,
     SkinLightnessRead,
 )
-from app.services import s3, skin_analysis, skin_scoring
+from app.services import quota, s3, skin_analysis, skin_scoring
 from app.services.errors import ErrorCode
 from app.services.moisture_scale60 import classification
 
@@ -143,6 +144,7 @@ def _save(
     moisture_source: str,
     moisture_raw: int | None,
     moisture_score: int | None,
+    user_id: int | None = None,
     guest_id=None,
     image_id: int | None = None,
 ) -> AnalysisRead:
@@ -159,6 +161,7 @@ def _save(
             scores=scores,
             moisture_source=moisture_source,
             logic_version=logic_version,
+            user_id=user_id,
             guest_id=guest_id,
             image_id=image_id,
         )
@@ -170,8 +173,9 @@ def _save(
 
 
 @router.post("/analyses", status_code=201)
-def create_analysis(body: AnalysisCreate, db: Session = Depends(get_db)) -> AnalysisRead:
+def create_analysis(body: AnalysisCreate, actor: Actor = Depends(require_analysis_actor), db: Session = Depends(get_db)) -> AnalysisRead:
     """사진(S3에 올린 image_id)과 수분값으로 분석 1건을 만든다."""
+    quota.check_quota(db, actor, "skin")
     image = None
     if body.image_id is not None:
         image = db.get(Image, body.image_id)
@@ -183,7 +187,7 @@ def create_analysis(body: AnalysisCreate, db: Session = Depends(get_db)) -> Anal
                 {"image_id": body.image_id},
             )
 
-    seed = image.s3_key if image else str(body.guest_id or body.image_id or "dev")
+    seed = image.s3_key if image else str(actor.user_id or actor.guest_id or body.image_id)
     photo_scores, logic_version = _photo_scores(image, seed)
 
     return _save(
@@ -193,7 +197,8 @@ def create_analysis(body: AnalysisCreate, db: Session = Depends(get_db)) -> Anal
         moisture_source=body.moisture_source,
         moisture_raw=body.moisture_raw,
         moisture_score=body.moisture_score,
-        guest_id=body.guest_id,
+        user_id=actor.user_id,
+        guest_id=actor.guest_id,
         image_id=body.image_id,
     )
 
@@ -229,6 +234,7 @@ def create_analysis_debug(
     moisture_raw: int | None = Form(None),
     moisture_score: int | None = Form(None),
     manual_moisture_index: int | None = Form(None, ge=0, le=60),
+    actor: Actor = Depends(require_analysis_actor),
     db: Session = Depends(get_db),
 ) -> DebugAnalysisRead:
     """사진을 직접 올려 분석한다 (S3를 거치지 않음).
@@ -236,6 +242,7 @@ def create_analysis_debug(
     CV 임계값을 맞출 때 쓰는 개발용 경로다. 원본은 저장하지 않으므로
     image_id는 항상 null이 된다. 응답에는 정규화 전 원시값(raw)이 함께 담긴다.
     """
+    quota.check_quota(db, actor, "skin")
     if manual_moisture_index is not None:
         if moisture_source != "manual" or moisture_score is not None or moisture_raw is not None:
             raise HTTPException(422, "수동 수분 지수는 다른 수분값과 함께 보낼 수 없습니다.")
@@ -276,20 +283,16 @@ def create_analysis_debug(
         moisture_source=moisture_source,
         moisture_raw=moisture_raw,
         moisture_score=moisture_score,
+        user_id=actor.user_id,
+        guest_id=actor.guest_id,
     )
     return DebugAnalysisRead(**saved.model_dump(), raw=raw)
 
 
 @router.get("/analyses/{analysis_id}")
-def get_analysis(analysis_id: int, db: Session = Depends(get_db)) -> AnalysisRead:
+def get_analysis(analysis_id: int, actor: Actor = Depends(require_analysis_actor), db: Session = Depends(get_db)) -> AnalysisRead:
     analysis = _get_with_scores(db, analysis_id)
-    if analysis is None:
-        raise _error(
-            404,
-            ErrorCode.ANALYSIS_NOT_FOUND,
-            f"분석 결과를 찾을 수 없습니다: {analysis_id}",
-            {"analysis_id": analysis_id},
-        )
+    require_owned_result(analysis, actor)
     return to_read(analysis)
 
 

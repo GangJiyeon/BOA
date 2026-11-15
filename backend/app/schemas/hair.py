@@ -18,6 +18,7 @@ class FaceAnalysisRequest(BaseModel):
     # 1장(single) 또는 3장(triple) 분량의 랜드마크 세트
     landmark_sets: list[LandmarkSet] = Field(min_length=1, max_length=3)
     sex: Sex
+    # 하위 호환용 소유자 필드. API 저장 시 무시하고 actor를 사용한다.
     user_id: int | None = None
     guest_id: str | None = None  # UUID 문자열
     image_id: int | None = None
@@ -36,6 +37,7 @@ class FaceAnalysisResult(BaseModel):
 
 class HairRecommendRequest(BaseModel):
     face_analysis_id: int
+    # 하위 호환용 소유자 필드. API 저장 시 무시하고 actor를 사용한다.
     user_id: int | None = None
     guest_id: str | None = None
     preferred_length: str | None = None

@@ -1,3 +1,4 @@
+import { hairImageUrl } from '../api/hair-image'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { analyzeFace, getHairStyles, recommendHair, type FaceAnalysis, type HairResult, type HairStyle, type Sex } from '../api/hair'
 import { measureSkinTone } from '../api/skin'
@@ -128,6 +129,6 @@ function HairImage({ url, name }: { url: string | null; name: string }) {
   const [failed, setFailed] = useState(false)
   // 카탈로그에는 /static/hair/... 경로가 저장된다.
   return url && (url.startsWith('/static/') || /^https?:\/\//.test(url)) && !failed
-    ? <img className="hair-image" src={url} alt={name} loading="lazy" onError={() => setFailed(true)} />
+    ? <img className="hair-image" src={hairImageUrl(url)} alt={name} loading="lazy" onError={() => setFailed(true)} />
     : <div className="hair-image image-placeholder">사진 준비 중</div>
 }

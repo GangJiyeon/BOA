@@ -50,7 +50,7 @@ class StudioIntegrationTests(unittest.TestCase):
                 db.get(HairRender,render_id).status='done';db.commit()
         async def run():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
-                with patch.object(studio,'get_settings',return_value=SimpleNamespace(gemini_api_key='test-only')),patch.object(studio.quota,'check_quota') as quota,patch.object(studio.hair_studio,'decode_image',return_value=object()),patch.object(studio.hair_studio,'landmarks'),patch.object(studio.hair_studio,'process_render',side_effect=finish):
+                with patch.object(studio,'get_settings',return_value=SimpleNamespace(gemini_api_key='test-only')),patch.object(studio.quota,'check_quota') as quota,patch.object(studio.hair_studio,'decode_image',return_value=object()),patch.object(studio.hair_studio,'prepare_photo'),patch.object(studio.hair_studio,'process_render',side_effect=finish):
                     created=await client.post('/api/studio/hair-renders',data={'style_id':'bob'},files={'photo':('face.jpg',b'photo-bytes','image/jpeg')})
                     self.assertEqual(created.status_code,202,created.text)
                     self.assertEqual(created.json()['status'],'pending')

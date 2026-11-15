@@ -15,6 +15,7 @@ from app.api.routes import (
     health,
     images,
     kiosk,
+    makeup,
     me,
     qr,
     skin,
@@ -62,6 +63,7 @@ api.include_router(moisture.router)
 api.include_router(cosmetics.router)
 api.include_router(hair.router)
 api.include_router(studio.router)
+api.include_router(makeup.router)
 api.include_router(actor.router)
 api.include_router(terms.router)
 api.include_router(guest.router)

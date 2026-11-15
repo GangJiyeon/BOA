@@ -160,3 +160,16 @@ class ConsentStatusRead(BaseModel):
 class ConsentChangeRequest(BaseModel):
     type: str = Field(description="선택 약관만 (PHOTO_STORAGE, MARKETING)")
     action: Literal["AGREE", "WITHDRAW"]
+
+
+class AnalysisHistoryItem(BaseModel):
+    kind: Literal["skin", "hair"]
+    id: int
+    created_at: datetime
+
+
+class AnalysisHistoryRead(BaseModel):
+    items: list[AnalysisHistoryItem]
+    limit: int
+    offset: int
+    has_more: bool

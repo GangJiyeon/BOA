@@ -1,0 +1,290 @@
+[
+  {
+    "id": "F03_low_soft_arch",
+    "label": "낮은 소프트 아치",
+    "group": "여성형",
+    "preview": "/static/makeup/brows/F03_low_soft_arch-541e596a59-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/F03_low_soft_arch-541e596a59-left.png",
+      "width": 795,
+      "height": 152
+    },
+    "right": {
+      "url": "/static/makeup/brows/F03_low_soft_arch-541e596a59-right.png",
+      "width": 795,
+      "height": 149
+    }
+  },
+  {
+    "id": "F05_low_rounded_arch",
+    "label": "낮은 둥근 아치",
+    "group": "여성형",
+    "preview": "/static/makeup/brows/F05_low_rounded_arch-0d27994166-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/F05_low_rounded_arch-0d27994166-left.png",
+      "width": 680,
+      "height": 170
+    },
+    "right": {
+      "url": "/static/makeup/brows/F05_low_rounded_arch-0d27994166-right.png",
+      "width": 678,
+      "height": 172
+    }
+  },
+  {
+    "id": "M01_natural_straight",
+    "label": "자연스러운 남성 일자",
+    "group": "남성형",
+    "preview": "/static/makeup/brows/M01_natural_straight-449c6acaa6-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/M01_natural_straight-449c6acaa6-left.png",
+      "width": 962,
+      "height": 188
+    },
+    "right": {
+      "url": "/static/makeup/brows/M01_natural_straight-449c6acaa6-right.png",
+      "width": 963,
+      "height": 190
+    }
+  },
+  {
+    "id": "M11_soft_straight",
+    "label": "부드러운 일자",
+    "group": "남성형",
+    "preview": "/static/makeup/brows/M11_soft_straight-f7db922dfa-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/M11_soft_straight-f7db922dfa-left.png",
+      "width": 979,
+      "height": 202
+    },
+    "right": {
+      "url": "/static/makeup/brows/M11_soft_straight-f7db922dfa-right.png",
+      "width": 989,
+      "height": 199
+    }
+  },
+  {
+    "id": "M12_bold_straight",
+    "label": "짙은 일자",
+    "group": "남성형",
+    "preview": "/static/makeup/brows/M12_bold_straight-b2792634b1-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/M12_bold_straight-b2792634b1-left.png",
+      "width": 965,
+      "height": 260
+    },
+    "right": {
+      "url": "/static/makeup/brows/M12_bold_straight-b2792634b1-right.png",
+      "width": 968,
+      "height": 262
+    }
+  },
+  {
+    "id": "M13_textured_angular",
+    "label": "결 살린 각진",
+    "group": "남성형",
+    "preview": "/static/makeup/brows/M13_textured_angular-266cffba91-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/M13_textured_angular-266cffba91-left.png",
+      "width": 975,
+      "height": 254
+    },
+    "right": {
+      "url": "/static/makeup/brows/M13_textured_angular-266cffba91-right.png",
+      "width": 994,
+      "height": 273
+    }
+  },
+  {
+    "id": "M14_airy_natural",
+    "label": "연한 내추럴",
+    "group": "남성형",
+    "preview": "/static/makeup/brows/M14_airy_natural-3459b53cda-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/M14_airy_natural-3459b53cda-left.png",
+      "width": 910,
+      "height": 217
+    },
+    "right": {
+      "url": "/static/makeup/brows/M14_airy_natural-3459b53cda-right.png",
+      "width": 904,
+      "height": 207
+    }
+  },
+  {
+    "id": "M15_full_soft_arch",
+    "label": "풍성 아치",
+    "group": "남성형",
+    "preview": "/static/makeup/brows/M15_full_soft_arch-1014209d60-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/M15_full_soft_arch-1014209d60-left.png",
+      "width": 981,
+      "height": 256
+    },
+    "right": {
+      "url": "/static/makeup/brows/M15_full_soft_arch-1014209d60-right.png",
+      "width": 985,
+      "height": 253
+    }
+  },
+  {
+    "id": "M16_long_straight",
+    "label": "긴 일자",
+    "group": "남성형",
+    "preview": "/static/makeup/brows/M16_long_straight-6f9a822976-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/M16_long_straight-6f9a822976-left.png",
+      "width": 968,
+      "height": 215
+    },
+    "right": {
+      "url": "/static/makeup/brows/M16_long_straight-6f9a822976-right.png",
+      "width": 969,
+      "height": 216
+    }
+  },
+  {
+    "id": "M17_natural_angular",
+    "label": "내추럴 각진",
+    "group": "남성형",
+    "preview": "/static/makeup/brows/M17_natural_angular-830b55b28f-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/M17_natural_angular-830b55b28f-left.png",
+      "width": 901,
+      "height": 230
+    },
+    "right": {
+      "url": "/static/makeup/brows/M17_natural_angular-830b55b28f-right.png",
+      "width": 926,
+      "height": 232
+    }
+  },
+  {
+    "id": "M18_dense_straight",
+    "label": "숱 많은 일자",
+    "group": "남성형",
+    "preview": "/static/makeup/brows/M18_dense_straight-db8818a0a9-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/M18_dense_straight-db8818a0a9-left.png",
+      "width": 907,
+      "height": 223
+    },
+    "right": {
+      "url": "/static/makeup/brows/M18_dense_straight-db8818a0a9-right.png",
+      "width": 920,
+      "height": 224
+    }
+  },
+  {
+    "id": "F06_soft_rounded_arch",
+    "label": "소프트 라운드 아치",
+    "group": "여성형",
+    "preview": "/static/makeup/brows/F06_soft_rounded_arch-c1c86d5ea4-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/F06_soft_rounded_arch-c1c86d5ea4-left.png",
+      "width": 716,
+      "height": 180
+    },
+    "right": {
+      "url": "/static/makeup/brows/F06_soft_rounded_arch-c1c86d5ea4-right.png",
+      "width": 737,
+      "height": 184
+    }
+  },
+  {
+    "id": "F08_soft_arch",
+    "label": "소프트 아치",
+    "group": "여성형",
+    "preview": "/static/makeup/brows/F08_soft_arch-a0f744e4db-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/F08_soft_arch-a0f744e4db-left.png",
+      "width": 936,
+      "height": 226
+    },
+    "right": {
+      "url": "/static/makeup/brows/F08_soft_arch-a0f744e4db-right.png",
+      "width": 925,
+      "height": 232
+    }
+  },
+  {
+    "id": "F09_soft_straight",
+    "label": "소프트 일자",
+    "group": "여성형",
+    "preview": "/static/makeup/brows/F09_soft_straight-9933fee86d-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/F09_soft_straight-9933fee86d-left.png",
+      "width": 827,
+      "height": 169
+    },
+    "right": {
+      "url": "/static/makeup/brows/F09_soft_straight-9933fee86d-right.png",
+      "width": 827,
+      "height": 168
+    }
+  },
+  {
+    "id": "M02_natural_straight",
+    "label": "내추럴 일자",
+    "group": "남성형",
+    "preview": "/static/makeup/brows/M02_natural_straight-990d2ce295-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/M02_natural_straight-990d2ce295-left.png",
+      "width": 785,
+      "height": 141
+    },
+    "right": {
+      "url": "/static/makeup/brows/M02_natural_straight-990d2ce295-right.png",
+      "width": 801,
+      "height": 142
+    }
+  },
+  {
+    "id": "03_round_high_arch",
+    "label": "둥근 얼굴 · 높은 아치",
+    "group": "여성형",
+    "preview": "/static/makeup/brows/03_round_high_arch-d6ee1eaa77-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/03_round_high_arch-d6ee1eaa77-left.png",
+      "width": 711,
+      "height": 216
+    },
+    "right": {
+      "url": "/static/makeup/brows/03_round_high_arch-d6ee1eaa77-right.png",
+      "width": 713,
+      "height": 218
+    }
+  },
+  {
+    "id": "04_square_crescent",
+    "label": "각진 얼굴 · 초승달",
+    "group": "여성형",
+    "preview": "/static/makeup/brows/04_square_crescent-49bdbf4b5e-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/04_square_crescent-49bdbf4b5e-left.png",
+      "width": 724,
+      "height": 196
+    },
+    "right": {
+      "url": "/static/makeup/brows/04_square_crescent-49bdbf4b5e-right.png",
+      "width": 727,
+      "height": 194
+    }
+  },
+  {
+    "id": "06_diamond_soft_arch",
+    "label": "마름모형 · 소프트 아치",
+    "group": "여성형",
+    "preview": "/static/makeup/brows/06_diamond_soft_arch-541e596a59-preview.png",
+    "left": {
+      "url": "/static/makeup/brows/06_diamond_soft_arch-541e596a59-left.png",
+      "width": 795,
+      "height": 152
+    },
+    "right": {
+      "url": "/static/makeup/brows/06_diamond_soft_arch-541e596a59-right.png",
+      "width": 795,
+      "height": 149
+    }
+  }
+]

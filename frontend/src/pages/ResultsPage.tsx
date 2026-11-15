@@ -40,6 +40,7 @@ export default function ResultsPage({ latestSkin, latestHair, cosmetics, hasShar
   return <section className="session-results">
     <PageIntro eyebrow="YOUR RESULTS" title="이번 분석 결과">마지막으로 완료한 피부·화장품과 헤어 결과를 한곳에서 확인하세요.</PageIntro>
     <p className="session-note">이번 이용 중 완료한 결과입니다. 새로고침하거나 이용 세션을 바꾸면 이 목록은 초기화됩니다.</p>
+    <p><a className="text-action" href="#/start">내 계정의 저장된 분석 이력 보기 →</a></p>
     {hasSharedToken && <p className="input-note">공유 링크 조회는 준비 중입니다. 아래에는 이 화면에서 직접 실행한 결과만 표시합니다.</p>}
     {!hasResults && <div className="empty-box"><h3>아직 완료한 분석이 없어요</h3><p>피부 분석이나 헤어 추천을 진행하면 이곳에 결과가 모입니다.</p><div className="actions"><a className="button" href="#/skin">피부 분석 시작</a><a className="button secondary" href="#/hair">헤어 추천 시작</a></div></div>}
     {hasResults && <>
