@@ -18,6 +18,7 @@ from app.api.routes import (
     me,
     qr,
     skin,
+    skin_tone,
     moisture,
     studio,
     terms,
@@ -56,6 +57,7 @@ api = APIRouter(prefix="/api")
 api.include_router(health.router)
 api.include_router(images.router)
 api.include_router(skin.router)
+api.include_router(skin_tone.router)
 api.include_router(moisture.router)
 api.include_router(cosmetics.router)
 api.include_router(hair.router)

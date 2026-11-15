@@ -62,10 +62,12 @@ DEFAULT_MIN_FACE_WIDTH = 250
 BRIGHTNESS_RANGE = (100.0, 210.0)    # 피부 영역 L 채널 평균 (0~255)
 REDNESS_RANGE = (6.0, 14.0)          # 볼·이마의 홍조 지수 (R/G 로그비). 기본(phone) 프로필 값
 TROUBLE_RANGE = (0.0, 0.028)         # 반점으로 탐지된 픽셀 비율
-# 균일도: 조명 흐름(큰 그늘)을 뺀 뒤 남은 국소 밝기 편차 (낮을수록 균일).
-# 잠정값이다. 피부가 깨끗한 휴대폰 사진 2.8~3.1, 여드름 많은 얼굴 4.4, 웹캠 1.7~2.1이 나왔다.
-# 실제 시연 기기(갤럭시북 웹캠) 표본으로 다시 맞춰야 한다.
-UNIFORMITY_STD_RANGE = (2.5, 5.0)
+# 균일도: 조명 흐름(큰 그늘)을 뺀 뒤 남은 국소 밝기 편차 (낮을수록 균일). 기본(phone) 프로필 값.
+# 측정 부위를 이마·양볼(UNIFORMITY_REGIONS)로 바꾸면서 값이 약 0.77배로 줄어,
+# 예전 범위(2.5, 5.0)에 0.77을 곱해 옮겼다. 같은 휴대폰 사진은 예전과 거의 같은 점수가 나온다
+# (같은위치사진 5장: 예전 74~89점 → 새 방식에서도 같은 구간).
+# 여드름 많은 얼굴은 이마·양볼에서 비율이 0.90으로 덜 줄어, 깨끗한 피부와의 차이가 더 벌어졌다.
+UNIFORMITY_STD_RANGE = (1.9, 3.9)
 
 # 홍조 지수를 uint8로 옮길 때 쓰는 배율.
 # 지수 1단위를 16단계로 쪼개므로 국소 중앙값 계산의 양자화 오차가 작다.
@@ -133,6 +135,16 @@ MAX_SATURATED_SKIN_RATIO = 0.05
 # 머리카락·그림자·안경처럼 피부가 아닌 것이 마스크에 섞이면 통계가 망가진다.
 SKIN_MAD_FACTOR = 2.5
 
+# 트러블 영역을 다듬을 때 어두운 쪽으로 허용하는 최소 폭 (8비트 L 단위).
+# 기본 하한(8)은 피부가 매끈하게 찍히는 웹캠에서 너무 좁아, 주변보다 어두워진 진한 트러블을
+# '피부 아님'으로 잘라냈다. 진하고 큰 트러블일수록 점수가 낮아지는 역전이 생긴다.
+# (갤럭시북 4명 합성 실험: 지름 6mm·대비 6 점은 밝기가 약 11 낮아져 2%만 분석 영역에 남았고,
+#  검출률이 2mm 83% → 4mm 42% → 6mm 29%로 떨어졌다)
+# 그래서 트러블 영역에서만 어두운 쪽 허용 폭을 넓힌다. 밝은 쪽(하이라이트)과
+# 다른 지표(홍조·밝기·균일도)의 피부 영역은 그대로다.
+# 머리카락(기준 밝기의 0.6배 이하)은 _hair_zone이 먼저 걷어내므로 이 값과 무관하다.
+TROUBLE_DARK_TOLERANCE = 20.0
+
 # ── 가림(앞머리 등) 판정 ─────────────────────────────────────────────
 # 패치별 MAD 정제는 "패치 안의 다수"를 피부로 간주한다. 앞머리가 이마 패치를
 # 대부분 덮으면 머리카락이 다수가 되어, 머리카락이 남고 피부가 버려진다.
@@ -171,6 +183,14 @@ REGIONS = (
 
 # 홍조는 볼과 이마로만 판단한다 (코·턱은 원래 붉은기가 있어 과대평가된다)
 REDNESS_REGIONS = ("forehead", "left_cheek", "right_cheek")
+
+# 균일도도 이마·양볼로만 판단한다.
+# 코는 굴곡·반사 때문에 누구나 볼의 2~3배 편차가 나오고, 턱은 수염 자국·턱 아래 그늘이 섞인다.
+# 이 둘이 섞이면 피부가 고른지보다 코 모양·수염 여부를 재게 된다.
+# (갤럭시북 4명의 부위별 편차: 양볼 1.0~1.6, 코 2.2~3.6, 턱 1.8~4.4.
+#  수염 자국이 있는 사람은 턱 하나로 전체 편차가 1.72 → 2.17로 올랐다)
+# 코·턱은 트러블 탐지(TROUBLE_REGIONS)에는 계속 쓴다.
+UNIFORMITY_REGIONS = ("forehead", "left_cheek", "right_cheek")
 
 # ── 트러블 분석 영역 ─────────────────────────────────────────────────
 # 기존 패치(REGIONS)는 얼굴의 약 4%만 덮어서 볼 아래쪽처럼 트러블이 잘 생기는 곳이 빠진다.
@@ -306,12 +326,21 @@ def _detect_landmarks(image: np.ndarray) -> np.ndarray:
     return np.array([(p.x * width, p.y * height) for p in points], dtype=np.float32)
 
 
-def _refine_skin(lab: np.ndarray, mask: np.ndarray, *, min_pixels: int = 500) -> np.ndarray:
+def _refine_skin(
+    lab: np.ndarray,
+    mask: np.ndarray,
+    *,
+    min_pixels: int = 500,
+    dark_tolerance: float | None = None,
+) -> np.ndarray:
     """윤곽 안에 섞여 들어온 비피부 픽셀을 걷어낸다.
 
     얼굴 윤곽을 볼록껍질로 잡으면 머리카락선, 턱 그늘, 안경테 같은 것이
     함께 들어온다. 이들은 밝기 분포에서 멀리 떨어진 값이므로,
     중앙값 기준 MAD(중앙값 절대편차)로 바깥쪽을 잘라낸다.
+
+    dark_tolerance를 주면 어두운 쪽은 최소 그 폭까지 남긴다 (트러블 영역용).
+    주지 않으면 밝은 쪽과 같은 폭으로 자른다 (기존 동작).
     """
     values = lab[:, :, 0][mask > 0]
     if values.size == 0:
@@ -321,7 +350,13 @@ def _refine_skin(lab: np.ndarray, mask: np.ndarray, *, min_pixels: int = 500) ->
     mad = float(np.median(np.abs(values.astype(np.float32) - median)))
     spread = max(mad * SKIN_MAD_FACTOR, 8.0)  # MAD가 0에 가까울 때를 대비한 하한
 
-    inlier = (np.abs(lab[:, :, 0].astype(np.float32) - median) <= spread).astype(np.uint8) * 255
+    # 어두운 쪽 허용 폭: 기본은 밝은 쪽과 같고, 트러블 영역은 더 넓게 둔다
+    dark_spread = spread if dark_tolerance is None else max(spread, dark_tolerance)
+
+    lightness = lab[:, :, 0].astype(np.float32)
+    inlier = (
+        (lightness >= median - dark_spread) & (lightness <= median + spread)
+    ).astype(np.uint8) * 255
     refined = cv2.bitwise_and(mask, inlier)
 
     # 경계 한 겹은 머리카락·배경과 섞이기 쉬워 깎아낸다
@@ -385,7 +420,12 @@ def _hair_zone(lab: np.ndarray, reference_l: float, face_width: float) -> np.nda
 
 
 def _build_skin_regions(
-    image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray, regions_def: tuple = REGIONS
+    image: np.ndarray,
+    lab: np.ndarray,
+    landmarks: np.ndarray,
+    regions_def: tuple = REGIONS,
+    *,
+    dark_tolerance: float | None = None,
 ) -> tuple[dict[str, np.ndarray], dict[str, float]]:
     """부위별 피부 마스크와, 부위별 피부 노출 비율(coverage)을 돌려준다.
 
@@ -411,7 +451,9 @@ def _build_skin_regions(
 
         # 남은 픽셀 안에서 그늘·하이라이트 등 이상치를 MAD로 정제
         try:
-            regions[name] = _refine_skin(lab, visible, min_pixels=100)
+            regions[name] = _refine_skin(
+                lab, visible, min_pixels=100, dark_tolerance=dark_tolerance
+            )
         except AnalysisError:
             continue
 
@@ -423,8 +465,13 @@ def _build_skin_regions(
 
 
 def _trouble_area(image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray) -> np.ndarray:
-    """트러블을 찾을 피부 마스크. 넓은 패치(TROUBLE_REGIONS)에 같은 정제 과정을 적용한다."""
-    regions, _ = _build_skin_regions(image, lab, landmarks, TROUBLE_REGIONS)
+    """트러블을 찾을 피부 마스크. 넓은 패치(TROUBLE_REGIONS)에 같은 정제 과정을 적용한다.
+
+    단, 어두운 쪽 허용 폭은 넓혀서 주변보다 어두워진 진한 트러블이 잘려 나가지 않게 한다.
+    """
+    regions, _ = _build_skin_regions(
+        image, lab, landmarks, TROUBLE_REGIONS, dark_tolerance=TROUBLE_DARK_TOLERANCE
+    )
     area = np.zeros(lab.shape[:2], dtype=np.uint8)
     for mask in regions.values():
         area = cv2.bitwise_or(area, mask)
@@ -454,6 +501,8 @@ class CameraProfile:
     channel_gains: tuple[float, float, float]  # 고정 색 보정 이득 (B, G, R)
     redness_range: tuple[float, float]         # 홍조 지수 lo → 0점, hi → 100점
     color_check: bool                          # 홍조 지수가 지나치게 낮으면 측정 불가로 돌려보낼지
+    # 균일도 편차 lo → 100점, hi → 0점. 기기마다 피부결을 매끈하게 처리하는 정도가 달라 따로 둔다.
+    uniformity_std_range: tuple[float, float] = UNIFORMITY_STD_RANGE
 
 
 CAMERA_PROFILES: dict[str, CameraProfile] = {
@@ -472,6 +521,19 @@ CAMERA_PROFILES: dict[str, CameraProfile] = {
         channel_gains=(1.0, 1.0, 1.0),
         redness_range=(1.5, 3.5),
         color_check=True,
+    ),
+    # 실제 시연 기기 (갤럭시북4 내장 웹캠). 표본: 서로 다른 4명, 같은 장소, 1인 1장.
+    # 시연 장소에서 찍은 사진으로 scripts/validation/calibrate_profile.py를 돌려 다시 맞춘다.
+    #  - 색 보정·홍조: 휴대폰과 색감이 비슷해(홍조 지수 10.6~11.9) 휴대폰 값을 그대로 쓴다.
+    #  - 균일도: 웹캠이 피부를 매끈하게 처리해 편차가 휴대폰의 약 0.55배로 작다
+    #    (깨끗한 피부 중앙값: 휴대폰 2.16, 갤럭시북 1.19). 휴대폰 범위에 0.55를 곱했다.
+    #    "4명의 피부 상태가 휴대폰 표본과 비슷하다"는 가정에 기댄 임시값이다.
+    "galaxybook": CameraProfile(
+        description="갤럭시북4 내장 웹캠 (시연 기기, 4명 1장씩 기준 임시값)",
+        channel_gains=DEVICE_CHANNEL_GAINS,
+        redness_range=REDNESS_RANGE,
+        color_check=True,
+        uniformity_std_range=(1.05, 2.15),
     ),
 }
 DEFAULT_CAMERA_PROFILE = "phone"
@@ -621,7 +683,10 @@ def _cheek_l_ratio(lab: np.ndarray, regions: dict[str, np.ndarray]) -> float | N
 
 
 def _uniformity(
-    lab: np.ndarray, skin: np.ndarray, face_width: float
+    lab: np.ndarray,
+    skin: np.ndarray,
+    face_width: float,
+    std_range: tuple[float, float] = UNIFORMITY_STD_RANGE,
 ) -> tuple[int, float, float]:
     """조명 흐름을 뺀 국소 밝기 편차의 역방향 점수. 고를수록 높다.
 
@@ -645,7 +710,7 @@ def _uniformity(
     std_flat = float(residual.std())
     std_raw = float(lightness[skin > 0].std())  # 예전 방식 (비교용으로만 기록)
 
-    unevenness = _linear_score(std_flat, *UNIFORMITY_STD_RANGE)
+    unevenness = _linear_score(std_flat, *std_range)
     return _clamp(100 - unevenness), std_flat, std_raw
 
 
@@ -672,15 +737,15 @@ def _prepare_face(
     preview, scale = _shrink(full)
     preview_landmarks = _detect_landmarks(preview)
     preview_face_width = float(np.ptp(preview_landmarks[:, 0]))
+    source_face_width = preview_face_width / scale
 
-    # 얼굴이 너무 작으면 트러블 탐지가 둔해져 점수를 신뢰할 수 없다
-    # (기준은 기존과 같이 축소본 기준 너비로 판단한다)
-    if preview_face_width < min_face_width:
+    # 얼굴을 찾는 축소본과 달리, 분석용 피부 픽셀은 원본에서 가져온다.
+    if source_face_width < min_face_width:
         raise AnalysisError(
-            f"얼굴이 너무 작게 나왔습니다 (너비 {preview_face_width:.0f}px, 최소 {min_face_width}px). "
+            f"얼굴이 너무 작게 나왔습니다 (너비 {source_face_width:.0f}px, 최소 {min_face_width}px). "
             "얼굴이 화면에 더 크게 들어오도록 가까이에서 촬영해주세요.",
             code=ErrorCode.FACE_TOO_SMALL,
-            detail={"face_width_px": round(preview_face_width, 1), "required_px": min_face_width},
+            detail={"face_width_px": round(source_face_width, 1), "required_px": min_face_width},
         )
 
     # 색 보정은 사진마다 계산하지 않고 카메라 프로필의 고정값을 쓴다
@@ -699,7 +764,7 @@ def _prepare_face(
         lab=lab,
         face_width=float(np.ptp(landmarks[:, 0])),
         preview_face_width=preview_face_width,
-        source_face_width=preview_face_width / scale,
+        source_face_width=source_face_width,
     )
 
 
@@ -804,6 +869,25 @@ def measure_skin_lightness(
     return round(sample.mean_l * 100 / 255, 2)
 
 
+def measure_skin_color(
+    image_bytes: bytes,
+    *,
+    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
+    camera_profile: str = DEFAULT_CAMERA_PROFILE,
+) -> dict[str, float]:
+    """촬영 품질을 통과한 사진에서 피부의 CIELAB 색을 표본 추출한다."""
+    sample = _sample_skin_lightness(
+        image_bytes, min_face_width=min_face_width, profile=get_camera_profile(camera_profile)
+    )
+    # 양볼의 중앙값을 같은 비중으로 반영한다.
+    cheeks = [sample.regions[name] for name in SKIN_REFERENCE_REGIONS if name in sample.regions]
+    patches = cheeks or list(sample.regions.values())
+    lab = sample.face.lab
+    colors = [np.median(lab[patch > 0][:, 1:], axis=0) for patch in patches]
+    a, b = np.median(colors, axis=0) - 128
+    return {"lightness": round(sample.mean_l * 100 / 255, 2), "a": float(a), "b": float(b)}
+
+
 def analyze_image_detail(
     image_bytes: bytes,
     *,
@@ -850,7 +934,16 @@ def analyze_image_detail(
     # 트러블은 볼을 크게 잡은 넓은 패치에서 찾는다
     trouble_skin = _trouble_area(image, lab, landmarks)
     trouble, blemish_ratio, trouble_threshold = _trouble(index_map, trouble_skin, face_width)
-    uniformity, std_l, std_l_raw = _uniformity(lab, skin, face_width)
+    # 균일도는 이마·양볼만 (코 굴곡·턱 수염 제외). 셋 다 가려졌으면 전체 피부로 대체
+    uniformity_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    for name in UNIFORMITY_REGIONS:
+        if name in regions:
+            uniformity_mask = cv2.bitwise_or(uniformity_mask, regions[name])
+    if int(np.count_nonzero(uniformity_mask)) < 100:
+        uniformity_mask = skin
+    uniformity, std_l, std_l_raw = _uniformity(
+        lab, uniformity_mask, face_width, profile.uniformity_std_range
+    )
 
     scores = {
         "redness": redness,
@@ -864,11 +957,12 @@ def analyze_image_detail(
         "saturated_ratio": round(saturated_ratio, 3),
         "blemish_ratio": round(blemish_ratio, 5),  # TROUBLE_RANGE 기준
         "trouble_threshold": round(trouble_threshold, 2),  # 적용된 임계값 (TROUBLE_THRESHOLD)
-        "std_l_skin": round(std_l, 2),             # 조명 흐름 제거 후 편차 (UNIFORMITY_STD_RANGE 기준)
+        "std_l_skin": round(std_l, 2),             # 조명 흐름 제거 후 편차 (프로필의 uniformity_std_range 기준, 이마·양볼)
         "std_l_skin_raw": round(std_l_raw, 2),     # 참고: 예전 방식 편차 (조명 포함)
-        "face_width_px": round(face.preview_face_width, 1),  # 축소본 기준 (최소 크기 검사용)
+        "face_width_px": round(face.preview_face_width, 1),  # 얼굴을 찾는 축소본 기준
         "source_face_width_px": round(face.source_face_width, 1),  # 원본 사진에서의 얼굴 너비
-        "skin_px": int(np.count_nonzero(skin)),                   # 패치(밝기·균일도·홍조) 픽셀
+        "skin_px": int(np.count_nonzero(skin)),                   # 패치(밝기) 픽셀
+        "uniformity_px": int(np.count_nonzero(uniformity_mask)),  # 균일도 분석 픽셀 (이마·양볼)
         "trouble_skin_px": int(np.count_nonzero(trouble_skin)),   # 트러블 분석 영역 픽셀
         "regions_used": len(regions),              # 분석에 쓰인 부위 수 (최대 5)
     }
