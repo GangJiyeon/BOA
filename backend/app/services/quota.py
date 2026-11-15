@@ -45,7 +45,8 @@ class Usage:
 
 
 def _today_start() -> datetime:
-    return datetime.combine(datetime.now(KST).date(), time.min, tzinfo=KST)
+    # 한국 시간 자정을 UTC로 넘김 (SQLite는 시간대를 버리고 글자로 비교해 KST 0~9시에 오늘 행을 못 셌음)
+    return datetime.combine(datetime.now(KST).date(), time.min, tzinfo=KST).astimezone(timezone.utc)
 
 
 def _limit(kind: QuotaKind) -> int:
