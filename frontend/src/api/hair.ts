@@ -1,7 +1,7 @@
 import { api } from './client'
 export type Sex = 'male' | 'female' | 'unisex'
 export type FaceAnalysis = { id: number; sex: Sex; face_shape: string; top2: string | null; confidence: number | null; source: string; ratios: Record<string, number> | null; updated_at: string }
-export type HairStyle = { style_id: string; name: string; sex: Sex; length: string; texture: string; image: string | null }
+export type HairStyle = { style_id: string; name: string; sex: Sex; length: string; texture: string; image: string | null; guide?: string | null; face_fit?: Record<string, number> }
 export type HairResult = {
   run_id: number; face_analysis_id: number; created_at: string;
   preferred_length: string | null; preferred_texture: string | null;

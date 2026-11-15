@@ -21,7 +21,7 @@ KST = timezone(timedelta(hours=9))
 
 _skin = SkinAnalysis.__table__
 _hair = HairRecRun.__table__  # 헤어 요청 1번(사진 3장) = 1행
-_studio = HairRender.__table__  # AI 합성 요청 1번 = 1행 (실패 포함)
+_studio = HairRender.__table__  # AI 합성 요청 1번 = 1행 (실패는 안 셈)
 _sessions = GuestSession.__table__
 
 # 기능별 (guest_id 칼럼, 생성 시각 칼럼)
@@ -30,6 +30,8 @@ SOURCES = {
     "hair": (_hair.c.guest_id, _hair.c.created_at),
     "studio": (_studio.c.guest_id, _studio.c.created_at),
 }
+# 기능별 추가 조건 (합성은 재시도 없이 바로 실패 처리 → 실패한 요청은 횟수에서 뺌, 진행 중은 셈)
+EXCLUDE = {"studio": _studio.c.status != "failed"}
 
 
 @dataclass(frozen=True)
@@ -59,6 +61,8 @@ def _count(db: Session, kind: QuotaKind, *, guest_id=None, ip_hash: str | None =
     """오늘 생긴 행 수, guest_id 또는 같은 ip_hash 세션 전체 기준"""
     guest_col, created_col = SOURCES[kind]
     stmt = select(func.count()).select_from(guest_col.table).where(created_col >= _today_start())
+    if kind in EXCLUDE:
+        stmt = stmt.where(EXCLUDE[kind])
     if guest_id is not None:
         stmt = stmt.where(guest_col == guest_id)
     else:
