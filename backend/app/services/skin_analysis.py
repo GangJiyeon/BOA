@@ -133,6 +133,16 @@ MAX_SATURATED_SKIN_RATIO = 0.05
 # 머리카락·그림자·안경처럼 피부가 아닌 것이 마스크에 섞이면 통계가 망가진다.
 SKIN_MAD_FACTOR = 2.5
 
+# 트러블 영역을 다듬을 때 어두운 쪽으로 허용하는 최소 폭 (8비트 L 단위).
+# 기본 하한(8)은 피부가 매끈하게 찍히는 웹캠에서 너무 좁아, 주변보다 어두워진 진한 트러블을
+# '피부 아님'으로 잘라냈다. 진하고 큰 트러블일수록 점수가 낮아지는 역전이 생긴다.
+# (갤럭시북 4명 합성 실험: 지름 6mm·대비 6 점은 밝기가 약 11 낮아져 2%만 분석 영역에 남았고,
+#  검출률이 2mm 83% → 4mm 42% → 6mm 29%로 떨어졌다)
+# 그래서 트러블 영역에서만 어두운 쪽 허용 폭을 넓힌다. 밝은 쪽(하이라이트)과
+# 다른 지표(홍조·밝기·균일도)의 피부 영역은 그대로다.
+# 머리카락(기준 밝기의 0.6배 이하)은 _hair_zone이 먼저 걷어내므로 이 값과 무관하다.
+TROUBLE_DARK_TOLERANCE = 20.0
+
 # ── 가림(앞머리 등) 판정 ─────────────────────────────────────────────
 # 패치별 MAD 정제는 "패치 안의 다수"를 피부로 간주한다. 앞머리가 이마 패치를
 # 대부분 덮으면 머리카락이 다수가 되어, 머리카락이 남고 피부가 버려진다.
@@ -306,12 +316,21 @@ def _detect_landmarks(image: np.ndarray) -> np.ndarray:
     return np.array([(p.x * width, p.y * height) for p in points], dtype=np.float32)
 
 
-def _refine_skin(lab: np.ndarray, mask: np.ndarray, *, min_pixels: int = 500) -> np.ndarray:
+def _refine_skin(
+    lab: np.ndarray,
+    mask: np.ndarray,
+    *,
+    min_pixels: int = 500,
+    dark_tolerance: float | None = None,
+) -> np.ndarray:
     """윤곽 안에 섞여 들어온 비피부 픽셀을 걷어낸다.
 
     얼굴 윤곽을 볼록껍질로 잡으면 머리카락선, 턱 그늘, 안경테 같은 것이
     함께 들어온다. 이들은 밝기 분포에서 멀리 떨어진 값이므로,
     중앙값 기준 MAD(중앙값 절대편차)로 바깥쪽을 잘라낸다.
+
+    dark_tolerance를 주면 어두운 쪽은 최소 그 폭까지 남긴다 (트러블 영역용).
+    주지 않으면 밝은 쪽과 같은 폭으로 자른다 (기존 동작).
     """
     values = lab[:, :, 0][mask > 0]
     if values.size == 0:
@@ -321,7 +340,13 @@ def _refine_skin(lab: np.ndarray, mask: np.ndarray, *, min_pixels: int = 500) ->
     mad = float(np.median(np.abs(values.astype(np.float32) - median)))
     spread = max(mad * SKIN_MAD_FACTOR, 8.0)  # MAD가 0에 가까울 때를 대비한 하한
 
-    inlier = (np.abs(lab[:, :, 0].astype(np.float32) - median) <= spread).astype(np.uint8) * 255
+    # 어두운 쪽 허용 폭: 기본은 밝은 쪽과 같고, 트러블 영역은 더 넓게 둔다
+    dark_spread = spread if dark_tolerance is None else max(spread, dark_tolerance)
+
+    lightness = lab[:, :, 0].astype(np.float32)
+    inlier = (
+        (lightness >= median - dark_spread) & (lightness <= median + spread)
+    ).astype(np.uint8) * 255
     refined = cv2.bitwise_and(mask, inlier)
 
     # 경계 한 겹은 머리카락·배경과 섞이기 쉬워 깎아낸다
@@ -385,7 +410,12 @@ def _hair_zone(lab: np.ndarray, reference_l: float, face_width: float) -> np.nda
 
 
 def _build_skin_regions(
-    image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray, regions_def: tuple = REGIONS
+    image: np.ndarray,
+    lab: np.ndarray,
+    landmarks: np.ndarray,
+    regions_def: tuple = REGIONS,
+    *,
+    dark_tolerance: float | None = None,
 ) -> tuple[dict[str, np.ndarray], dict[str, float]]:
     """부위별 피부 마스크와, 부위별 피부 노출 비율(coverage)을 돌려준다.
 
@@ -411,7 +441,9 @@ def _build_skin_regions(
 
         # 남은 픽셀 안에서 그늘·하이라이트 등 이상치를 MAD로 정제
         try:
-            regions[name] = _refine_skin(lab, visible, min_pixels=100)
+            regions[name] = _refine_skin(
+                lab, visible, min_pixels=100, dark_tolerance=dark_tolerance
+            )
         except AnalysisError:
             continue
 
@@ -423,8 +455,13 @@ def _build_skin_regions(
 
 
 def _trouble_area(image: np.ndarray, lab: np.ndarray, landmarks: np.ndarray) -> np.ndarray:
-    """트러블을 찾을 피부 마스크. 넓은 패치(TROUBLE_REGIONS)에 같은 정제 과정을 적용한다."""
-    regions, _ = _build_skin_regions(image, lab, landmarks, TROUBLE_REGIONS)
+    """트러블을 찾을 피부 마스크. 넓은 패치(TROUBLE_REGIONS)에 같은 정제 과정을 적용한다.
+
+    단, 어두운 쪽 허용 폭은 넓혀서 주변보다 어두워진 진한 트러블이 잘려 나가지 않게 한다.
+    """
+    regions, _ = _build_skin_regions(
+        image, lab, landmarks, TROUBLE_REGIONS, dark_tolerance=TROUBLE_DARK_TOLERANCE
+    )
     area = np.zeros(lab.shape[:2], dtype=np.uint8)
     for mask in regions.values():
         area = cv2.bitwise_or(area, mask)
