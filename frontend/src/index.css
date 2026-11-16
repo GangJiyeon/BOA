@@ -2407,6 +2407,8 @@ main:focus-visible {
   gap:14px;
 }
 
+/* 추천 헤어색 이유·색 설명 */
+.color-studio-basis { margin:2px 0 8px; font-size:12px; line-height:1.6; color:var(--muted); }
 .color-studio-current strong {
   display:block;
   font-size:20px;
@@ -2476,3 +2478,62 @@ main:focus-visible {
     grid-template-columns:1fr;
   }
 }
+
+
+.hair-hsv-input { border:0; padding:0; margin:0; display:grid; gap:10px; min-width:0; }
+.hair-hsv-input legend { font-weight:600; margin-bottom:12px; }
+.hair-hsv-input label { display:flex; justify-content:space-between; font-size:14px; }
+.hair-hsv-input output { font-variant-numeric:tabular-nums; color:var(--muted); }
+.hair-hsv-input input[type="range"] { width:100%; min-height:28px; margin:0; accent-color:var(--green); cursor:pointer; }
+.hair-hsv-input input:focus-visible { outline:2px solid var(--green); outline-offset:3px; }
+.hair-hsv-preview { display:flex; align-items:center; gap:10px; font-size:13px; }
+.hair-hsv-preview > span:first-child { width:28px; height:28px; border:1px solid var(--line); border-radius:6px; }
+
+.account-preferences, .account-withdraw { margin-top: 24px; padding-top: 20px; border-top: 1px solid #dce5df; }
+.account-delete-button { background: #a73131; color: #fff; }
+.account-delete-button:hover:not(:disabled) { background: #872727; }
+
+.account-history { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.account-history-list { list-style: none; padding: 0; margin: 16px 0; }
+.account-history-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.account-history-list time { color: var(--muted); font-size: .88rem; }
+.account-history-detail { margin-top: 20px; }
+
+/* 계정 요약과 관리 화면은 분리하고, 자주 쓰는 작업은 한 행에 모은다. */
+.account-profile-top, .account-profile-bottom { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.account-identity { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.account-identity > div { min-width: 0; }
+.account-avatar { width: 48px; height: 48px; flex-shrink: 0; display: grid; place-items: center; background: var(--tint); color: var(--green); border-radius: 50%; }
+.account-caption { display: block; color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+.account-email { display: inline; font-size: 16px; overflow-wrap: anywhere; }
+.account-nationality { display: inline-block; margin-left: 10px; padding: 2px 7px; background: var(--tint); border-radius: 5px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.account-profile-actions { display: flex; align-items: center; gap: 18px; }
+.account-profile-actions .text-button { font-size: 13px; color: var(--muted); }
+.account-profile-bottom { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+.account-language { display: flex; align-items: center; gap: 10px; margin: 0; }
+.account-language label { white-space: nowrap; color: var(--muted); font-size: 13px; }
+.account-language select { width: 116px; padding: 8px 10px; }
+.account-profile .account-language button { margin: 0; padding: 8px 14px; }
+.account-settings-link, .account-back { font-size: 13px; color: var(--green); text-decoration: none; }
+.account-settings-link { display: inline-flex; align-items: center; gap: 16px; }
+.account-settings-link:hover, .account-back:hover { text-decoration: underline; }
+.account-settings-link[aria-disabled="true"], .account-back[aria-disabled="true"] { opacity: .5; cursor: default; }
+.account-back { display: inline-block; margin: 0 0 4px; }
+.account-settings .account-preferences, .account-history-card .account-history { margin-top: 0; padding-top: 0; border-top: 0; }
+.account-settings h4, .account-history-card h4 { margin: 0; font-size: 16px; }
+.account-settings .account-withdraw h4 { color: var(--muted); font-size: 14px; }
+.account-settings .account-withdraw > button { padding: 8px 14px; font-size: 12px; }
+@media (max-width: 600px) {
+  .account-profile-top { align-items: flex-start; gap: 18px; }
+  .account-profile-actions { width: 100%; justify-content: space-between; }
+  .account-profile-bottom { align-items: flex-start; gap: 18px; }
+  .account-language { flex-wrap: wrap; }
+  .account-email { font-size: 14px; }
+  .account-nationality { margin-left: 6px; }
+}
+.account-consent-row { justify-content: space-between; align-items: center; gap: 20px; margin: 0; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.account-consent-row > span { font-size: 14px; }
+.account-consent-row small { display: block; font-size: 11px; margin-top: 3px; }
+.account-required-consents { margin-top: 18px; font-size: 12px; color: var(--muted); }
+.account-required-consents summary { cursor: pointer; }
+.account-required-consents .check-row { margin: 6px 0; min-height: 36px; }

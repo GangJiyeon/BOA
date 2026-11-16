@@ -1,3 +1,4 @@
+import { SESSION_EXPIRED_EVENT } from '../api/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getHealth, type Health } from '../api/health'
 import { getActor, getQuota, type Actor, type Quota } from '../api/account'
@@ -9,6 +10,7 @@ import HairPage from './HairPage'
 import ResultsPage from './ResultsPage'
 import KioskPage from './KioskPage'
 import StudioPage from './StudioPage'
+import MakeupPage from './MakeupPage'
 import LandingPage from './LandingPage'
 import Icon, { type IconName } from '../components/Icon'
 
@@ -17,6 +19,7 @@ const pages = [
   { id: 'start', icon: 'user', label: '시작 · 계정' }, { id: 'skin', icon: 'skin', label: '피부 · 화장품' },
   { id: 'hair', icon: 'hair', label: '얼굴형 · 헤어' }, { id: 'results', icon: 'results', label: '이번 분석 결과' },
   { id: 'kiosk', icon: 'kiosk', label: '키오스크' }, { id: 'studio', icon: 'sparkles', label: 'AI Studio' },
+  { id: 'makeup', icon: 'sparkles', label: '메이크업' },
 ] as const
 type Page = typeof pages[number]['id']
 function route() {
@@ -95,6 +98,18 @@ export default function HomePage() {
     setLatestCosmetics(value); setLatestSkin(value.analysis)
   }, [])
   function clearSession() { setLatestSkin(null); setLatestHair(null); setLatestCosmetics(null); setSessionVersion(value => value + 1) }
+  useEffect(() => {
+    const expired = () => {
+      actorRequest.current?.abort()
+      quotaRequest.current?.abort()
+      setActor(null); setQuota(null); setQuotaError('')
+      clearSession()
+      window.location.hash = '/start'
+      void refreshActor().then(() => setActorError('로그인이 만료되었습니다. 다시 로그인해 주세요.'))
+    }
+    window.addEventListener(SESSION_EXPIRED_EVENT, expired)
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, expired)
+  }, [refreshActor])
   const startAnalysis = () => { window.location.hash = '/skin' }
   return <div className="app-shell">
     <a className="skip-link" href="#page-content" onClick={event => { event.preventDefault(); document.getElementById('page-content')?.focus() }}>본문으로 이동</a>
@@ -113,9 +128,10 @@ export default function HomePage() {
       {current.page === 'start' && <AccountPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onLogin={clearSession} onLogout={clearSession} onSignup={clearSession} onStart={startAnalysis} />}
       {current.page === 'results' && <ResultsPage key={current.token} latestSkin={latestSkin} latestHair={latestHair} cosmetics={latestCosmetics} hasSharedToken={Boolean(current.token)} />}
       {current.page === 'kiosk' && <KioskPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onEnd={clearSession} onStart={startAnalysis} />}
+      {current.page === 'makeup' && <MakeupPage hair={latestHair} />}
       {current.page === 'studio' && <StudioPage hair={latestHair} onUsed={() => void refreshQuota()} />}
     </div>
-    <footer className="app-footer"><span>BOA · 분석 및 추천</span><details><summary>연결 상태 확인</summary><ul className="health-status"><li>API: {health?.status ?? '연결 확인 필요'}</li><li>DB: {health?.db ? '연결됨' : '연결 확인 필요'}</li><li>S3: {health?.s3 ? '설정됨' : '미설정'}</li>{quota && <li>횟수 조회 · 피부 {quota.skin.remaining ?? '제한 없음'} / 헤어 {quota.hair.remaining ?? '제한 없음'} / AI 스튜디오 {quota.studio?.remaining ?? '제한 없음'}</li>}</ul>{quotaError && <p>{quotaError}</p>}<p>중간발표 버전 · 세션별 저장과 사용 횟수 적용은 연결 준비 중입니다.</p><button className="secondary" onClick={() => { void refreshHealth(); void refreshActor() }}>상태 다시 확인</button></details></footer>
+    <footer className="app-footer"><span>BOA · 분석 및 추천</span><details><summary>연결 상태 확인</summary><ul className="health-status"><li>API: {health?.status ?? '연결 확인 필요'}</li><li>DB: {health?.db ? '연결됨' : '연결 확인 필요'}</li><li>S3: {health?.s3 ? '설정됨' : '미설정'}</li>{quota && <li>횟수 조회 · 피부 {quota.skin.remaining ?? '제한 없음'} / 헤어 {quota.hair.remaining ?? '제한 없음'} / AI 스튜디오 {quota.studio?.remaining ?? '제한 없음'}</li>}</ul>{quotaError && <p>{quotaError}</p>}<button className="secondary" onClick={() => { void refreshHealth(); void refreshActor() }}>상태 다시 확인</button></details></footer>
     </main></div>
   </div>
 }

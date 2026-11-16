@@ -24,7 +24,7 @@ class AnalysisCreate(BaseModel):
     # 직접 입력 점수 (moisture_source=manual일 때 — 디버깅·센서 장애 대체용)
     moisture_score: int | None = Field(default=None, ge=0, le=100)
 
-    # 비회원 분석일 때 클라이언트가 보유한 게스트 식별자
+    # 하위 호환용. 소유자는 요청 값이 아닌 서버의 인증 쿠키로 결정한다.
     guest_id: UUID | None = None
 
     @model_validator(mode="after")
@@ -70,6 +70,11 @@ class DebugAnalysisRead(AnalysisRead):
 
 class SkinLightnessRead(BaseModel):
     lightness: float = Field(ge=0, le=100)
+
+
+class SkinColorRead(SkinLightnessRead):
+    a: float = Field(ge=-128, le=127)
+    b: float = Field(ge=-128, le=127)
 
 
 # ── 재현성 측정 (디버그) ─────────────────────────────────────────────

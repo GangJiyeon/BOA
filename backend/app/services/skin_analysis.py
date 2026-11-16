@@ -826,15 +826,15 @@ def _prepare_face(
     preview, scale = _shrink(full)
     preview_landmarks = _detect_landmarks(preview)
     preview_face_width = float(np.ptp(preview_landmarks[:, 0]))
+    source_face_width = preview_face_width / scale
 
-    # 얼굴이 너무 작으면 트러블 탐지가 둔해져 점수를 신뢰할 수 없다
-    # (기준은 기존과 같이 축소본 기준 너비로 판단한다)
-    if preview_face_width < min_face_width:
+    # 얼굴을 찾는 축소본과 달리, 분석용 피부 픽셀은 원본에서 가져온다.
+    if source_face_width < min_face_width:
         raise AnalysisError(
-            f"얼굴이 너무 작게 나왔습니다 (너비 {preview_face_width:.0f}px, 최소 {min_face_width}px). "
+            f"얼굴이 너무 작게 나왔습니다 (너비 {source_face_width:.0f}px, 최소 {min_face_width}px). "
             "얼굴이 화면에 더 크게 들어오도록 가까이에서 촬영해주세요.",
             code=ErrorCode.FACE_TOO_SMALL,
-            detail={"face_width_px": round(preview_face_width, 1), "required_px": min_face_width},
+            detail={"face_width_px": round(source_face_width, 1), "required_px": min_face_width},
         )
 
     # 색 보정은 사진마다 계산하지 않고 카메라 프로필의 고정값을 쓴다
@@ -853,7 +853,7 @@ def _prepare_face(
         lab=lab,
         face_width=float(np.ptp(landmarks[:, 0])),
         preview_face_width=preview_face_width,
-        source_face_width=preview_face_width / scale,
+        source_face_width=source_face_width,
     )
 
 
@@ -958,6 +958,25 @@ def measure_skin_lightness(
     return round(sample.mean_l * 100 / 255, 2)
 
 
+def measure_skin_color(
+    image_bytes: bytes,
+    *,
+    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
+    camera_profile: str = DEFAULT_CAMERA_PROFILE,
+) -> dict[str, float]:
+    """촬영 품질을 통과한 사진에서 피부의 CIELAB 색을 표본 추출한다."""
+    sample = _sample_skin_lightness(
+        image_bytes, min_face_width=min_face_width, profile=get_camera_profile(camera_profile)
+    )
+    # 양볼의 중앙값을 같은 비중으로 반영한다.
+    cheeks = [sample.regions[name] for name in SKIN_REFERENCE_REGIONS if name in sample.regions]
+    patches = cheeks or list(sample.regions.values())
+    lab = sample.face.lab
+    colors = [np.median(lab[patch > 0][:, 1:], axis=0) for patch in patches]
+    a, b = np.median(colors, axis=0) - 128
+    return {"lightness": round(sample.mean_l * 100 / 255, 2), "a": float(a), "b": float(b)}
+
+
 def analyze_image_detail(
     image_bytes: bytes,
     *,
@@ -1035,7 +1054,7 @@ def analyze_image_detail(
         "trouble_threshold": round(trouble_threshold, 2),  # 적용된 임계값 (TROUBLE_THRESHOLD)
         "std_l_skin": round(std_l, 2),             # 조명 흐름 제거 후 편차 (프로필의 uniformity_std_range 기준, 이마·양볼)
         "std_l_skin_raw": round(std_l_raw, 2),     # 참고: 예전 방식 편차 (조명 포함)
-        "face_width_px": round(face.preview_face_width, 1),  # 축소본 기준 (최소 크기 검사용)
+        "face_width_px": round(face.preview_face_width, 1),  # 얼굴을 찾는 축소본 기준
         "source_face_width_px": round(face.source_face_width, 1),  # 원본 사진에서의 얼굴 너비
         "skin_px": int(np.count_nonzero(skin)),                   # 패치(밝기) 픽셀
         "uniformity_px": int(np.count_nonzero(uniformity_mask)),  # 균일도 분석 픽셀 (이마·양볼)

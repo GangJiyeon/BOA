@@ -42,3 +42,28 @@ def calculate_cheek_ratio(points: Dict[str, Point]) -> Dict[str, float]:
     return {
         "cheek_width_ratio": round(cheek_width / face_length, 4),
     }
+
+def makeup_cheek_features(points: Dict[str, Point]) -> Dict[str, float]:
+    """정면의 상대적인 옆 폭만 추정. 얼굴 길이나 3D 돌출 여부로 해석하지 않는다.
+
+    기존 cheek_width_ratio는 호환용으로 유지한다. 메이크업에서는 이마와 턱의
+    폭을 함께 비교해 긴 얼굴을 '좁은 광대'로 자동 판정하지 않는다.
+    중립 구간과 완만한 보정 범위는 시각 QA용 휴리스틱이다.
+    """
+    widths = {name: _distance(points[f'{name}_left'], points[f'{name}_right'])
+              for name in ('forehead', 'cheek', 'jaw')}
+    if min(widths.values()) <= 0:
+        raise ValueError('이마·광대·턱의 유효한 폭이 필요합니다.')
+    relative = widths['cheek'] / math.sqrt(widths['forehead'] * widths['jaw'])
+
+    def ramp(value: float) -> float:
+        t = min(1.0, max(0.0, value))
+        return t * t * (3 - 2 * t)
+
+    return {
+        'relative_width': round(relative, 4),
+        'forehead_ratio': round(widths['cheek'] / widths['forehead'], 4),
+        'jaw_ratio': round(widths['cheek'] / widths['jaw'], 4),
+        'wide': ramp((relative - 1.36) / .18),
+        'narrow': ramp((1.24 - relative) / .16),
+    }

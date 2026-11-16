@@ -21,8 +21,13 @@ export function analyzeSkinPhoto(file: File, moisture: number | null, signal?: A
 
 export const getSkinAnalysis = (id: number, signal?: AbortSignal) => api<SkinAnalysis>(`/skin/analyses/${id}`, { signal })
 
-export function measureSkinLightness(file: File, signal?: AbortSignal) {
+export type SkinColorSample = { lightness: number; a: number; b: number }
+
+// 헤어색 추천에 필요한 톤 분석 응답 필드만 사용한다.
+export type SkinToneSample = { undertone: string; confidence: string; raw: { L: number } }
+
+export function measureSkinTone(file: File, signal?: AbortSignal) {
   const body = new FormData()
   body.append('file', file)
-  return api<{ lightness: number }>('/skin/lightness', { method: 'POST', body, signal })
+  return api<SkinToneSample>('/skin/tone', { method: 'POST', body, signal })
 }

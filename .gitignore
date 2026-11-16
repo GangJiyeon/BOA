@@ -256,5 +256,16 @@ backend/ml_assets/
 ~$*
 # 피부 분석 테스트 사진 (개인 얼굴 사진, 진단 스크립트 결과 이미지 포함)
 backend/photos/
+
+# 메이크업, 헤어 레퍼런스
+backend/backups
+backend/ref
 # Claude 작업 결과물
 Claude outputs/
+
+# 메이크업 확인용 렌더 결과물 (scripts/validation/prepare_makeup_contour_fixtures.py로 다시 생성)
+frontend/.qa-preview/
+# 헤어 스타일 사진 백업 (앱은 static/hair 루트 사진만 사용)
+backend/static/hair/F001-F040/
+backend/static/hair/M001-M040/
+backend/static/hair/hairstyles/

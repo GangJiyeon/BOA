@@ -31,7 +31,7 @@ export function rgbToLab(r: number, g: number, b: number): [number, number, numb
   return [116 * y - 16, 500 * (x - y), 200 * (y - z)]
 }
 
-function labToRgb(L: number, a: number, b: number, out: Uint8ClampedArray, o: number) {
+export function labToRgb(L: number, a: number, b: number, out: Uint8ClampedArray, o: number) {
   const fy = (L + 16) / 116, fx = fy + a / 500, fz = fy - b / 200
   const X = 0.95047 * fInv(fx), Y = fInv(fy), Z = 1.08883 * fInv(fz)
   out[o] = lin(3.2404542 * X - 1.5371385 * Y - 0.4985314 * Z)
@@ -42,6 +42,12 @@ function labToRgb(L: number, a: number, b: number, out: Uint8ClampedArray, o: nu
 export function hexToRgb(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16)
   return [n >> 16 & 255, n >> 8 & 255, n & 255]
+}
+
+export function labToHex(lightness: number, a: number, b: number): string {
+  const rgb = new Uint8ClampedArray(3)
+  labToRgb(lightness, a, b, rgb, 0)
+  return '#' + Array.from(rgb, channel => channel.toString(16).padStart(2, '0')).join('')
 }
 
 // image·mask 픽셀(RGBA)로 Lab 값과 머리 평균색 미리 계산
@@ -65,10 +71,14 @@ const DARK_L = 25
 // 머리 평균 밝기가 이보다 높으면 밝은 베이스
 const LIGHT_BASE_L = 50
 
+// 목표색 맞춤: 칠한 결과의 머리 평균 Lab이 목표색과 같아지게 밝기·색을 더 옮김 (채도 감쇠·밝기 압축·색역 잘림 보정)
+// 반복 횟수, 표본 간격(픽셀), 보정 한계 (Lab): 1회·8px 간격이면 렌더 23→13ms(보정 없음 11ms), 32색 평균 오차 1.0·최대 3.3
+const MATCH_ITERS = 1, MATCH_STEP = 8, MATCH_MAX = 30
+
 export function renderColor(base: PreparedBase, color: HairColor, out: Uint8ClampedArray) {
   const t = { ...DEFAULT_TUNING, ...color }
-  const [tL0, tA, tB] = rgbToLab(...hexToRgb(color.hex))
-  const tL = tL0 + t.lOff
+  const [tL0, tA0, tB0] = rgbToLab(...hexToRgb(color.hex))
+  const tL = tL0 + t.lOff, tA = tA0 * t.chroma, tB = tB0 * t.chroma
   // 어두운 목표색은 명암 폭을 줄이고 밝은 목표색은 조금 키움
   // 밝은 베이스에서 어둡게 내릴 때는 명암 그대로 (비율로 줄이면 결이 1/3로 줄어 떡져 보임)
   // 어두운 베이스는 원래 계산 유지 (어두운 색은 이 계산으로 잘 나옴)
@@ -79,28 +89,69 @@ export function renderColor(base: PreparedBase, color: HairColor, out: Uint8Clam
   const KNEE = 78, TOE = 6
   const tmp = new Uint8ClampedArray(3)
   const { src, L: Ls, A: As, B: Bs, mask, meanL, meanA, meanB } = base
+  // 픽셀 i의 칠한 색 → tmp (RGB), cL·cA·cB는 목표색 맞춤 보정
+  const shade = (i: number, cL: number, cA: number, cB: number) => {
+    const a = mask[i]
+    // 밝은 베이스 가장자리는 배경과 섞여 어두운 걸 그대로 옮기면 검은 외곽선이 생김 → 마스크 0.5~0.95 구간에서 명암 차이를 줄임
+    const e = lightBase ? Math.min(1, Math.max(0, (a - 0.5) / 0.45)) : 1
+    const d = (Ls[i] - meanL) * e * e * (3 - 2 * e)
+    let L = tL + cL + (dark ? (d > 0 ? d : d * 0.5) : d * kEff)
+    // 100/0에서 딱 잘리지 않게 부드럽게 눌러줌
+    if (L > KNEE) L = KNEE + (100 - KNEE) * (1 - Math.exp(-(L - KNEE) / (100 - KNEE)))
+    else if (L < TOE) L = TOE * Math.exp((L - TOE) / TOE)
+    // 아주 어둡거나 밝은 곳은 채도 낮춤
+    const f = Math.sqrt(Math.sin(Math.PI * Math.min(0.98, Math.max(0.02, L / 100))))
+    labToRgb(L, (tA + cA) * f + (As[i] - meanA) * t.vari, (tB + cB) * f + (Bs[i] - meanB) * t.vari, tmp, 0)
+  }
+  let cL = 0, cA = 0, cB = 0
+  for (let it = 0; it < MATCH_ITERS; it++) {
+    let n = 0, sl = 0, sa = 0, sb = 0
+    for (let i = 0; i < mask.length; i += MATCH_STEP) {
+      if (mask[i] <= 0.6) continue
+      shade(i, cL, cA, cB)
+      const [l, a, b] = rgbToLab(tmp[0], tmp[1], tmp[2])
+      sl += l; sa += a; sb += b; n++
+    }
+    if (!n) break
+    const clamp = (v: number) => Math.max(-MATCH_MAX, Math.min(MATCH_MAX, v))
+    cL = clamp(cL + tL - sl / n); cA = clamp(cA + tA - sa / n); cB = clamp(cB + tB - sb / n)
+  }
   for (let i = 0, p = 0; i < mask.length; i++, p += 4) {
     const a = mask[i]
     let r = src[p], g = src[p + 1], b = src[p + 2]
     if (a >= 0.004) {
-      // 밝은 베이스 가장자리는 배경과 섞여 어두운 걸 그대로 옮기면 검은 외곽선이 생김 → 마스크 0.5~0.95 구간에서 명암 차이를 줄임
-      const e = lightBase ? Math.min(1, Math.max(0, (a - 0.5) / 0.45)) : 1
-      const d = (Ls[i] - meanL) * e * e * (3 - 2 * e)
-      let L = tL + (dark ? (d > 0 ? d : d * 0.5) : d * kEff)
-      // 100/0에서 딱 잘리지 않게 부드럽게 눌러줌
-      if (L > KNEE) L = KNEE + (100 - KNEE) * (1 - Math.exp(-(L - KNEE) / (100 - KNEE)))
-      else if (L < TOE) L = TOE * Math.exp((L - TOE) / TOE)
-      // 아주 어둡거나 밝은 곳은 채도 낮춤
-      const f = Math.sqrt(Math.sin(Math.PI * Math.min(0.98, Math.max(0.02, L / 100))))
-      labToRgb(L, tA * t.chroma * f + (As[i] - meanA) * t.vari, tB * t.chroma * f + (Bs[i] - meanB) * t.vari, tmp, 0)
+      shade(i, cL, cA, cB)
       r += (tmp[0] - r) * a; g += (tmp[1] - g) * a; b += (tmp[2] - b) * a
     }
     out[p] = r; out[p + 1] = g; out[p + 2] = b; out[p + 3] = 255
   }
 }
 
-export async function loadPixels(url: string, width?: number, height?: number, signal?: AbortSignal): Promise<ImageData> {
-  const res = await fetch(url, { signal })
+// 밝은 쪽 베이스를 어둡게 내리는 건 자연스럽고, 어두운 베이스를 밝히면 회색·떡짐 → 밝혀야 하는 거리에 가중치
+const LIGHTEN_COST = 1.6
+// 가장 밝은 베이스(light)는 앞머리 마스크가 가장 불안정 → 바로 아래 베이스(brown)를 이만큼(L)까지 밝혀도 되면 그쪽 사용
+// (brown 평균 L 26에서 허니블론드 L 62까지 얼룩 없음, 베이지블론드 L 70부터 가닥 명암이 진해짐)
+const LIGHT_AVOID_LIFT = 38
+
+// 목표색 밝기에 가장 가까운 베이스 (사진마다 베이스 밝기가 달라 고정 경계 대신 실제 머리 평균 밝기로)
+export function pickBase<K extends string>(bases: Partial<Record<K, PreparedBase>>, hex: string): K | null {
+  const [tL] = rgbToLab(...hexToRgb(hex))
+  const list = (Object.entries(bases) as [K, PreparedBase | undefined][])
+    .filter((e): e is [K, PreparedBase] => Boolean(e[1])).sort((a, b) => a[1].meanL - b[1].meanL)
+  let best: K | null = null, bestCost = Infinity
+  for (const [k, b] of list) {
+    const cost = b.meanL < tL ? (tL - b.meanL) * LIGHTEN_COST : b.meanL - tL
+    if (cost < bestCost) { bestCost = cost; best = k }
+  }
+  if (list.length > 1 && best === list[list.length - 1][0]) {
+    const [k, b] = list[list.length - 2]
+    if (tL - b.meanL <= LIGHT_AVOID_LIFT) return k
+  }
+  return best
+}
+
+export async function loadPixels(url: string, width?: number, height?: number, signal?: AbortSignal, cache: RequestCache = 'default'): Promise<ImageData> {
+  const res = await fetch(url, { signal, cache })
   if (!res.ok) throw new Error('합성 이미지를 불러오지 못했습니다.')
   const bitmap = await createImageBitmap(await res.blob())
   const w = width ?? bitmap.width, h = height ?? bitmap.height

@@ -17,4 +17,5 @@ export type HairSessionResult = {
   // AI 스튜디오 합성용 정면 사진 (첫 장), 브라우저 메모리에만 보관
   photo: File
   recommendedColors?: HairColorRecommendation[]
+  hairColorBasis?: string
 }

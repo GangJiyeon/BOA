@@ -1,12 +1,13 @@
+import { hairImageUrl } from '../api/hair-image'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { analyzeFace, getHairStyles, recommendHair, type FaceAnalysis, type HairResult, type HairStyle, type Sex } from '../api/hair'
-import { measureSkinLightness } from '../api/skin'
+import { measureSkinTone } from '../api/skin'
 import { SectionJump, TaskStatus } from '../components/Shared'
 import PhotoUpload from '../components/PhotoUpload'
 import PageIntro, { ProgressSteps } from '../components/PageIntro'
 import Icon from '../components/Icon'
 import { useTask } from '../hooks/useTask'
-import { recommendHairColors } from '../studio/hairColorRecommendations'
+import { recommendHairColors, type HairColorRecommendation } from '../studio/hairColorRecommendations'
 import type { HairSessionResult } from '../types/sessionResults'
 
 export default function HairPage({ onResult }: { onResult: (value: HairSessionResult) => void }) {
@@ -56,9 +57,10 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
   function requestColors() {
     if (!session || session.recommendedColors) return
     void colorTask.run(async signal => {
-      const { lightness } = await measureSkinLightness(session.photo, signal)
+      const skinTone = await measureSkinTone(session.photo, signal)
       if (signal.aborted) return
-      const updated = { ...session, recommendedColors: recommendHairColors(lightness) }
+      const { colors, basis } = recommendHairColors(skinTone)
+      const updated = { ...session, recommendedColors: colors, hairColorBasis: basis }
       setSession(updated)
       onResult(updated)
     })
@@ -85,19 +87,18 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
     {analysis && <div className="face-result"><span className="feature-icon"><Icon name="hair" size={28} /></span><div><span className="eyebrow">YOUR FACE SHAPE</span><h3>{analysis.face_shape}</h3><p>얼굴 분석 #{analysis.id}{analysis.top2 && ` · 차순위 ${analysis.top2}`}</p></div><span className="category-pill">분석 완료</span></div>}
     {session && <>
       <section className="form-card" aria-labelledby="hair-color-recommend-title">
-        <h3 id="hair-color-recommend-title">피부 명도 기반 헤어색 추천</h3>
-        <p className="input-note">첫 번째 정면 사진을 기준으로 밝기 대비가 다른 3색을 골라요.</p>
+        <h3 id="hair-color-recommend-title">피부색에 맞춘 헤어색 추천</h3>
+        <p className="input-note">첫 정면 사진의 피부톤으로 색 계열을 고르고, 밝은 대안과 포인트 색에 피부 밝기를 반영해요.</p>
         {!session.recommendedColors && <button type="button" className="secondary" disabled={colorTask.busy} onClick={requestColors}>
           {colorTask.busy ? '헤어색을 고르고 있어요…' : '이 사진으로 헤어색 추천받기'}
         </button>}
         <div aria-live="polite">
           {colorTask.error && <p className="error-box">{colorTask.error}</p>}
-          {session.recommendedColors && <ul className="hair-color-recommendations">
-            {session.recommendedColors.map(({ color, label }) => <li key={color.name}>
-              <span className="hair-color-chip" style={{ backgroundColor: color.hex }} aria-hidden="true" />
-              <span><strong>{color.name}</strong><small>{label}</small></span>
-            </li>)}
-          </ul>}
+          {session.recommendedColors && <>
+            <p className="input-note">{session.hairColorBasis}</p>
+            <HairColorSwatches colors={session.recommendedColors} showDescriptions />
+            <p className="input-note">화면은 색상 미리보기예요. 실제 발색과 밝히는 시술의 필요 여부는 현재 모발색과 염색·탈색 이력에 따라 달라져요.</p>
+          </>}
         </div>
       </section>
       <HairResults result={session.result} titleId="hair-result-title" />
@@ -105,6 +106,18 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
     </>}
   </section>
 }
+export function HairColorSwatches({ colors, showDescriptions = false }: {
+  colors: HairColorRecommendation[]
+  showDescriptions?: boolean
+}) {
+  return <ul className="hair-color-recommendations">
+    {colors.map(({ color, label }) => <li key={color.name}>
+      <span className="hair-color-chip" style={{ backgroundColor: color.hex }} aria-hidden="true" />
+      <span><strong>{color.name}</strong>{showDescriptions && <small>{label}</small>}</span>
+    </li>)}
+  </ul>
+}
+
 export function HairResults({ result, titleId }: { result: HairResult; titleId?: string }) {
   return <section className="hair-results"><div className="results-heading"><h3 id={titleId} className="section-target" tabIndex={-1}>헤어 추천 #{result.run_id}</h3><span>{result.recommendations.length}개 스타일</span></div>{!result.recommendations.length && <p className="empty-box">현재 조건에 맞는 스타일이 없습니다. 선호 조건이나 카탈로그를 확인해 주세요.</p>}
     <ul className="hair-grid">{result.recommendations.map(style => <li className="hair-card" key={style.style_id}>
@@ -116,6 +129,6 @@ function HairImage({ url, name }: { url: string | null; name: string }) {
   const [failed, setFailed] = useState(false)
   // 카탈로그에는 /static/hair/... 경로가 저장된다.
   return url && (url.startsWith('/static/') || /^https?:\/\//.test(url)) && !failed
-    ? <img className="hair-image" src={url} alt={name} loading="lazy" onError={() => setFailed(true)} />
+    ? <img className="hair-image" src={hairImageUrl(url)} alt={name} loading="lazy" onError={() => setFailed(true)} />
     : <div className="hair-image image-placeholder">사진 준비 중</div>
 }

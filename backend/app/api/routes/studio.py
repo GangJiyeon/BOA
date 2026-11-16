@@ -61,9 +61,9 @@ async def create_hair_render(
     data = await photo.read()
     if len(data) > MAX_PHOTO_BYTES:
         raise HTTPException(413, "사진은 10MB 이하로 올려 주세요")
-    # 얼굴 없는 사진은 AI 호출(유료) 전에 거절
+    # 얼굴 없음·기울어짐·옆모습·얼굴 너무 작음은 AI 호출(유료) 전에 거절
     try:
-        hair_studio.landmarks(hair_studio.decode_image(data))
+        hair_studio.prepare_photo(hair_studio.decode_image(data))
     except ValueError as e:
         raise HTTPException(422, str(e))
 

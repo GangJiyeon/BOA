@@ -6,6 +6,7 @@
 """
 
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -79,6 +80,25 @@ class UniformityRegionsAndProfileTest(unittest.TestCase):
         wide = sa._uniformity(lab, mask, 300.0, (1.0, 10.0))[0]
         narrow = sa._uniformity(lab, mask, 300.0, (0.5, 1.5))[0]
         self.assertGreater(wide, narrow)
+
+
+class SourceFaceWidthTest(unittest.TestCase):
+    def test_minimum_width_uses_source_resolution(self):
+        source = np.zeros((640, 2048, 3), dtype=np.uint8)
+        with (
+            patch.object(sa, "_decode_full", return_value=source),
+            patch.object(sa, "_detect_landmarks") as detect,
+        ):
+            detect.return_value = np.array([[20, 20], [150, 120]], dtype=np.float32)
+            face = sa._prepare_face(b"fixture", min_face_width=250)
+            self.assertEqual(face.preview_face_width, 130)
+            self.assertEqual(face.source_face_width, 260)
+
+            detect.return_value = np.array([[20, 20], [144, 120]], dtype=np.float32)
+            with self.assertRaises(sa.AnalysisError) as error:
+                sa._prepare_face(b"fixture", min_face_width=250)
+            self.assertEqual(error.exception.code, sa.ErrorCode.FACE_TOO_SMALL)
+            self.assertEqual(error.exception.detail["face_width_px"], 248)
 
 
 if __name__ == "__main__":

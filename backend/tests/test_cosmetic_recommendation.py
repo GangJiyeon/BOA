@@ -13,6 +13,7 @@ from sqlalchemy import create_engine, event, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
+from app.api.deps import Actor, get_actor
 from app.db.session import get_db
 from app.main import app
 from app.models.cosmetic_rule import CategoryIngredient, CosmeticRuleEvidence, CosmeticRuleSet
@@ -256,6 +257,9 @@ class ApiDatabaseTests(unittest.TestCase):
                 yield db
 
         app.dependency_overrides[get_db] = override_db
+        # 이 테스트군은 추천·수분 로직을 검증하므로 인증은 고정 회원으로 대체한다.
+        # 실제 접근 제한은 test_analysis_ownership.py에서 따로 검증한다.
+        app.dependency_overrides[get_actor] = lambda: Actor(kind="member", user_id=7)
 
     def tearDown(self):
         app.dependency_overrides.clear()

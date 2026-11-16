@@ -1,11 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from sqlalchemy import literal, select, union_all
 from sqlalchemy.orm import Session
 
 from app.api.deps import Actor, require_user
 from app.core.cookies import clear_auth_cookies
 from app.db.session import get_db
-from app.models import User
+from app.models import HairRecRun, SkinAnalysis, User
 from app.schemas.account import (
+    AnalysisHistoryItem,
+    AnalysisHistoryRead,
     ConsentChangeRequest,
     ConsentStatusRead,
     MeRead,
@@ -81,3 +84,35 @@ def delete_me(actor: Actor = Depends(require_user), db: Session = Depends(get_db
     response = Response(status_code=204)
     clear_auth_cookies(response)
     return response
+
+
+@router.get("/analyses")
+def read_analysis_history(
+    kind: str = Query("all", pattern="^(all|skin|hair)$"),
+    limit: int = Query(20, ge=1, le=50),
+    offset: int = Query(0, ge=0),
+    actor: Actor = Depends(require_user),
+    db: Session = Depends(get_db),
+) -> AnalysisHistoryRead:
+    """회원 본인의 피부·헤어 추천 기록. 소유자 필터 후 DB에서 정렬·페이지 분할."""
+    _get_user(db, actor)
+    sources = []
+    if kind in ("all", "skin"):
+        sources.append(select(
+            literal("skin").label("kind"), SkinAnalysis.id.label("id"),
+            SkinAnalysis.analyzed_at.label("created_at"),
+        ).where(SkinAnalysis.user_id == actor.user_id))
+    if kind in ("all", "hair"):
+        sources.append(select(
+            literal("hair").label("kind"), HairRecRun.id.label("id"),
+            HairRecRun.created_at.label("created_at"),
+        ).where(HairRecRun.user_id == actor.user_id))
+    history = union_all(*sources).subquery()
+    rows = db.execute(select(history).order_by(
+        history.c.created_at.desc(), history.c.kind, history.c.id.desc(),
+    ).offset(offset).limit(limit + 1)).mappings().all()
+    # 다음 페이지 존재 여부만 알아내므로 전체 COUNT 쿼리는 필요 없다.
+    return AnalysisHistoryRead(
+        items=[AnalysisHistoryItem(**row) for row in rows[:limit]],
+        limit=limit, offset=offset, has_more=len(rows) > limit,
+    )
