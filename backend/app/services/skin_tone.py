@@ -38,13 +38,14 @@ from app.services.errors import ErrorCode
 #    (턱 하나 때문에 같은 밝기의 사람이 '어두운 편'으로 판정됨)
 #  - 이마는 4명 중 3명이 앞머리로 가려져, 실제로는 코·턱만으로 판정되고 있었다
 # 한계: 볼 홍조가 심한 사람은 쿨 쪽으로 약간 치우칠 수 있다.
-TONE_REGIONS = ("forehead", "left_cheek", "right_cheek")
+# 부위 정의는 밝기 점수와 공유하도록 skin_analysis에 둔다 (같은 값)
+TONE_REGIONS = sa.TONE_REGIONS
 # 위 부위가 모두 가려진 경우에만 코·턱으로 대체한다
-TONE_FALLBACK = ("nose", "chin")
+TONE_FALLBACK = sa.TONE_FALLBACK
 
 # b*(노란 기)가 이보다 작으면 측정 불가로 돌려보낸다.
 # ITA°는 b*로 나누는 식이라 b*가 0에 가까우면 ±90°로 튄다 (색이 바랜 웹캠 사진에서 발생).
-MIN_B_FOR_TONE = 3.0
+MIN_B_FOR_TONE = sa.MIN_B_FOR_ITA
 
 # 조명이 한쪽으로 치우친 사진은 색상각이 왜곡된다. 메이크업 화면은 분석을 거치지 않고
 # 들어올 수 있으므로 거절하는 대신 신뢰도를 낮춰 안내한다. (기준값은 기존 분석과 동일)
@@ -64,18 +65,61 @@ class ToneThresholds:
     medium_min_ita: float  # 이 값 초과면 중간, 이하면 어두운 편
     warm_min_hue: float    # h°가 이 값 이상이면 웜
     cool_max_hue: float    # h°가 이 값 이하면 쿨 (사이는 뉴트럴)
+    # 쿠션 호수 추정용 밝기 보정 (사진 L*에 더하면 호수표 밝기 기준이 됨). 카메라마다 피부를 기록하는 밝기가 다르다.
+    shade_l_offset: float = 0.0
 
 
 TONE_THRESHOLDS: dict[str, ToneThresholds] = {
     # 휴대폰: ITA 피부과 분류(>41° 밝음, 28~41° 중간)를 그대로 쓴다
-    "phone": ToneThresholds(bright_min_ita=41.0, medium_min_ita=28.0, warm_min_hue=50.0, cool_max_hue=40.0),
+    "phone": ToneThresholds(bright_min_ita=41.0, medium_min_ita=28.0, warm_min_hue=50.0, cool_max_hue=40.0, shade_l_offset=1.55),
+    # 휴대폰 호수 보정 +1.55: 같은 사람을 휴대폰·갤럭시북으로 찍었을 때 휴대폰이 L* 약 7.6 밝았음 (9.15 − 7.6)
     # 웹캠: 색이 바래 h°·ITA°가 전반적으로 낮게 나온다. 표본 확보 전 잠정값.
     "webcam": ToneThresholds(bright_min_ita=38.0, medium_min_ita=25.0, warm_min_hue=46.0, cool_max_hue=37.0),
     # 갤럭시북: 정답 데이터 확보 전까지 휴대폰 기준을 그대로 쓴다 (색감이 휴대폰과 비슷함).
     # 4명 모두 색상각 34~39°로 쿨 판정이 나오므로, 정답과 비교해 언더톤 경계 확인이 필요하다.
-    "galaxybook": ToneThresholds(bright_min_ita=41.0, medium_min_ita=28.0, warm_min_hue=50.0, cool_max_hue=40.0),
+    # 호수 보정 +9.15: 샘플3(실제 23호)의 L* 57.85를 호수표 23호 밝기(67)에 맞춤. 정답 1명 기준 잠정값 (2026-11-18)
+    "galaxybook": ToneThresholds(bright_min_ita=41.0, medium_min_ita=28.0, warm_min_hue=50.0, cool_max_hue=40.0, shade_l_offset=9.15),
 }
 DEFAULT_THRESHOLDS = TONE_THRESHOLDS["phone"]
+
+# ── 쿠션 호수 추정 ──────────────────────────────────────────────────
+# 호수별 밝기(L*): 프론트 makeup-looks.ts의 SHADE_L과 같은 값 (가상 메이크업 쿠션 색에도 쓰임)
+SHADE_L: tuple[tuple[int, float], ...] = ((13, 79.0), (17, 76.0), (19, 74.0), (21, 71.0), (23, 67.0), (25, 63.0))
+SHADE_MIN, SHADE_MAX = 11.0, 29.0
+# 실제 판매 호수 (안내는 이 중 가장 가까운 호수로) 와, 믿을 수 있는 추정 범위
+SHADE_STEPS = (13, 15, 17, 19, 21, 23, 25)
+# 호수표(13~25호)에서 한 칸 넘게 벗어나면 피부가 아니라 사진 처리(보정 필터·과노출·어두운 사진) 영향으로 본다
+# (예: 같은 사람 사진이 처리만 달라 L* 80/65 → 11호/23호로 갈림)
+CUSHION_VALID_RANGE = (12.0, 26.0)
+# 밝기 단계를 호수로 나눈다 (예전 ITA° 기준은 노란 기가 많으면 밝게 나와 노란 기 많은 어두운 피부를 '밝은 편'으로 판정했음)
+BRIGHT_MAX_SHADE = 20.0  # 이 호수 미만: 밝은 편
+MEDIUM_MAX_SHADE = 24.0  # 이 호수 미만: 중간, 이상: 어두운 편
+
+
+def estimate_shade(L: float, th: "ToneThresholds") -> float:
+    """사진 피부 L*(표준 CIELAB) → 추정 쿠션 호수 (연속값). 호수표 밖은 양 끝 기울기로 연장."""
+    lc = L + th.shade_l_offset
+    shades = [s for s, _ in SHADE_L]
+    lights = [lv for _, lv in SHADE_L]
+    if lc >= lights[0]:  # 13호보다 밝음
+        slope = (shades[1] - shades[0]) / (lights[0] - lights[1])
+        shade = shades[0] - (lc - lights[0]) * slope
+    elif lc <= lights[-1]:  # 25호보다 어두움
+        slope = (shades[-1] - shades[-2]) / (lights[-2] - lights[-1])
+        shade = shades[-1] + (lights[-1] - lc) * slope
+    else:
+        shade = float(np.interp(-lc, [-v for v in lights], shades))
+    return float(min(SHADE_MAX, max(SHADE_MIN, shade)))
+
+
+def level_from_shade(shade: float) -> str:
+    """추정 호수 → 밝기 단계."""
+    if shade < BRIGHT_MAX_SHADE:
+        return "bright"
+    if shade < MEDIUM_MAX_SHADE:
+        return "medium"
+    return "deep"
+
 
 BRIGHTNESS_LEVELS = ("bright", "medium", "deep")
 UNDERTONES = ("warm", "neutral", "cool")
@@ -139,23 +183,20 @@ def measure_tone(
     # 부위 패치 + 머리카락 제거는 기존 로직 그대로
     regions, coverage = sa._build_skin_regions(face.image, face.lab, face.landmarks)
 
-    names = [n for n in TONE_REGIONS if n in regions] or [n for n in TONE_FALLBACK if n in regions]
+    mask, names = sa.tone_mask(regions, face.image.shape[:2])
     if not names:
         raise sa.AnalysisError(
             "피부톤을 잴 부위(이마·볼·코·턱)를 찾지 못했습니다",
             code=ErrorCode.SKIN_AREA_TOO_SMALL,
         )
-    mask = np.zeros(face.image.shape[:2], dtype=np.uint8)
-    for n in names:
-        mask = cv2.bitwise_or(mask, regions[n])
+    # 트러블 덩어리(붉은 병변)는 뺀다: a*를 올려 색상각을 쿨 쪽으로 밀기 때문 (피부 분석 밝기 점수와 같은 처리)
+    trouble = sa.detect_face_trouble(face)
+    full_px = int(np.count_nonzero(mask))
+    mask = sa.exclude_trouble(mask, trouble.mask, face.face_width)
 
     # face.balanced = 카메라 프로필 고정 보정이 이미 적용된 이미지
-    lab = _to_cielab(face.balanced)
     # 중앙값은 JPEG 색 양자화로 계단처럼 튀어 평균을 쓴다 (probe 스크립트와 동일)
-    skin = mask > 0
-    L = float(np.mean(lab[..., 0][skin]))
-    a = float(np.mean(lab[..., 1][skin]))
-    b = float(np.mean(lab[..., 2][skin]))
+    L, a, b = sa.cielab_mean(face.balanced, mask)
 
     if b < MIN_B_FOR_TONE:
         raise sa.AnalysisError(
@@ -165,8 +206,7 @@ def measure_tone(
             detail={"b": round(b, 2), "required_min": MIN_B_FOR_TONE, "camera_profile": camera_profile},
         )
 
-    ita = math.degrees(math.atan((L - 50.0) / b))
-    hue = math.degrees(math.atan2(b, a))
+    ita, hue = sa.ita_hue(L, a, b)
 
     # 조명 치우침 → 거절 대신 신뢰도 하향 (기존 _cheek_l_ratio 재사용, 비율이라 Lab 단위 무관)
     cheek_ratio = sa._cheek_l_ratio(face.lab, regions)
@@ -174,8 +214,12 @@ def measure_tone(
     confidence = "high" if balanced_light else "low"
 
     th = thresholds_for(camera_profile)
+    shade = estimate_shade(L, th)
+    shade_out_of_range = not (CUSHION_VALID_RANGE[0] <= shade <= CUSHION_VALID_RANGE[1])
+    if shade_out_of_range:
+        confidence = "low"
     return SkinToneResult(
-        brightness_level=classify_brightness(ita, th),
+        brightness_level=level_from_shade(shade),
         undertone=classify_undertone(hue, th),
         confidence=confidence,
         raw={
@@ -184,7 +228,11 @@ def measure_tone(
             "b": round(b, 2),
             "ita_deg": round(ita, 1),
             "hue_deg": round(hue, 1),
+            "cushion_shade": round(shade, 1),  # 추정 쿠션 호수 (밝기 단계 근거)
+            "cushion_out_of_range": shade_out_of_range,  # 추정이 호수표 범위를 벗어남 (사진 처리 의심)
+            "ita_level": classify_brightness(ita, th),  # 참고: 예전 ITA° 기준 밝기 단계
             "regions_used": names,
+            "excluded_px": full_px - int(np.count_nonzero(mask)),  # 제외한 트러블 픽셀 (덩어리 + 여백)
             "cheek_l_ratio": None if cheek_ratio is None else round(cheek_ratio, 3),
             "face_width_px": round(face.face_width, 1),
             "camera_profile": camera_profile,
