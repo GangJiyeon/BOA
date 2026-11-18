@@ -1130,11 +1130,13 @@ def analyze_image_detail(
     bright_mask, _ = tone_mask(regions, image.shape[:2])
     bright_mask = exclude_trouble(bright_mask, trouble_result.mask, face_width)
     tone_L, tone_a, tone_b = cielab_mean(balanced, bright_mask)
-    ita = ita_hue(tone_L, tone_a, tone_b)[0] if tone_b >= MIN_B_FOR_ITA else None  # 참고 기록용
-    # 밝기 점수 = 피부톤과 같은 추정 호수 기준 (호수 밝기 단계 경계 = 판정 구간 경계 33/67점)
-    shade = skin_tone.estimate_shade(tone_L, tone_th)
+    ita = ita_hue(tone_L, tone_a, tone_b)[0] if tone_b >= MIN_B_FOR_ITA else None  # 참고 기록용 (보정 전)
+    # 밝기 점수 = 피부톤과 같은 추정 호수 기준: 보정 ITA° → 호수 (호수 밝기 단계 경계 = 판정 구간 경계 33/67점)
+    ita_c = skin_tone.corrected_ita(tone_L, tone_b, tone_th)
+    shade = skin_tone.estimate_shade(tone_L, tone_b, tone_th)
     brightness = brightness_from_shade(shade)
-    brightness_basis = "ita"  # (기록용 플래그 유지: 1 = 피부톤 기준 계산)
+    # 1 = 보정 ITA 기준, 0 = L* 기준 (보정 파일에서 shade_method=l 이거나 노란 기가 너무 작을 때)
+    brightness_basis = "ita" if (tone_th.shade_method == "ita" and ita_c is not None) else "l_mean"
 
     # 홍조 지수가 보정 범위보다 지나치게 낮으면 피부색이 아니라 카메라·조명 문제다.
     # 0점(홍조 없음)으로 내보내지 않고 측정 불가로 돌려보낸다.
@@ -1179,7 +1181,7 @@ def analyze_image_detail(
         "redness_index": round(mean_index, 2),     # 카메라 프로필의 홍조 범위 기준 (트러블 덩어리 제외)
         "redness_index_all": round(mean_index_all, 2),  # 참고: 트러블 포함 홍조 지수 (예전 방식)
         "trouble_excluded_px": int(np.count_nonzero(red_mask) - np.count_nonzero(red_mask_clean)),
-        # 밝기 점수 기준: 1 = 피부톤 ITA° 기준, 0 = 예전 L 평균 기준 (raw는 숫자만 담는 스키마라 글자 대신 1/0)
+        # 밝기 점수 기준: 1 = 카메라 보정 ITA° → 호수, 0 = 노란 기가 너무 작아 L* → 호수 대체 (raw는 숫자만 담는 스키마라 1/0)
         "brightness_from_ita": 1.0 if brightness_basis == "ita" else 0.0,
         "cushion_shade": round(shade, 1),         # 밝기 점수 근거: 추정 쿠션 호수 (피부톤과 같은 값)
         "mean_l_skin": round(mean_l, 2),           # 전체 패치 L 평균 (헤어 컬러·노출 검사용, BRIGHTNESS_RANGE 기준)
@@ -1197,9 +1199,11 @@ def analyze_image_detail(
         "lower_face_px": int(np.count_nonzero(lower_only)),       # 그중 하안부(턱·입 주변)만의 픽셀
         "regions_used": len(regions),              # 분석에 쓰인 부위 수 (최대 5)
     }
-    # 밝기 점수 근거 ITA° (피부톤과 같은 값). 노란 기가 너무 적어 ITA를 못 쓴 사진은 기록하지 않는다
+    # ITA° 기록 (보정 전 / 카메라 보정 후 = 밝기 점수 근거). 노란 기가 너무 적어 못 쓴 사진은 기록하지 않는다
     if ita is not None:
         raw["ita_deg"] = round(ita, 1)
+    if ita_c is not None:
+        raw["ita_corrected"] = round(ita_c, 1)
     # 양볼 밝기 비율 (MIN_CHEEK_L_RATIO 기준). 볼 하나가 빠졌으면 기록하지 않는다
     if cheek_ratio is not None:
         raw["cheek_l_ratio"] = round(cheek_ratio, 3)
