@@ -18,7 +18,7 @@ from app.services.errors import ErrorCode
 from app.models.skin import MOISTURE_SOURCES
 
 # 판정 기준 버전. 구간 경계값이나 점수 산출 방식을 바꾸면 이 값을 올린다.
-LOGIC_VERSION = "v2"  # v2: 트러블 개수 기준 점수 + 턱·입 주변 영역, 균일도·피부톤 이마·양볼, galaxybook 프로필
+LOGIC_VERSION = "v3"  # v3: 밝기 이마·양볼만 측정 / v2: 트러블 개수 기준 점수 + 턱·입 주변 영역, 균일도·피부톤 이마·양볼, galaxybook 프로필
 
 # 수분 지표는 센서/직접입력이 없으면 빠질 수 있고, 나머지 4개는 사진에서 항상 나온다.
 MOISTURE_CODE = "moisture"

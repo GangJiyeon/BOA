@@ -6,6 +6,8 @@
 
 쿠션 '호수'는 정확한 호수 판정이 아니라 범위 안내다. 사진 기반 밝기 단계는
 조명·기기에 따라 흔들릴 수 있어 한 호수를 찍지 않는다.
+범위는 겹치지 않게 나눈다 (밝은 편 17~21호 / 중간 22~23호 / 어두운 편 24호 이상).
+예전에는 21~23호·23호 이상처럼 경계 호수가 두 단계에 동시에 들어가 판정을 평가할 수 없었다.
 """
 
 from __future__ import annotations
@@ -40,7 +42,7 @@ PALETTES: dict[tuple[str, str], dict] = {
     },
     ("medium", "warm"): {
         "tone_name": "중간 웜톤",
-        "cushion": "21~23호 범위 · 황조(옐로 베이스)",
+        "cushion": "22~23호 범위 · 황조(옐로 베이스)",
         "lip": ["오렌지 브라운", "코랄 베이지"],
         "blush": ["베이지 코랄", "연한 테라코타"],
         "eye": ["웜 브라운", "카멜", "브론즈"],
@@ -48,7 +50,7 @@ PALETTES: dict[tuple[str, str], dict] = {
     },
     ("medium", "neutral"): {
         "tone_name": "중간 뉴트럴톤",
-        "cushion": "21~23호 범위 · 뉴트럴 베이스",
+        "cushion": "22~23호 범위 · 뉴트럴 베이스",
         "lip": ["로즈 브라운", "말린 장미"],
         "blush": ["모브 피치"],
         "eye": ["뉴트럴 브라운"],
@@ -56,7 +58,7 @@ PALETTES: dict[tuple[str, str], dict] = {
     },
     ("medium", "cool"): {
         "tone_name": "중간 쿨톤",
-        "cushion": "21~23호 범위 · 핑크조(핑크 베이스)",
+        "cushion": "22~23호 범위 · 핑크조(핑크 베이스)",
         "lip": ["플럼", "베리"],
         "blush": ["모브", "쿨 로즈"],
         "eye": ["그레이 브라운", "모브"],
@@ -64,7 +66,7 @@ PALETTES: dict[tuple[str, str], dict] = {
     },
     ("deep", "warm"): {
         "tone_name": "딥 웜톤",
-        "cushion": "23호 이상 범위 · 황조(옐로 베이스)",
+        "cushion": "24호 이상 범위 · 황조(옐로 베이스)",
         "lip": ["브릭", "테라코타"],
         "blush": ["테라코타"],
         "eye": ["카퍼", "다크 브라운"],
@@ -72,7 +74,7 @@ PALETTES: dict[tuple[str, str], dict] = {
     },
     ("deep", "neutral"): {
         "tone_name": "딥 뉴트럴톤",
-        "cushion": "23호 이상 범위 · 뉴트럴 베이스",
+        "cushion": "24호 이상 범위 · 뉴트럴 베이스",
         "lip": ["브라운 레드", "딥 말린 장미"],
         "blush": ["딥 피치"],
         "eye": ["다크 브라운"],
@@ -80,7 +82,7 @@ PALETTES: dict[tuple[str, str], dict] = {
     },
     ("deep", "cool"): {
         "tone_name": "딥 쿨톤",
-        "cushion": "23호 이상 범위 · 핑크조(핑크 베이스)",
+        "cushion": "24호 이상 범위 · 핑크조(핑크 베이스)",
         "lip": ["버건디", "와인"],
         "blush": ["플럼"],
         "eye": ["애쉬 브라운", "플럼"],

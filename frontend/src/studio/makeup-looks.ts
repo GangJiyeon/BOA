@@ -8,7 +8,7 @@ export type MakeupSex = 'female' | 'male'
 export type MakeupOccasion = 'daily' | 'formal' | 'outdoor' | 'party'
 export type LookId = string
 // 톤·밝기는 피부톤 분석(undertone·brightness_level)과 같은 축, 분석 결과가 없으면 사용자가 고름
-// 쿠션: 피부톤 분석의 palette.cushion (예: '21~23호 범위 · 핑크조'), 없으면 톤·밝기로 정함
+// 쿠션: 피부톤 분석의 palette.cushion (예: '22~23호 범위 · 핑크조'), 없으면 톤·밝기로 정함
 export type CushionBase = 'pink' | 'neutral' | 'yellow'
 export type Cushion = { shade: number; base: CushionBase }
 // faceShape 'auto': 사진 분석(얼굴 맞춤)으로 정함, 룩 추천에는 정해진 얼굴형만 넘김
@@ -67,7 +67,8 @@ export function cushionHex({ shade, base }: Cushion) {
   return labToHex(L, BASE_AB[base][0], BASE_AB[base][1])
 }
 const TONE_CUSHION: Record<Undertone, CushionBase> = { warm: 'yellow', neutral: 'neutral', cool: 'pink' }
-const BRIGHT_SHADE: Record<Brightness, number> = { light: 19, medium: 21, deep: 23 }
+// 밝기 단계별 대표 호수 (백엔드 범위 17~21 / 22~23 / 24호 이상에서 cushionFromAnalysis가 꺼내는 값과 같음)
+const BRIGHT_SHADE: Record<Brightness, number> = { light: 19, medium: 22.5, deep: 25 }
 // 애교살 섀도: 피치 베이지 / 로지 베이지 / 모브 핑크 (밝은 색이라 피부를 물들이는 방식으로 칠해짐)
 const AEGYO_COLOR: Record<Undertone, string> = { warm: '#dca58f', neutral: '#d4a19b', cool: '#cc9ca6' }
 // 립에 섞는 베이지 (톤별: 웜 카멜 베이지 / 뉴트럴 로지 베이지 / 쿨 모브 베이지)

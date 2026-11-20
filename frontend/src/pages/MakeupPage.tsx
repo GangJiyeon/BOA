@@ -10,7 +10,8 @@ import type { HairSessionResult } from '../types/sessionResults'
 import './MakeupPage.css'
 
 // 메이크업 밝기별 쿠션 호수 (makeup-looks BRIGHT_SHADE와 같은 값)
-const MAKEUP_SHADE: Record<Brightness, number> = { light: 19, medium: 21, deep: 23 }
+// 밝기 단계별 대표 호수 (백엔드 쿠션 범위 17~21 / 22~23 / 24호 이상의 가운데값)
+const MAKEUP_SHADE: Record<Brightness, number> = { light: 19, medium: 22.5, deep: 25 }
 
 // 얼굴형·헤어 추천 페이지와 같은 흐름: 01 사진 · 02 추천 기준 → 추천받기 → 03 결과
 // 사진을 올리면 바로 피부톤 분석(/skin/tone)으로 톤·밝기·쿠션을 채움, 직접 고른 값이 있으면 덮어쓰지 않음, 실패하면 직접 고른 값으로 진행

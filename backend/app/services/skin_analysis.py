@@ -200,6 +200,13 @@ REDNESS_REGIONS = ("forehead", "left_cheek", "right_cheek")
 # 코·턱은 트러블 탐지(TROUBLE_REGIONS)에는 계속 쓴다.
 UNIFORMITY_REGIONS = ("forehead", "left_cheek", "right_cheek")
 
+# 밝기 점수를 잴 부위. 피부톤·균일도와 같은 이마·양볼만 쓴다 (2026-11-20).
+# 예전에는 코·턱까지 평균해서, 사람 간 점수 차이가 피부가 아니라 턱의 수염 자국에서 나왔다.
+#   (갤럭시북 같은 회차 2명×3장: 양볼 L 157~161 vs 157~159로 거의 같은데,
+#    턱 L 132~135 vs 107~116 차이 때문에 점수가 48~51 vs 45~46으로 갈렸다)
+# 밝기는 원래 피부색·촬영 노출을 함께 재므로 피부 "상태" 판정이 아니라 참고 정보로 표시한다.
+BRIGHTNESS_REGIONS = UNIFORMITY_REGIONS
+
 # ── 트러블 분석 영역 ─────────────────────────────────────────────────
 # 기존 패치(REGIONS)는 얼굴의 약 4%만 덮어서 볼 아래쪽처럼 트러블이 잘 생기는 곳이 빠진다.
 # 트러블은 볼을 크게 잡은 패치로 찾는다 (분석 면적 약 3배).
@@ -863,9 +870,10 @@ class SkinLightnessSample(NamedTuple):
     regions: dict[str, np.ndarray]
     coverage: dict[str, float]
     brightness: int
-    mean_l: float
+    mean_l: float              # 분석 부위 전체 평균 L (노출 검사·피부색 측정용)
     saturated_ratio: float
     cheek_ratio: float | None
+    brightness_l: float        # 밝기 점수에 쓴 평균 L (BRIGHTNESS_REGIONS, BRIGHTNESS_RANGE 기준)
 
 
 def _sample_skin_lightness(
@@ -887,7 +895,17 @@ def _sample_skin_lightness(
     for mask in regions.values():
         skin = cv2.bitwise_or(skin, mask)
 
-    brightness, mean_l = _brightness(lab, skin)
+    # 노출 검사는 분석 부위 전체 평균으로 한다 (기존과 동일)
+    mean_l = cv2.mean(lab[:, :, 0], mask=skin)[0]
+
+    # 밝기 점수는 이마·양볼만으로 잰다. 모두 가려졌으면 전체 부위로 대체
+    bright_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+    for name in BRIGHTNESS_REGIONS:
+        if name in regions:
+            bright_mask = cv2.bitwise_or(bright_mask, regions[name])
+    if int(np.count_nonzero(bright_mask)) < 100:
+        bright_mask = skin
+    brightness, brightness_l = _brightness(lab, bright_mask)
 
     # 노출이 극단적이면 어떤 보정으로도 피부 정보가 남아 있지 않다
     low, high = EXPOSURE_L_RANGE
@@ -939,7 +957,9 @@ def _sample_skin_lightness(
             },
         )
 
-    return SkinLightnessSample(face, skin, regions, coverage, brightness, mean_l, saturated_ratio, cheek_ratio)
+    return SkinLightnessSample(
+        face, skin, regions, coverage, brightness, mean_l, saturated_ratio, cheek_ratio, brightness_l
+    )
 
 
 # ── 공개 함수 ───────────────────────────────────────────────────────
@@ -990,7 +1010,7 @@ def analyze_image_detail(
     """
     profile = get_camera_profile(camera_profile)  # 기기별 보정값 (색 보정·홍조 범위)
     sample = _sample_skin_lightness(image_bytes, min_face_width=min_face_width, profile=profile)
-    face, skin, regions, coverage, brightness, mean_l, saturated_ratio, cheek_ratio = sample
+    face, skin, regions, coverage, brightness, mean_l, saturated_ratio, cheek_ratio, brightness_l = sample
     image, landmarks, balanced, lab = face.image, face.landmarks, face.balanced, face.lab
     face_width = face.face_width
 
@@ -1047,7 +1067,8 @@ def analyze_image_detail(
     }
     raw = {
         "redness_index": round(mean_index, 2),     # 카메라 프로필의 홍조 범위 기준
-        "mean_l_skin": round(mean_l, 2),           # BRIGHTNESS_RANGE 기준
+        "mean_l_skin": round(brightness_l, 2),     # 밝기 점수용 이마·양볼 평균 (BRIGHTNESS_RANGE 기준)
+        "mean_l_all_regions": round(mean_l, 2),    # 참고: 코·턱 포함 전체 평균 (노출 검사 기준, 예전 밝기 값)
         "saturated_ratio": round(saturated_ratio, 3),
         "trouble_count": trouble_count,            # 트러블 덩어리 개수 (TROUBLE_COUNT_POINTS 기준, 점수 근거)
         "blemish_ratio": round(blemish_ratio, 5),  # 참고용: 트러블 면적 비율 (예전 점수 기준, 재현성 검사가 사용)

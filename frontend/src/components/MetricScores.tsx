@@ -15,6 +15,13 @@ export default function MetricScores({ scores, moisture }: { scores: AnalysisMet
     }
     const score = scores.find(item => item.metric_code === code)
     if (!score) return <div className="score-card unmeasured" key={code}><span>{names[code]}</span><strong>—</strong><span className="category-pill">미측정</span><small>측정값이 없습니다</small></div>
+    // 밝기: 원래 피부색·촬영 노출이 함께 반영되는 값이라 피부 상태(양호/개선 필요) 판정 대신 참고 정보로만 표시
+    if (code === 'brightness') return <div className="score-card" key={code}>
+      <div className="score-card-top"><span>{score.metric_name}</span><span className="category-pill">참고</span></div>
+      <strong>{score.score}<small>/ 100</small></strong>
+      <progress max={100} value={score.score} aria-label={`${score.metric_name} 참고 점수 ${score.score}`} />
+      <small>원래 피부색·조명에 따라 달라지는 값 · 상태 판정 아님</small>
+    </div>
     return <div className={`score-card${score.category_name === '개선 필요' ? ' needs-care' : ''}`} key={code}>
       <div className="score-card-top"><span>{score.metric_name}</span><span className="category-pill">{score.category_name}</span></div>
       <strong>{score.score}<small>/ 100</small></strong>
