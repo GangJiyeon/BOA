@@ -18,6 +18,7 @@
 """
 
 import hashlib
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import NamedTuple
@@ -192,6 +193,24 @@ REGIONS = (
 # 홍조는 볼과 이마로만 판단한다 (코·턱은 원래 붉은기가 있어 과대평가된다)
 REDNESS_REGIONS = ("forehead", "left_cheek", "right_cheek")
 
+# ── 밝기·피부톤 공통 측정 부위 ───────────────────────────────────────
+# 피부톤(skin_tone.py)과 밝기 점수는 같은 부위·같은 계산(CIELAB ITA°)을 쓴다.
+# 코는 볼보다 붉고(갤럭시북 4명 a*: 코 13.8~17.1, 볼 12.6~14.6), 턱은 그늘·수염 자국으로
+# 어둡게 나와(턱 L 120~146, 양볼 143~155) 밝기를 끌어내렸다. 이마·양볼이 모두 가려졌을 때만 코·턱을 쓴다.
+TONE_REGIONS = ("forehead", "left_cheek", "right_cheek")
+TONE_FALLBACK = ("nose", "chin")
+# ITA°는 b*로 나누는 식이라 b*가 0에 가까우면 ±90°로 튄다. 이보다 작으면 ITA를 쓰지 않는다.
+MIN_B_FOR_ITA = 3.0
+
+# ── 트러블 덩어리 제외 ───────────────────────────────────────────────
+# 트러블로 잡힌 덩어리는 홍조·밝기·피부톤 계산에서 뺀다.
+#  - 홍조: 여드름 하나가 트러블 개수와 홍조 평균에 이중으로 반영되던 문제
+#  - 피부톤: 붉은 병변이 a*를 올려 색상각을 쿨 쪽으로 밀던 문제 (심한 여드름 사진 h° 25.3°, 다른 사진 31~38°)
+# 덩어리 가장자리는 블러 때문에 번져 있으므로 얼굴 너비의 이 비율만큼 넓혀서 뺀다.
+TROUBLE_EXCLUDE_MARGIN_RATIO = 0.01
+# 제외하고 남은 픽셀이 원래의 이 비율보다 적으면 제외하지 않는다 (통계 불안정 방지)
+TROUBLE_EXCLUDE_MIN_KEEP = 0.5
+
 # 균일도도 이마·양볼로만 판단한다.
 # 코는 굴곡·반사 때문에 누구나 볼의 2~3배 편차가 나오고, 턱은 수염 자국·턱 아래 그늘이 섞인다.
 # 이 둘이 섞이면 피부가 고른지보다 코 모양·수염 여부를 재게 된다.
@@ -199,13 +218,6 @@ REDNESS_REGIONS = ("forehead", "left_cheek", "right_cheek")
 #  수염 자국이 있는 사람은 턱 하나로 전체 편차가 1.72 → 2.17로 올랐다)
 # 코·턱은 트러블 탐지(TROUBLE_REGIONS)에는 계속 쓴다.
 UNIFORMITY_REGIONS = ("forehead", "left_cheek", "right_cheek")
-
-# 밝기 점수를 잴 부위. 피부톤·균일도와 같은 이마·양볼만 쓴다 (2026-11-20).
-# 예전에는 코·턱까지 평균해서, 사람 간 점수 차이가 피부가 아니라 턱의 수염 자국에서 나왔다.
-#   (갤럭시북 같은 회차 2명×3장: 양볼 L 157~161 vs 157~159로 거의 같은데,
-#    턱 L 132~135 vs 107~116 차이 때문에 점수가 48~51 vs 45~46으로 갈렸다)
-# 밝기는 원래 피부색·촬영 노출을 함께 재므로 피부 "상태" 판정이 아니라 참고 정보로 표시한다.
-BRIGHTNESS_REGIONS = UNIFORMITY_REGIONS
 
 # ── 트러블 분석 영역 ─────────────────────────────────────────────────
 # 기존 패치(REGIONS)는 얼굴의 약 4%만 덮어서 볼 아래쪽처럼 트러블이 잘 생기는 곳이 빠진다.
@@ -698,16 +710,34 @@ def _trouble_count_score(count: int) -> int:
     return _clamp(int(round(float(np.interp(count, counts, scores)))))
 
 
+class TroubleResult(NamedTuple):
+    score: int
+    ratio: float        # 덩어리 면적 비율 (참고용)
+    threshold: float    # 적용 임계값 (홍조 지수 단위)
+    count: int          # 덩어리 개수 (점수 근거)
+    mask: np.ndarray    # 인정된 덩어리 픽셀 (uint8, 0/255) — 다른 지표에서 제외할 때 쓴다
+
+
 def _trouble(
     index_map: np.ndarray,
     skin: np.ndarray,
     face_width: float,
     strict: np.ndarray | None = None,
 ) -> tuple[int, float, float, int]:
+    """기존 호출용: (점수, 덩어리 면적 비율(참고용), 적용 임계값, 덩어리 개수)."""
+    r = _detect_trouble(index_map, skin, face_width, strict)
+    return r.score, r.ratio, r.threshold, r.count
+
+
+def _detect_trouble(
+    index_map: np.ndarray,
+    skin: np.ndarray,
+    face_width: float,
+    strict: np.ndarray | None = None,
+) -> TroubleResult:
     """평소 질감보다 유독 붉은 '덩어리'의 개수로 트러블을 추정한다.
 
     strict(하안부)에 주로 걸친 덩어리는 최고점이 LOWER_FACE_MIN_PEAK 이상일 때만 센다.
-    돌려주는 값: (점수, 덩어리 면적 비율(참고용), 적용 임계값, 덩어리 개수)
     """
     # 픽셀 단위 센서 노이즈 완화 (실수 상태에서 먼저 처리한다)
     blur = max(3, int(round(face_width * TROUBLE_BLUR_RATIO)) | 1)  # 홀수 커널
@@ -745,6 +775,7 @@ def _trouble(
     count, labels, stats, _ = cv2.connectedComponentsWithStats(candidate, connectivity=8)
     blemish_px = 0
     blemish_count = 0
+    blob_mask = np.zeros(skin.shape[:2], dtype=np.uint8)
     for i in range(1, count):  # 0번은 배경
         area = int(stats[i, cv2.CC_STAT_AREA])
         if area < min_area:
@@ -760,9 +791,86 @@ def _trouble(
                 continue
         blemish_px += area
         blemish_count += 1
+        blob_mask[blob] = 255
 
     ratio = blemish_px / float(np.count_nonzero(skin))
-    return _trouble_count_score(blemish_count), ratio, threshold / TROUBLE_INDEX_GAIN, blemish_count
+    return TroubleResult(
+        _trouble_count_score(blemish_count), ratio, threshold / TROUBLE_INDEX_GAIN, blemish_count, blob_mask
+    )
+
+
+def detect_face_trouble(face: "PreparedFace", index_map: np.ndarray | None = None) -> TroubleResult:
+    """준비된 얼굴에서 트러블을 찾는다 (볼 넓은 패치 + 턱·입 주변). 분석·피부톤이 같이 쓴다."""
+    image, lab, landmarks = face.image, face.lab, face.landmarks
+    if index_map is None:
+        index_map = _redness_index(face.balanced)
+    cheek_trouble = _trouble_area(image, lab, landmarks)
+    lower_face = _lower_face_area(image, lab, landmarks)
+    lower_only = cv2.bitwise_and(lower_face, cv2.bitwise_not(cheek_trouble))
+    trouble_skin = cv2.bitwise_or(cheek_trouble, lower_face)
+    return _detect_trouble(index_map, trouble_skin, face.face_width, strict=lower_only)
+
+
+def exclude_trouble(mask: np.ndarray, trouble_mask: np.ndarray, face_width: float) -> np.ndarray:
+    """mask에서 트러블 덩어리(+가장자리 여백)를 뺀다. 너무 많이 빠지면 원래 mask를 돌려준다."""
+    if not trouble_mask.any():
+        return mask
+    k = max(2, int(round(face_width * TROUBLE_EXCLUDE_MARGIN_RATIO)))
+    grown = cv2.dilate(trouble_mask, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * k + 1, 2 * k + 1)))
+    kept = cv2.bitwise_and(mask, cv2.bitwise_not(grown))
+    if np.count_nonzero(kept) < TROUBLE_EXCLUDE_MIN_KEEP * np.count_nonzero(mask):
+        return mask
+    return kept
+
+
+def tone_mask(regions: dict[str, np.ndarray], shape: tuple[int, int]) -> tuple[np.ndarray, list[str]]:
+    """밝기·피부톤을 잴 마스크 (이마·양볼, 모두 가려졌으면 코·턱)."""
+    names = [n for n in TONE_REGIONS if n in regions] or [n for n in TONE_FALLBACK if n in regions]
+    mask = np.zeros(shape, dtype=np.uint8)
+    for n in names:
+        mask = cv2.bitwise_or(mask, regions[n])
+    return mask, names
+
+
+def cielab_mean(balanced: np.ndarray, mask: np.ndarray) -> tuple[float, float, float]:
+    """표준 CIELAB(L* 0~100, a*·b* 부호 있음) 평균. JPEG 색 양자화로 중앙값이 튀어 평균을 쓴다."""
+    lab = cv2.cvtColor(balanced.astype(np.float32) / 255.0, cv2.COLOR_BGR2LAB)
+    skin = mask > 0
+    return (float(np.mean(lab[..., 0][skin])), float(np.mean(lab[..., 1][skin])), float(np.mean(lab[..., 2][skin])))
+
+
+def ita_hue(L: float, a: float, b: float) -> tuple[float, float]:
+    """ITA° = arctan((L*−50)/b*), 색상각 h° = atan2(b*, a*)."""
+    return math.degrees(math.atan((L - 50.0) / b)), math.degrees(math.atan2(b, a))
+
+
+def brightness_from_shade(shade: float) -> int:
+    """추정 호수 → 밝기 점수. 피부톤 밝기 단계 경계(20호·24호)를 판정 구간 경계(67/33점)에 맞춘다.
+
+    20호 미만 → 67점 이상(밝은 편), 20~24호 → 34~66점(중간), 24호 이상 → 33점 이하(어두운 편).
+    """
+    from app.services import skin_tone  # 순환 import 방지
+
+    lo, hi = skin_tone.BRIGHT_MAX_SHADE, skin_tone.MEDIUM_MAX_SHADE
+    span = hi - lo
+    if shade < lo:      # 밝은 편: 67~100점
+        score = np.interp(shade, [lo - span, lo], [100.0, 67.0])
+    elif shade < hi:    # 중간: 34~66점
+        score = np.interp(shade, [lo, hi], [66.0, 34.0])
+    else:               # 어두운 편: 0~33점
+        score = np.interp(shade, [hi, hi + span], [33.0, 0.0])
+    return _clamp(int(round(float(score))))
+
+
+def brightness_from_ita(ita: float, medium_min_ita: float, bright_min_ita: float) -> int:
+    """ITA°를 밝기 점수로. 피부톤 밝기 단계 경계와 판정 구간 경계(33/67점)를 맞춘다.
+
+    ITA ≤ medium 경계 → 33점 이하(어두운 편), medium~bright 경계 → 34~66점(중간), bright 초과 → 67점 이상(밝은 편).
+    양 끝은 경계 폭만큼 바깥에서 0점·100점이 된다.
+    """
+    span = bright_min_ita - medium_min_ita
+    xs = [medium_min_ita - span, medium_min_ita, bright_min_ita, bright_min_ita + span]
+    return _clamp(int(round(float(np.interp(ita, xs, [0.0, 33.4, 66.4, 100.0])))))
 
 
 def _cheek_l_ratio(lab: np.ndarray, regions: dict[str, np.ndarray]) -> float | None:
@@ -870,10 +978,9 @@ class SkinLightnessSample(NamedTuple):
     regions: dict[str, np.ndarray]
     coverage: dict[str, float]
     brightness: int
-    mean_l: float              # 분석 부위 전체 평균 L (노출 검사·피부색 측정용)
+    mean_l: float
     saturated_ratio: float
     cheek_ratio: float | None
-    brightness_l: float        # 밝기 점수에 쓴 평균 L (BRIGHTNESS_REGIONS, BRIGHTNESS_RANGE 기준)
 
 
 def _sample_skin_lightness(
@@ -895,17 +1002,7 @@ def _sample_skin_lightness(
     for mask in regions.values():
         skin = cv2.bitwise_or(skin, mask)
 
-    # 노출 검사는 분석 부위 전체 평균으로 한다 (기존과 동일)
-    mean_l = cv2.mean(lab[:, :, 0], mask=skin)[0]
-
-    # 밝기 점수는 이마·양볼만으로 잰다. 모두 가려졌으면 전체 부위로 대체
-    bright_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-    for name in BRIGHTNESS_REGIONS:
-        if name in regions:
-            bright_mask = cv2.bitwise_or(bright_mask, regions[name])
-    if int(np.count_nonzero(bright_mask)) < 100:
-        bright_mask = skin
-    brightness, brightness_l = _brightness(lab, bright_mask)
+    brightness, mean_l = _brightness(lab, skin)
 
     # 노출이 극단적이면 어떤 보정으로도 피부 정보가 남아 있지 않다
     low, high = EXPOSURE_L_RANGE
@@ -957,9 +1054,7 @@ def _sample_skin_lightness(
             },
         )
 
-    return SkinLightnessSample(
-        face, skin, regions, coverage, brightness, mean_l, saturated_ratio, cheek_ratio, brightness_l
-    )
+    return SkinLightnessSample(face, skin, regions, coverage, brightness, mean_l, saturated_ratio, cheek_ratio)
 
 
 # ── 공개 함수 ───────────────────────────────────────────────────────
@@ -1010,7 +1105,7 @@ def analyze_image_detail(
     """
     profile = get_camera_profile(camera_profile)  # 기기별 보정값 (색 보정·홍조 범위)
     sample = _sample_skin_lightness(image_bytes, min_face_width=min_face_width, profile=profile)
-    face, skin, regions, coverage, brightness, mean_l, saturated_ratio, cheek_ratio, brightness_l = sample
+    face, skin, regions, coverage, brightness, mean_l, saturated_ratio, cheek_ratio = sample
     image, landmarks, balanced, lab = face.image, face.landmarks, face.balanced, face.lab
     face_width = face.face_width
 
@@ -1022,7 +1117,26 @@ def analyze_image_detail(
         red_mask = skin  # 볼·이마가 모두 가려졌으면 전체로 대체
 
     index_map = _redness_index(balanced)
-    redness, mean_index = _redness(index_map, red_mask, profile.redness_range)
+    # 트러블을 먼저 찾아, 그 덩어리는 홍조·밝기 계산에서 뺀다 (여드름 이중 반영 방지)
+    trouble_result = detect_face_trouble(face, index_map)
+    _, mean_index_all = _redness(index_map, red_mask, profile.redness_range)
+    red_mask_clean = exclude_trouble(red_mask, trouble_result.mask, face_width)
+    redness, mean_index = _redness(index_map, red_mask_clean, profile.redness_range)
+
+    # 밝기: 피부톤과 같은 부위·계산(ITA°)으로, 경계는 카메라 프로필의 피부톤 밝기 단계에 맞춘다
+    from app.services import skin_tone  # 순환 import 방지 (skin_tone이 이 모듈을 import함)
+
+    tone_th = skin_tone.thresholds_for(camera_profile)
+    bright_mask, _ = tone_mask(regions, image.shape[:2])
+    bright_mask = exclude_trouble(bright_mask, trouble_result.mask, face_width)
+    tone_L, tone_a, tone_b = cielab_mean(balanced, bright_mask)
+    ita = ita_hue(tone_L, tone_a, tone_b)[0] if tone_b >= MIN_B_FOR_ITA else None  # 참고 기록용 (보정 전)
+    # 밝기 점수 = 피부톤과 같은 추정 호수 기준: 보정 ITA° → 호수 (호수 밝기 단계 경계 = 판정 구간 경계 33/67점)
+    ita_c = skin_tone.corrected_ita(tone_L, tone_b, tone_th)
+    shade = skin_tone.estimate_shade(tone_L, tone_b, tone_th)
+    brightness = brightness_from_shade(shade)
+    # 1 = 보정 ITA 기준, 0 = L* 기준 (보정 파일에서 shade_method=l 이거나 노란 기가 너무 작을 때)
+    brightness_basis = "ita" if (tone_th.shade_method == "ita" and ita_c is not None) else "l_mean"
 
     # 홍조 지수가 보정 범위보다 지나치게 낮으면 피부색이 아니라 카메라·조명 문제다.
     # 0점(홍조 없음)으로 내보내지 않고 측정 불가로 돌려보낸다.
@@ -1040,14 +1154,12 @@ def analyze_image_detail(
                 "camera_profile": camera_profile,
             },
         )
-    # 트러블은 볼을 크게 잡은 넓은 패치 + 턱·입 주변(하안부)에서 찾는다
+    # 트러블 (볼 넓은 패치 + 턱·입 주변, 위에서 계산) — 분석 영역 크기는 원시값 기록용으로 다시 구한다
+    trouble, blemish_ratio, trouble_threshold, trouble_count = trouble_result[:4]
     cheek_trouble = _trouble_area(image, lab, landmarks)
     lower_face = _lower_face_area(image, lab, landmarks)
     lower_only = cv2.bitwise_and(lower_face, cv2.bitwise_not(cheek_trouble))
     trouble_skin = cv2.bitwise_or(cheek_trouble, lower_face)
-    trouble, blemish_ratio, trouble_threshold, trouble_count = _trouble(
-        index_map, trouble_skin, face_width, strict=lower_only
-    )
     # 균일도는 이마·양볼만 (코 굴곡·턱 수염 제외). 셋 다 가려졌으면 전체 피부로 대체
     uniformity_mask = np.zeros(image.shape[:2], dtype=np.uint8)
     for name in UNIFORMITY_REGIONS:
@@ -1066,9 +1178,13 @@ def analyze_image_detail(
         "uniformity": uniformity,
     }
     raw = {
-        "redness_index": round(mean_index, 2),     # 카메라 프로필의 홍조 범위 기준
-        "mean_l_skin": round(brightness_l, 2),     # 밝기 점수용 이마·양볼 평균 (BRIGHTNESS_RANGE 기준)
-        "mean_l_all_regions": round(mean_l, 2),    # 참고: 코·턱 포함 전체 평균 (노출 검사 기준, 예전 밝기 값)
+        "redness_index": round(mean_index, 2),     # 카메라 프로필의 홍조 범위 기준 (트러블 덩어리 제외)
+        "redness_index_all": round(mean_index_all, 2),  # 참고: 트러블 포함 홍조 지수 (예전 방식)
+        "trouble_excluded_px": int(np.count_nonzero(red_mask) - np.count_nonzero(red_mask_clean)),
+        # 밝기 점수 기준: 1 = 카메라 보정 ITA° → 호수, 0 = 노란 기가 너무 작아 L* → 호수 대체 (raw는 숫자만 담는 스키마라 1/0)
+        "brightness_from_ita": 1.0 if brightness_basis == "ita" else 0.0,
+        "cushion_shade": round(shade, 1),         # 밝기 점수 근거: 추정 쿠션 호수 (피부톤과 같은 값)
+        "mean_l_skin": round(mean_l, 2),           # 전체 패치 L 평균 (헤어 컬러·노출 검사용, BRIGHTNESS_RANGE 기준)
         "saturated_ratio": round(saturated_ratio, 3),
         "trouble_count": trouble_count,            # 트러블 덩어리 개수 (TROUBLE_COUNT_POINTS 기준, 점수 근거)
         "blemish_ratio": round(blemish_ratio, 5),  # 참고용: 트러블 면적 비율 (예전 점수 기준, 재현성 검사가 사용)
@@ -1083,6 +1199,11 @@ def analyze_image_detail(
         "lower_face_px": int(np.count_nonzero(lower_only)),       # 그중 하안부(턱·입 주변)만의 픽셀
         "regions_used": len(regions),              # 분석에 쓰인 부위 수 (최대 5)
     }
+    # ITA° 기록 (보정 전 / 카메라 보정 후 = 밝기 점수 근거). 노란 기가 너무 적어 못 쓴 사진은 기록하지 않는다
+    if ita is not None:
+        raw["ita_deg"] = round(ita, 1)
+    if ita_c is not None:
+        raw["ita_corrected"] = round(ita_c, 1)
     # 양볼 밝기 비율 (MIN_CHEEK_L_RATIO 기준). 볼 하나가 빠졌으면 기록하지 않는다
     if cheek_ratio is not None:
         raw["cheek_l_ratio"] = round(cheek_ratio, 3)

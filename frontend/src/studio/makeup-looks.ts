@@ -8,7 +8,7 @@ export type MakeupSex = 'female' | 'male'
 export type MakeupOccasion = 'daily' | 'formal' | 'outdoor' | 'party'
 export type LookId = string
 // 톤·밝기는 피부톤 분석(undertone·brightness_level)과 같은 축, 분석 결과가 없으면 사용자가 고름
-// 쿠션: 피부톤 분석의 palette.cushion (예: '22~23호 범위 · 핑크조'), 없으면 톤·밝기로 정함
+// 쿠션: 피부톤 분석의 palette.cushion (예: '21~23호 범위 · 핑크조'), 없으면 톤·밝기로 정함
 export type CushionBase = 'pink' | 'neutral' | 'yellow'
 export type Cushion = { shade: number; base: CushionBase }
 // faceShape 'auto': 사진 분석(얼굴 맞춤)으로 정함, 룩 추천에는 정해진 얼굴형만 넘김
@@ -67,8 +67,7 @@ export function cushionHex({ shade, base }: Cushion) {
   return labToHex(L, BASE_AB[base][0], BASE_AB[base][1])
 }
 const TONE_CUSHION: Record<Undertone, CushionBase> = { warm: 'yellow', neutral: 'neutral', cool: 'pink' }
-// 밝기 단계별 대표 호수 (백엔드 범위 17~21 / 22~23 / 24호 이상에서 cushionFromAnalysis가 꺼내는 값과 같음)
-const BRIGHT_SHADE: Record<Brightness, number> = { light: 19, medium: 22.5, deep: 25 }
+const BRIGHT_SHADE: Record<Brightness, number> = { light: 19, medium: 21, deep: 23 }
 // 애교살 섀도: 피치 베이지 / 로지 베이지 / 모브 핑크 (밝은 색이라 피부를 물들이는 방식으로 칠해짐)
 const AEGYO_COLOR: Record<Undertone, string> = { warm: '#dca58f', neutral: '#d4a19b', cool: '#cc9ca6' }
 // 립에 섞는 베이지 (톤별: 웜 카멜 베이지 / 뉴트럴 로지 베이지 / 쿨 모브 베이지)
@@ -265,38 +264,41 @@ const FEMALE: Record<MakeupOccasion, Recipe[]> = {
 // 남성: 아이라인·속눈썹 없음, 차이는 쉐딩(턱 모양·코 모양·세기)과 눈썹(룩마다 기본 눈썹, 빈 곳 채우기)으로
 // 립: 모두 그라데이션, 입술에 붉은기를 넣은 로즈·레드 계열(레퍼런스 backend/ref 1~5), 광(lipGloss)만 0~.45로 다르게
 // 블러셔: 전부 은은하게(.08~.22), 하이라이터는 펄 없는 매트 베이지로 콧대·턱끝만, 눈두덩은 아주 옅은 브라운
+// 남성 피부 보정: 0.7은 모공·피부결이 뭉개져 보정 사진처럼 보였고, 수염 가리기 0.9는 턱·인중이 볼보다 하얗게 떠
+// 분칠 경계가 생김 → 질감을 남기도록 낮춤 (2026-11-18)
+const MALE_SKIN = .4, MALE_BEARD = .45
 const MALE: Record<MakeupOccasion, Recipe[]> = {
   daily: [
     { name: '내추럴', description: '턱선만 옅게 정리하고 입술은 립밤처럼 은은한 MLBB로.',
-      eye: ['eye', 'basic', .12], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.1, 0], lip: ['#c27a74', 'gradient', .4], lipBeige: .3, lipGloss: 0.35, shading: 0.14, nose: 0.24, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M14_airy_natural' },
+      eye: ['eye', 'basic', .12], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.1, 0], lip: ['#c27a74', 'gradient', 0.27], lipBeige: .3, lipGloss: 0.35, shading: 0.14, nose: 0.24, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M14_airy_natural' },
     { name: '클린', description: '콧대 옆면의 얇은 음영과 매트 하이라이트, 입술은 누드 코랄 베이지로 깔끔하게.',
-      eye: ['eye', 'basic', .14], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.1, 0], lip: ['#bf7666', 'gradient', .45], lipBeige: .35, lipGloss: 0.1, noseCleft: 0.1, noseShape: 'slim',  shading: 0.24, nose: 0.36, highlight: ['tzone', .19], highlightHex: '#f2e3d6', brow: 'M11_soft_straight' },
+      eye: ['eye', 'basic', .14], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.1, 0], lip: ['#bf7666', 'gradient', 0.29], lipBeige: .35, lipGloss: 0.1, noseShape: 'slim',  shading: 0.24, nose: 0.36, highlight: ['tzone', .19], highlightHex: '#f2e3d6', brow: 'M11_soft_straight' },
     { name: '생기', description: '볼에 옅은 혈색, 입술은 코랄 레드 틴트로 살짝 윤기 있게.',
-      eye: ['eye', 'basic', .12], liner: ['basic', 0], blush: ['#e8a08c', 'wide', .2, .1], lip: ['#d2574d', 'gradient', .6], lipGloss: 0.45, shading: 0.17, nose: 0.24, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M14_airy_natural' },
+      eye: ['eye', 'basic', .12], liner: ['basic', 0], blush: ['#e8a08c', 'wide', .2, .1], lip: ['#d2574d', 'gradient', 0.33], lipBeige: .3, lipGloss: 0.45, shading: 0.17, nose: 0.24, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M14_airy_natural' },
   ],
   formal: [
     { name: '매트', description: '광 없이 매트하게, 짙은 일자 눈썹과 누드 로즈 매트 립으로 단정하게.',
-      eye: ['eye', 'basic', .15], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.08, 0], lip: ['#a8646a', 'blur', .5], lipMuted: .2, lipGloss: 0, noseCleft: 0.16, noseShape: 'slim', shadingShape: 'sculpt', cleft: 0.16, shading: 0.3, nose: 0.38, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M12_bold_straight' },
+      eye: ['eye', 'basic', .15], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.08, 0], lip: ['#a8646a', 'blur', 0.3], lipBeige: .3, lipMuted: .2, lipGloss: 0, noseShape: 'slim', shadingShape: 'sculpt', shading: 0.3, nose: 0.38, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M12_bold_straight' },
     { name: '단정', description: '턱끝과 코끝을 정돈하고 긴 일자 눈썹, 베이지 핑크 립으로 차분하게.',
-      eye: ['eye', 'basic', .16], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.1, 0], lip: ['#b97a70', 'gradient', .5], lipBeige: .25, lipGloss: 0.1, noseCleft: 0.1, noseShape: 'tip', shadingShape: 'chin', cleft: 0.15, shading: 0.3, nose: 0.34, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M16_long_straight' },
+      eye: ['eye', 'basic', .16], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.1, 0], lip: ['#b97a70', 'gradient', 0.3], lipBeige: .3, lipGloss: 0.1, noseShape: 'tip', shadingShape: 'chin', shading: 0.3, nose: 0.34, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M16_long_straight' },
   ],
   outdoor: [
     { name: '톤업', description: '자연광에서는 최소한으로, 입술은 거의 무색 립밤 윤기만.',
-      eye: ['eye', 'basic', .12], liner: ['basic', 0], blush: ['#efb0a8', 'wide', .15, .2], lip: ['#c98a82', 'gradient', .3], lipBeige: .2, lipGloss: 0.5, shading: 0.1, nose: 0.16, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M14_airy_natural' },
+      eye: ['eye', 'basic', .12], liner: ['basic', 0], blush: ['#efb0a8', 'wide', .15, .2], lip: ['#c98a82', 'gradient', 0.24], lipBeige: .3, lipGloss: 0.5, shading: 0.1, nose: 0.16, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M14_airy_natural' },
     { name: '헬시', description: '볼에 붉은 혈색, 입술은 체리 레드로 건강해 보이게.',
-      eye: ['eye', 'basic', .12], liner: ['basic', 0], blush: ['#e39a8f', 'wide', .22, .1], lip: ['#c43744', 'gradient', .65], lipGloss: 0.3, noseShape: 'tip', shading: 0.17, nose: 0.26, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M15_full_soft_arch' },
+      eye: ['eye', 'basic', .12], liner: ['basic', 0], blush: ['#e39a8f', 'wide', .22, .1], lip: ['#c43744', 'gradient', 0.34], lipBeige: .3, lipGloss: 0.3, noseShape: 'tip', shading: 0.17, nose: 0.26, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M15_full_soft_arch' },
     { name: '선번', description: '햇볕에 살짝 탄 듯 광대에서 콧등을 가로질러 잇고, 입술은 오렌지 코랄로 윤기 있게.',
-      eye: ['eye', 'basic', .14], liner: ['basic', 0], blush: ['#e48a78', 'sunburn', .5, .2], lip: ['#cf6447', 'gradient', .55], lipGloss: 0.4, noseShape: 'tip', shading: 0.17, nose: 0.26, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M11_soft_straight' },
+      eye: ['eye', 'basic', .14], liner: ['basic', 0], blush: ['#e48a78', 'sunburn', .5, .2], lip: ['#cf6447', 'gradient', 0.32], lipBeige: .3, lipGloss: 0.4, noseShape: 'tip', shading: 0.17, nose: 0.26, highlight: ['tzone', .12], highlightHex: '#f2e3d6', brow: 'M11_soft_straight' },
   ],
   party: [
     { name: '선명', description: '맑은 피부에 쿨 로즈 립, 턱선·콧대는 또렷하게.',
-      eye: ['eye', 'basic', .18], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.12, 0], lip: ['#bd4862', 'gradient', .62], lipGloss: 0.2, noseCleft: 0.24, noseShape: 'sculpted', shadingShape: 'vline',  cleft: 0.24, shading: 0.42, nose: 0.46, highlight: ['tzone', .32], highlightHex: '#f2e3d6', brow: 'M12_bold_straight' },
+      eye: ['eye', 'basic', .18], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.12, 0], lip: ['#bd4862', 'gradient', 0.34], lipBeige: .3, lipGloss: 0.2, noseCleft: 0.08, noseShape: 'sculpted', shadingShape: 'vline',  cleft: 0.08, shading: 0.42, nose: 0.46, highlight: ['tzone', .32], highlightHex: '#f2e3d6', brow: 'M12_bold_straight' },
     { name: '샤프', description: '코끝·턱끝의 작은 홈과 광대 골격을 또렷하게, 브릭 매트 립. 넓은 광대·사각턱은 강조를 줄여요.',
-      eye: ['eye', 'wing', .2], liner: ['basic', 0], blush: ['#d99a90', 'diagonal', 0.15, 0], lip: ['#a0463c', 'blur', .62], lipMuted: .1, lipGloss: 0, noseCleft: 0.38, noseShape: 'sculpted', shadingShape: 'sculpt',  cleft: 0.4, shading: 0.65, nose: 0.56, highlight: ['bone', .2], highlightHex: '#f2e3d6', brow: 'M17_natural_angular' },
+      eye: ['eye', 'wing', .2], liner: ['basic', 0], blush: ['#d99a90', 'diagonal', 0.15, 0], lip: ['#a0463c', 'blur', 0.34], lipBeige: .3, lipMuted: .1, lipGloss: 0, noseCleft: 0.12, noseShape: 'sculpted', shadingShape: 'sculpt',  cleft: 0.12, shading: 0.65, nose: 0.56, highlight: ['bone', .2], highlightHex: '#f2e3d6', brow: 'M17_natural_angular' },
     { name: '윤곽', description: '광대 밑 사선 음영과 코끝·턱끝의 작은 입체감, 말린 장미 매트 립. 넓은 골격은 강조를 줄여요.',
-      eye: ['eye', 'basic', .18], liner: ['basic', 0], blush: ['#d99a90', 'diagonal', 0.12, 0], lip: ['#9b5058', 'blur', .55], lipMuted: .15, lipGloss: 0, noseCleft: 0.28, noseShape: 'sculpted', shadingShape: 'sculpt',  cleft: 0.32, shading: 0.56, nose: 0.5, highlight: ['bone', .26], highlightHex: '#f2e3d6', brow: 'M13_textured_angular' },
+      eye: ['eye', 'basic', .18], liner: ['basic', 0], blush: ['#d99a90', 'diagonal', 0.12, 0], lip: ['#9b5058', 'blur', 0.32], lipBeige: .3, lipMuted: .15, lipGloss: 0, noseCleft: 0.1, noseShape: 'sculpted', shadingShape: 'sculpt',  cleft: 0.11, shading: 0.56, nose: 0.5, highlight: ['bone', .26], highlightHex: '#f2e3d6', brow: 'M13_textured_angular' },
     { name: '스테이지', description: '조명 아래서도 생기 있게, 숱 많은 눈썹과 윤기 있는 베리 립.',
-      eye: ['eye', 'smoky', .25], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.18, 0], lip: ['#a63a56', 'gradient', .68], lipGloss: 0.35, noseCleft: 0.3, noseShape: 'tip', shadingShape: 'chin',  cleft: 0.3, shading: 0.4, nose: 0.46, highlight: ['tzone', .18], highlightHex: '#f2e3d6', brow: 'M18_dense_straight' },
+      eye: ['eye', 'smoky', .25], liner: ['basic', 0], blush: ['#e3a39a', 'wide', 0.18, 0], lip: ['#a63a56', 'gradient', 0.35], lipBeige: .3, lipGloss: 0.35, noseCleft: 0.1, noseShape: 'tip', shadingShape: 'chin',  cleft: 0.1, shading: 0.4, nose: 0.46, highlight: ['tzone', .18], highlightHex: '#f2e3d6', brow: 'M18_dense_straight' },
   ],
 }
 
@@ -310,8 +312,13 @@ export function brightnessFromAnalysis(level: 'bright' | 'medium' | 'deep', ita?
 }
 export function cushionFromAnalysis(text: string | null | undefined): Cushion | undefined {
   if (!text) return undefined
+  // 백엔드 문구: '약 23호 (21~25호 범위)' · '13호 이하 (…)' · '25호 이상 (…)' → 안내한 호수를 그대로 씀
+  // (범위 가운데를 쓰면 신뢰도가 낮아 넓힌 범위·13~25호 끝에서 잘린 범위에서 문구와 다른 호수가 됨)
+  // 예전 문구 '21~23호 범위'처럼 대표 호수가 없으면 범위 가운데
+  const approx = text.match(/약\s*(\d+)\s*호/), below = text.match(/(\d+)\s*호\s*이하/)
   const range = text.match(/(\d+)\s*~\s*(\d+)\s*호/), above = text.match(/(\d+)\s*호\s*이상/)
-  const shade = range ? (Number(range[1]) + Number(range[2])) / 2 : above ? Number(above[1]) + 1 : null
+  const shade = approx ? Number(approx[1]) : below ? Number(below[1]) - 1 : above ? Number(above[1]) + 1
+    : range ? (Number(range[1]) + Number(range[2])) / 2 : null
   if (shade === null) return undefined
   const base: CushionBase = text.includes('핑크') ? 'pink' : text.includes('황조') || text.includes('옐로') ? 'yellow' : 'neutral'
   return { shade, base }
@@ -357,7 +364,7 @@ export function recommendMakeupLooks(profile: MakeupProfile & { faceShape: FaceS
       blush: { on: blushAmount > 0, hex: r.blushBy?.[profile.tone] ? shiftHex(r.blushBy[profile.tone]!, profile.brightness) : color(r.blush[0], 'blush'), amount: blushAmount, shape: blushShape, glow, tip: r.blushTip },
       eyeshadow: { on: r.eye[2] > 0, hex: color(r.eye[0], 'eyeshadow'), amount: eyeAmt(r.eye[2]), shape: r.eye[1], shimmer: r.shimmer },
       shadowPoint: r.point ? { on: r.point[2] > 0, hex: color(r.point[0], 'eyeshadow'), amount: eyeAmt(r.point[2]), shape: r.point[1] } : DEFAULT_MAKEUP.shadowPoint,
-      skin: { on: true, hex: cushionHex(profile.cushion ?? { shade: BRIGHT_SHADE[profile.brightness], base: TONE_CUSHION[profile.tone] }), amount: r.skin ?? (male ? .7 : .55), shape: 'cushion', beard: male ? .9 : 0 },
+      skin: { on: true, hex: cushionHex(profile.cushion ?? { shade: BRIGHT_SHADE[profile.brightness], base: TONE_CUSHION[profile.tone] }), amount: r.skin ?? (male ? MALE_SKIN : .55), shape: 'cushion', beard: male ? MALE_BEARD : 0 },
       aegyo: r.aegyo ? { on: true, hex: AEGYO_COLOR[profile.tone], amount: r.aegyo, shape: r.aegyoShape ?? 'soft' } : DEFAULT_MAKEUP.aegyo,
       underShadow: r.under ? { on: r.under[2] > 0, hex: color(r.under[0], 'eyeshadow'), amount: eyeAmt(r.under[2]), shape: r.under[1] } : DEFAULT_MAKEUP.underShadow,
       eyeliner: { on: r.liner[1] > 0, hex: linerColor, amount: eyeAmt(r.liner[1]), shape: r.liner[0] },
@@ -365,7 +372,7 @@ export function recommendMakeupLooks(profile: MakeupProfile & { faceShape: FaceS
       shading: { on: r.shading > 0, hex: shade, amount: r.shading, shape: r.shadingShape ?? placement.shading, cleft: r.cleft },
       noseShading: { on: r.nose > 0, hex: shade, amount: r.nose, shape: r.noseShape ?? 'soft', noseCleft: r.noseCleft },
       // 블러셔 광을 켠 룩은 하이라이터를 줄여 겹치지 않게
-      highlight: { on: r.highlight[1] > 0, hex: r.highlightHex ?? base.highlight, amount: r.highlight[1] * (1 - glow * .4), shape: r.highlight[0] ?? placement.highlight },
+      highlight: { on: r.highlight[1] > 0, hex: r.highlightHex ? (male ? shiftHex(r.highlightHex, profile.brightness) : r.highlightHex) : base.highlight, amount: r.highlight[1] * (1 - glow * .4), shape: r.highlight[0] ?? placement.highlight },
     } }
   })
 }

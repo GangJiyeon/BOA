@@ -9,9 +9,6 @@ import { BRIGHTNESS, FACE_SHAPES, MAKEUP_SEXES, TONES, brightnessFromAnalysis, c
 import type { HairSessionResult } from '../types/sessionResults'
 import './MakeupPage.css'
 
-// 메이크업 밝기별 쿠션 호수 (makeup-looks BRIGHT_SHADE와 같은 값)
-// 밝기 단계별 대표 호수 (백엔드 쿠션 범위 17~21 / 22~23 / 24호 이상의 가운데값)
-const MAKEUP_SHADE: Record<Brightness, number> = { light: 19, medium: 22.5, deep: 25 }
 
 // 얼굴형·헤어 추천 페이지와 같은 흐름: 01 사진 · 02 추천 기준 → 추천받기 → 03 결과
 // 사진을 올리면 바로 피부톤 분석(/skin/tone)으로 톤·밝기·쿠션을 채움, 직접 고른 값이 있으면 덮어쓰지 않음, 실패하면 직접 고른 값으로 진행
@@ -38,10 +35,11 @@ export default function MakeupPage({hair}:{hair:HairSessionResult|null}) {
   // 분석 중 = 이 사진의 결과도 오류도 아직 없음
   const toneError=toneFailure&&toneFailure.file===file?toneFailure:null
   const toneBusy=Boolean(file&&!analyzed&&!toneError)
-  // 쿠션: 베이스(황조·핑크조·뉴트럴)는 분석값, 호수는 메이크업 밝기 기준 (ITA로 다시 나눠 백엔드 호수 범위와 다를 수 있음)
+  // 쿠션: 베이스(황조·핑크조·뉴트럴)와 호수 모두 백엔드 피부톤 분석값 (추정 호수 ±2 범위의 가운데 = 화면 문구와 같은 호수)
+  // 2026-11-18: 예전엔 호수를 메이크업 밝기(19·21·23호)로 덮어써 화면 문구와 실제 적용 호수가 달랐음
   // 톤·밝기를 직접 바꾸면 분석 쿠션은 안 씀
   const analyzedCushion=analyzed&&!manual?cushionFromAnalysis(analyzed.palette.cushion):undefined
-  const cushion=analyzedCushion&&{...analyzedCushion,shade:MAKEUP_SHADE[brightness]}
+  const cushion=analyzedCushion
   // 새 사진은 분석값을 다시 받음
   function resetManual(){setManual(false);manualRef.current=false}
   function applyTone(result:SkinTone){setTone(result.undertone);setBrightness(brightnessFromAnalysis(result.brightness_level,result.raw?.ita_deg));setManual(false)}
