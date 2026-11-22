@@ -78,6 +78,10 @@ const LIP_MUTED = '#8f716c'
 const LIP_PALE_BEIGE = .75, LIP_PALE_BOOST = .25, LIP_PALE_SAT = .12
 // 창백한 입술에 톤별 색(lipTint)을 섞는 최대 비율 (창백도 1일 때)
 const LIP_PALE_TINT = .5
+// 남성 룩의 창백한 입술 맞춤 배율 (0 = 끔, 1 = 여성과 같게)
+// 2026-11-22: 창백한 입술(창백도 .9~1)에 강도 +25%·채도 +12%·베이지 감소가 겹쳐 파티 룩 립이 코랄·주황으로 혼자 튐
+// → 남성 그루밍 룩은 입술을 원래 색에 가깝게 두므로 끔
+const MALE_LIP_PALE = 0
 // 여성 눈 화장(섀도 3칸·아이라인) 강도 배율 (2026-11-15 "조금씩 더 강하게", 애교살·속눈썹은 제외)
 const FEMALE_EYE_BOOST = 1.15
 const LIP_BEIGE: Record<Undertone, string> = { warm: '#c9977f', neutral: '#c39589', cool: '#bd9290' }
@@ -341,7 +345,8 @@ export function recommendMakeupLooks(profile: MakeupProfile & { faceShape: FaceS
   const male = profile.sex === 'male'
   const eyeAmt = (v: number) => male ? v : Math.min(1, v * FEMALE_EYE_BOOST)
   // 립: 톤별 지정색 > 레퍼런스/팔레트 색, 그다음 베이지·탁기 섞기
-  const pale = Math.min(1, Math.max(0, profile.lipPale ?? 0))
+  // 창백도 (남성은 MALE_LIP_PALE 배율만큼만 반영)
+  const pale = Math.min(1, Math.max(0, profile.lipPale ?? 0)) * (male ? MALE_LIP_PALE : 1)
   const lipHex = (r: Recipe) => {
     let hex = r.lipBy?.[profile.tone] ? shiftHex(r.lipBy[profile.tone]!, profile.brightness) : color(r.lip[0], 'lip')
     // 창백한 입술엔 베이지를 덜 섞음 (베이지가 원래 옅은 입술을 더 창백하게 만듦)
