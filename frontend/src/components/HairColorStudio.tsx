@@ -2,13 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { type HairRender, type HairRenderBase } from '../api/studio'
 import { PALETTE, type HairBase, type HairColor } from '../studio/palette'
 import type { HairColorRecommendation } from '../studio/hairColorRecommendations'
-import { hexToRgb, loadPixels, pickBase, prepareBase, renderColor, rgbToLab, type PreparedBase } from '../studio/recolor'
+import { hexToRgb, loadPixels, prepareBase, renderColor, rgbToLab, type PreparedBase } from '../studio/recolor'
 
-import { clampHairColor, hexToHsv, hsvToHex, type Hsv } from '../studio/hsv-input'
-
-const INITIAL_HSV = hexToHsv('#3b2a20')
-
-// base 필드 대체값 기준 (실제 베이스는 pickBase가 사진별 머리 밝기로 고름, 못 고를 때만 사용)
+// 원래 머리색 항목의 base 메타데이터를 정하는 명도 기준
 const MID_MAX_L = 30
 const BROWN_MAX_L = 52
 
@@ -38,7 +34,6 @@ export default function HairColorStudio({ render, styleName, recommendedColors =
   const color = picked ?? autoColor
   const setColor = (item: HairColor | null) => { setTouched(true); setPicked(item) }
   const [holding, setHolding] = useState(false)
-  const [hsv, setHsv] = useState<Hsv>(INITIAL_HSV)
 
   // 사진 속 원래 머리색 (원본 사진 대신 서버가 색만 저장)
   const original = useMemo<HairColor | null>(() => {
@@ -48,21 +43,17 @@ export default function HairColorStudio({ render, styleName, recommendedColors =
   }, [render.hair_hex])
 
   useEffect(() => {
-    if (!render.mid) return
+    // brown을 우선하고 과거 결과는 light, mid 순으로 대체
+    const pickBase: HairBase | null = render.brown ? 'brown' : render.light ? 'light' : render.mid ? 'mid' : null
+    if (!pickBase) return
+    const chosen = render[pickBase]!
     const controller = new AbortController()
-    const { mid, brown, light } = render
     void (async () => {
       try {
-        const midBase = await prepare(mid, null, controller.signal)
-        const size = [midBase.width, midBase.height] as const
-        // 이전 결과에는 brown 베이스가 없을 수 있음
-        const [brownBase, lightBase] = await Promise.all([
-          brown ? prepare(brown, size, controller.signal) : undefined,
-          light ? prepare(light, size, controller.signal) : undefined,
-        ])
+        const prepared = await prepare(chosen, null, controller.signal)
         if (controller.signal.aborted) return
-        out.current = new ImageData(...size)
-        setBases({ mid: midBase, brown: brownBase, light: lightBase })
+        out.current = new ImageData(prepared.width, prepared.height)
+        setBases({ [pickBase]: prepared })
       } catch (err) {
         if (!controller.signal.aborted) setError(err instanceof Error ? err.message : '합성 이미지를 불러오지 못했습니다.')
       }
@@ -70,25 +61,10 @@ export default function HairColorStudio({ render, styleName, recommendedColors =
     return () => controller.abort()
   }, [render])
 
-  function pick(item: HairColor) {
-    setColor(item)
-    setHsv(hexToHsv(item.hex))
-  }
+  const pick = (item: HairColor) => setColor(item)
 
-  // 자동 추천색이 보이는 중이면 그 색에서 조절 시작
-  const shownHsv = autoColor && !picked ? hexToHsv(autoColor.hex) : hsv
-  function changeHsv(key: keyof Hsv, value: number) {
-    const next = { ...shownHsv, [key]: value }
-    const hex = clampHairColor(hsvToHex(next))
-    const [L] = rgbToLab(...hexToRgb(hex))
-    setHsv(next)
-    setColor({ name: '직접 조절', hex, base: L < MID_MAX_L ? 'mid' : L < BROWN_MAX_L ? 'brown' : 'light' })
-  }
-
-  // 목표색 밝기에 가장 가까운 베이스 (사진마다 베이스 밝기가 다름), 못 고르면 지정 베이스·예전 결과는 밝은 베이스
-  const baseOf = (item: HairColor): HairBase => (item.lockBase && bases[item.base] ? item.base : pickBase(bases, item.hex)) ?? (item.base === 'brown' && !render.brown ? 'light' : item.base)
-  // 일부 베이스가 없는 예전 합성 결과에서도 색을 적용할 수 있게 (main 병합 시 합침)
-  const base = color ? bases[baseOf(color)] ?? bases.brown ?? bases.light ?? bases.mid : bases.mid
+  // 모든 색상에 불러온 베이스 한 장을 사용
+  const base = bases.brown ?? bases.light ?? bases.mid
   useEffect(() => {
     const el = canvas.current, image = out.current
     if (!el || !base || !image) return
@@ -107,7 +83,7 @@ export default function HairColorStudio({ render, styleName, recommendedColors =
     link.click()
   }
 
-  const ready = Boolean(bases.mid)
+  const ready = Boolean(base)
   const swatch = (item: HairColor) => <button key={item.name} type="button" className="swatch" style={{ background: item.hex }} title={item.name}
     aria-label={item.name} aria-pressed={color?.name === item.name} onClick={() => pick(item)} />
 
@@ -124,34 +100,24 @@ export default function HairColorStudio({ render, styleName, recommendedColors =
       </div>}
     </div>
     <div className="color-studio-palette">
-      <div className="color-studio-current"><span className="eyebrow">HAIR COLOR</span><strong>{color?.name ?? '기본 (어두운 갈색)'}</strong></div>
+      <div className="color-studio-current"><span className="eyebrow">HAIR COLOR</span><strong>{color?.name ?? '기본 (중간 갈색)'}</strong></div>
       {recommendedColors.length > 0 && <fieldset className="swatch-group" disabled={!ready}>
         <legend>추천 헤어색</legend>
         {basis && <p className="color-studio-basis">{basis}</p>}
         <div className="swatches">{recommendedColors.map(({ color }) => swatch(color))}</div>
         {color && recommendedColors.find(item => item.color.name === color.name) && <p className="color-studio-basis">{recommendedColors.find(item => item.color.name === color.name)!.label}</p>}
       </fieldset>}
-      <fieldset className="hair-hsv-input" disabled={!ready}>
-        <legend>색상·채도·밝기 조절</legend>
-        <label htmlFor="hair-input-h">색상 H <output>{Math.round(shownHsv.h)}°</output></label>
-        <input id="hair-input-h" type="range" min="0" max="360" step="1" value={shownHsv.h} onChange={e => changeHsv('h', Number(e.target.value))} />
-        <label htmlFor="hair-input-s">채도 S <output>{Math.round(shownHsv.s)}%</output></label>
-        <input id="hair-input-s" type="range" min="0" max="100" step="1" value={shownHsv.s} onChange={e => changeHsv('s', Number(e.target.value))} />
-        <label htmlFor="hair-input-v">밝기 V <output>{Math.round(shownHsv.v)}%</output></label>
-        <input id="hair-input-v" type="range" min="0" max="100" step="1" value={shownHsv.v} onChange={e => changeHsv('v', Number(e.target.value))} />
-        <div className="hair-hsv-preview"><span style={{ background: clampHairColor(hsvToHex(shownHsv)) }} /><span>{clampHairColor(hsvToHex(shownHsv)).toUpperCase()}</span></div>
-      </fieldset>
       {original && <fieldset className="swatch-group" disabled={!ready}>
         <legend>내 사진</legend>
         <div className="swatches">{swatch(original)}</div>
       </fieldset>}
-      <details><summary>프리셋에서 선택</summary>
+      <details open><summary>프리셋에서 선택</summary>
       {PALETTE.map(group => <fieldset key={group.group} className="swatch-group" disabled={!ready}>
         <legend>{group.group}</legend>
         <div className="swatches">{group.colors.map(swatch)}</div>
       </fieldset>)}
       </details>
-      <button type="button" className="secondary" disabled={!color} onClick={() => { setColor(null); setHsv(INITIAL_HSV) }}>기본 색으로</button>
+      <button type="button" className="secondary" disabled={!color} onClick={() => setColor(null)}>기본 색으로</button>
     </div>
   </div>
 }

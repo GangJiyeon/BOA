@@ -20,7 +20,7 @@ const labels: Record<string,string> = {female:'여성',male:'남성',unisex:'공
 // 서버가 단계를 알려주지 않아 지난 시간으로 안내 (AI 생성 약 1분 + 얼굴 맞춤 합성 약 15초)
 const STAGES:[number,string,string][]=[
   [0,'사진을 인식하고 있어요','얼굴 각도와 크기를 살펴보고 있어요.'],
-  [5,'AI가 머리를 합성하고 있어요','세 가지 밝기로 한 번에 만들고 있어요. 1분 정도 걸려요.'],
+  [5,'AI가 머리를 합성하고 있어요','선택한 헤어스타일을 사진에 입히고 있어요.'],
   [60,'내 얼굴에 맞춰 다듬고 있어요','얼굴은 그대로 두고 새 머리만 자연스럽게 입히고 있어요.'],
   [90,'거의 다 됐어요','조금만 더 기다려 주세요.'],
 ]
@@ -49,7 +49,7 @@ function StudioProgress({style}:{style?:WaitStyle}) {
   return <section className="studio-wait" aria-busy="true">
     <div className="request-progress"><span className="spinner"/><div>
       <strong role="status">{title}</strong>
-      <p>{note} <span aria-hidden="true">({sec}초)</span></p>
+      <p>{note}</p>
     </div></div>
     <ol className="studio-wait-steps" aria-label="합성 단계">{STEP_LABELS.map((label,i)=><li key={label} className={i<step?'done':i===step?'current':undefined} aria-current={i===step?'step':undefined}><span>{i<step?'✓':i+1}</span>{label}</li>)}</ol>
     {style&&<div className="studio-wait-style">

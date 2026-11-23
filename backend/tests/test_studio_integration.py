@@ -56,12 +56,13 @@ class StudioIntegrationTests(unittest.TestCase):
                     self.assertEqual(created.json()['status'],'pending')
                     self.assertEqual(quota.call_args.args[2],'studio')
                     render_id=created.json()['id']
-                done=await client.get(f'/api/studio/hair-renders/{render_id}')
+                with patch.object(studio.hair_studio, 'asset_exists', side_effect=lambda asset_dir, name: name == 'brown.jpg'):
+                    done=await client.get(f'/api/studio/hair-renders/{render_id}')
                 self.assertEqual(done.status_code,200,done.text)
                 self.assertEqual(done.json()['status'],'done')
-                self.assertTrue(done.json()['mid']['image'].endswith('/mid.jpg'))
+                self.assertIsNone(done.json()['mid'])
                 self.assertIsNone(done.json()['light'])
-                self.assertIsNone(done.json()['brown'])
+                self.assertTrue(done.json()['brown']['image'].endswith('/brown.jpg'))
                 app.dependency_overrides[get_actor]=lambda:Actor(kind='member',user_id=8)
                 self.assertEqual((await client.get(f'/api/studio/hair-renders/{render_id}')).status_code,404)
         try:asyncio.run(run())

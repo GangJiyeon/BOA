@@ -28,8 +28,8 @@ def _read(render: HairRender) -> HairRenderRead:
         status=render.status,
         error=render.error,
         created_at=render.created_at,
-        mid=base("mid", render.status == "done"),
-        # 세 칸 생성 이전 결과에는 없음
+        # 한 장 생성부터는 brown만, 예전 결과에는 mid·light도 있음
+        mid=base("mid", render.status == "done" and hair_studio.asset_exists(render.asset_dir, "mid.jpg")),
         brown=base("brown", render.status == "done" and hair_studio.asset_exists(render.asset_dir, "brown.jpg")),
         light=base("light", render.status == "done" and hair_studio.asset_exists(render.asset_dir, "light.jpg")),
         hair_hex=render.hair_hex,
