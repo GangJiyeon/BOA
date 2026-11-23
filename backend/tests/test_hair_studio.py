@@ -47,22 +47,14 @@ class GeminiImageTest(unittest.TestCase):
 
 
 class HairStudioTest(unittest.TestCase):
-    def test_fine_mask_refines_tiles_but_basic_mask_does_not(self):
-        image = np.zeros((32, 32, 3), np.uint8)
-        empty = np.zeros((32, 32), np.float32)
-        with patch.object(hair_studio, 'segment', return_value=(empty, empty, empty, empty)), patch.object(hair_studio, '_refine_hair_tiles', return_value=empty) as tiles:
-            hair_studio.hair_mask(image)
-            tiles.assert_not_called()
-            hair_studio.hair_mask_fine(image)
-            tiles.assert_called_once()
-
-    def test_empty_hair_skips_tile_inference(self):
-        image = np.zeros((32, 32, 3), np.uint8)
-        empty = np.zeros((32, 32), np.float32)
-        with patch.object(hair_studio, 'segment') as segment:
-            result = hair_studio._refine_hair_tiles(image, empty)
-        segment.assert_not_called()
-        np.testing.assert_array_equal(result, empty)
+    def test_padding_and_crop_restore_input(self):
+        image = np.arange(15 * 40 * 3, dtype=np.uint8).reshape(15, 40, 3)
+        padded, _, pad = hair_studio._pad_input(image)
+        self.assertNotEqual(padded.shape, image.shape)
+        np.testing.assert_array_equal(
+            hair_studio._crop_output(padded, padded.shape[:2], pad, image.shape[:2]),
+            image,
+        )
 
     def test_see_through_strand_on_forehead_only(self):
         img = np.full((240, 240, 3), 200, np.uint8)
@@ -98,15 +90,27 @@ class HairStudioTest(unittest.TestCase):
         decoded = cv2.imdecode(np.frombuffer(files['mid_mask.png'], np.uint8), cv2.IMREAD_GRAYSCALE)
         np.testing.assert_array_equal(decoded, mask)
 
-    def test_lower_face_contour_moves_to_base_without_changing_upper_points(self):
-        gen = np.array([[10, 10], [20, 30], [40, 50]], np.float32)
-        base = np.array([[15, 15], [24, 34], [100, 100]], np.float32)
+    def test_pyramid_blend_keeps_each_side(self):
+        a = np.full((64, 64, 3), 200, np.uint8)
+        b = np.full((64, 64, 3), 40, np.uint8)
+        mask = np.zeros((64, 64), np.float32)
+        mask[:, :32] = 1
 
-        aligned = hair_studio._align_lower_face_contour(gen, base, lid=20, limit=5)
+        out = hair_studio._pyramid_blend(a, b, mask, levels=3)
 
-        np.testing.assert_array_equal(aligned[0], gen[0])
-        np.testing.assert_array_equal(aligned[1], [24, 34])
-        np.testing.assert_array_equal(aligned[2], [45, 55])
+        self.assertTrue(np.all(np.abs(out[:, :8].astype(int) - 200) <= 2))
+        self.assertTrue(np.all(np.abs(out[:, -8:].astype(int) - 40) <= 2))
+
+    def test_face_ratio_width_and_length(self):
+        lb = np.zeros((478, 2), np.float32)
+        lb[33], lb[263], lb[234], lb[454], lb[152] = (40, 50), (60, 50), (20, 60), (80, 60), (50, 150)
+        la = lb.copy()
+        la[234], la[454], la[152] = (23, 60), (77, 60), (50, 160)
+
+        width, length = hair_studio.face_ratio(la, lb)
+
+        self.assertAlmostEqual(width, 0.9, places=3)
+        self.assertAlmostEqual(length, 1.1, places=3)
 
     def test_female_reference_controls_cut_and_curls(self):
         prompt = hair_studio.style_prompt(style(name="단발 히피펌", texture="curly"), has_ref=True)
@@ -173,7 +177,11 @@ class HairStudioTest(unittest.TestCase):
         for prompt in (with_ref, without):
             self.assertIn("ONE uniform dye color from roots to ends", prompt)
             self.assertIn("No ombre, balayage", prompt)
-            self.assertIn("RIGHT panel hair color: very light pearl blonde", prompt)
+            self.assertIn("HAIR COLOR: medium natural brown", prompt)
+            self.assertIn("Do NOT copy or recolor the source photo's fringe", prompt)
+            self.assertNotIn("panel", prompt.lower())
+            self.assertIn("CHANGE ONLY THE HAIR", prompt)
+            self.assertNotIn("pearl blonde", prompt)
             self.assertIn("No white strand outlines", prompt)
             self.assertIn("FRINGE ONLY", prompt)
             self.assertIn("HAIR SURFACE: follow the target texture", prompt)
@@ -249,7 +257,7 @@ class PhotoCheckTest(unittest.TestCase):
         base = fake_landmarks()
         small = (base - base[152]) * 0.8 + base[152]  # AI가 얼굴을 20% 줄여 그림
         with patch.object(hair_studio, "landmarks", side_effect=[base, small]):
-            self.assertEqual(hair_studio._generation_issue(orig, [orig]), "얼굴 크기")
+            self.assertEqual(hair_studio._generation_issue(orig, orig), "얼굴 크기")
 
 
 class GenerateOnceTest(unittest.TestCase):
@@ -258,11 +266,11 @@ class GenerateOnceTest(unittest.TestCase):
         with patch.object(hair_studio, "get_settings", return_value=SimpleNamespace(studio_style_model="m", studio_debug=False)), \
                 patch.object(hair_studio, "decode_image", side_effect=lambda d, *a: np.zeros((8, 8, 3), np.uint8)), \
                 patch.object(hair_studio, "prepare_photo", side_effect=lambda img: img), \
-                patch.object(hair_studio, "_panels", return_value=(np.zeros((8, 24, 3), np.uint8), "16:9", (0, 0))), \
+                patch.object(hair_studio, "_pad_input", return_value=(np.zeros((8, 24, 3), np.uint8), "16:9", (0, 0))), \
                 patch.object(hair_studio, "_style_ref", return_value=None), \
                 patch.object(hair_studio, "style_prompt", return_value="p"), \
                 patch.object(hair_studio, "edit_image", return_value=b"x") as edit, \
-                patch.object(hair_studio, "_split", return_value=[np.zeros((4, 4, 3), np.uint8)] * 3), \
+                patch.object(hair_studio, "_crop_output", return_value=np.zeros((4, 4, 3), np.uint8)), \
                 patch.object(hair_studio, "_generation_issue", return_value=issue), \
                 patch.object(hair_studio, "compose_bases", return_value={}) as compose, \
                 patch.object(hair_studio, "_write"), patch.object(hair_studio, "hair_hex", return_value=None):
