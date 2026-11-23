@@ -55,7 +55,9 @@ def analyze_skin_tone(
         raise _error(400, e.code, str(e), e.detail) from e
 
     rec = makeup_palette.recommend(
-        result.brightness_level, result.undertone, confidence=result.confidence
+        result.brightness_level, result.undertone, confidence=result.confidence,
+        cushion_shade=result.raw.get("cushion_shade"),
+        cushion_out_of_range=bool(result.raw.get("cushion_out_of_range")),
     )
     return SkinToneRead(
         brightness_level=result.brightness_level,
