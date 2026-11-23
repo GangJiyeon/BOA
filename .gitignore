@@ -269,3 +269,6 @@ frontend/.qa-preview/
 backend/static/hair/F001-F040/
 backend/static/hair/M001-M040/
 backend/static/hair/hairstyles/
+
+# 테스트용 얼굴 사진 (개인정보, 커밋 금지)
+/photos/
