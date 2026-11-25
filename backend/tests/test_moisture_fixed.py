@@ -21,6 +21,9 @@ def actual(estimation=False):
     return result
 
 
+from skin_test_helpers import post_skin
+
+
 class FixedWindowTests(unittest.TestCase):
     def test_actual_first_three_seconds_normalizes_to_26(self):
         r=CompletedMoisture.model_validate(actual())
@@ -53,7 +56,7 @@ class FixedApiTests(unittest.TestCase):
     def test_real_score_persisted_in_skin_analysis_and_used_by_recommendation(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                analysis=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json();aid=analysis['id']
+                analysis=(await post_skin(c, json={'moisture_source':'none'})).json();aid=analysis['id']
                 r=actual(True);body={'analysis_id':aid,'result':r}
                 saved=await c.post('/api/skin/moisture/results',json=body)
                 self.assertEqual(saved.status_code,200,saved.text)

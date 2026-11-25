@@ -43,12 +43,7 @@ summary { min-height: 48px; padding-top: 12px; padding-bottom: 12px; }
 .cosmetic-preview .recommend-button { min-height: 56px; font-size: 16px; }
 .cosmetic-preview .single-photo-actions { gap: 12px; }
 .cosmetic-preview .single-photo-actions button, .cosmetic-preview .single-photo-actions .button { font-size: 15px; min-height: 52px; }
-.care-profile { padding: 14px 0 20px; }
-.care-profile > span { font-size: 13px; color: var(--muted); }
-.care-profile > div:not(.care-types) { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
-.care-profile p { flex: 1; font-size: 15px; }
-.care-profile > div:not(.care-types) > span { color: var(--muted); font-size: 12px; }
-.care-types span { font-size: 13px; }
+
 .cosmetic-preview .filter-details { border-top: 1px solid var(--line); margin: 0; }
 .cosmetic-preview .filter-details summary { font-size: 14px; }
 .cosmetic-preview .filter-details summary small { margin-left: 8px; }
@@ -80,7 +75,6 @@ summary { min-height: 48px; padding-top: 12px; padding-bottom: 12px; }
  .cosmetic-preview .upload-zone { padding: 20px 12px; }
  .cosmetic-preview .single-photo-actions { gap: 8px; }
  .cosmetic-preview .single-photo-actions button, .cosmetic-preview .single-photo-actions .button { padding: 10px 12px; font-size: 14px; }
- .care-profile { padding: 8px 0 12px; }
 }
 
 /* v10: persistent analysis action and compact result hierarchy. */

@@ -48,24 +48,6 @@ def _distance(p1: Point, p2: Point) -> float:
     return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
 
 
-def check_quality_gate(
-    yaw: float, pitch: float, roll: float,
-    max_yaw: float = 15.0, max_pitch: float = 15.0, max_roll: float = 10.0,
-) -> Tuple[bool, str]:
-    """
-    촬영 품질 게이트. 정면 각도(yaw/pitch/roll)가 임계값 안일 때만 통과.
-    MediaPipe의 얼굴 변환 행렬에서 추정한 각도를 넘겨받는다고 가정한다.
-    실패하면 (False, 사유)를 반환해서 재촬영 안내에 사용한다.
-    """
-    if abs(yaw) > max_yaw:
-        return False, f"좌우 각도(yaw={yaw:.1f}°)가 기준({max_yaw}°)을 벗어났습니다. 정면을 봐주세요."
-    if abs(pitch) > max_pitch:
-        return False, f"상하 각도(pitch={pitch:.1f}°)가 기준({max_pitch}°)을 벗어났습니다. 고개를 들거나 숙이지 마세요."
-    if abs(roll) > max_roll:
-        return False, f"기울기(roll={roll:.1f}°)가 기준({max_roll}°)을 벗어났습니다. 고개를 기울이지 마세요."
-    return True, "통과"
-
-
 def normalize_points(points: Dict[str, Point]) -> Dict[str, Point]:
     """
     두 눈을 잇는 선을 수평으로 회전(roll 보정)한다.

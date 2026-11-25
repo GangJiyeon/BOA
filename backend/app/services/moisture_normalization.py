@@ -3,7 +3,6 @@ from statistics import median
 from app.services.cheek_signal import capacitance_change
 
 VERSION = 'boa-cap-response-10-v1'
-ALGORITHM = 'skin-fixed-3s-v1'
 CAPACITANCE_SPAN_PERCENT = 10.0
 
 

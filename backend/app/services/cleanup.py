@@ -10,7 +10,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
-from app.models import EmailVerification, GuestSession, RefreshToken
+from app.models import GuestSession, RefreshToken
 from app.services.account import RESULT_MODELS
 from app.services.hair_studio import cleanup_renders
 
@@ -42,9 +42,6 @@ def cleanup_expired(db: Session) -> dict[str, int]:
     counts["hair_renders_old"] = cleanup_renders(db)
     counts["guest_sessions"] = run(delete(GuestSession).where(GuestSession.id.in_(expired_sessions)))
     counts["refresh_tokens"] = run(delete(RefreshToken).where(RefreshToken.expires_at < now))
-    counts["email_verifications"] = run(
-        delete(EmailVerification).where(EmailVerification.expires_at < now)
-    )
     return counts
 
 

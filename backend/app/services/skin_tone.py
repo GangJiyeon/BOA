@@ -266,11 +266,6 @@ def thresholds_for(camera_profile: str) -> ToneThresholds:
     return replace(base, **values) if values else base
 
 
-def _to_cielab(bgr: np.ndarray) -> np.ndarray:
-    """표준 CIELAB 변환 (L* 0~100, a*·b* 부호 있음)."""
-    return cv2.cvtColor(bgr.astype(np.float32) / 255.0, cv2.COLOR_BGR2LAB)
-
-
 def measure_tone(
     image_bytes: bytes,
     *,

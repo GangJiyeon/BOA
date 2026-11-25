@@ -17,6 +17,9 @@ def result():
                 samples=[dict(sequence=i, uptime_ms=1000+i*100, count=400+i%2) for i in range(31)])
 
 
+from skin_test_helpers import post_skin
+
+
 class CompletedTests(unittest.TestCase):
     setUp = fixture.ApiDatabaseTests.setUp
     tearDown = fixture.ApiDatabaseTests.tearDown
@@ -24,7 +27,7 @@ class CompletedTests(unittest.TestCase):
     def test_save_retry_read_and_score_isolation(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                created=await c.post('/api/skin/analyses',json={'moisture_source':'manual','moisture_score':25})
+                created=await post_skin(c, json={'moisture_source':'manual','moisture_score':25})
                 self.assertEqual(created.status_code,201)
                 aid=created.json()['id']; payload=result()
                 body={'analysis_id':aid,'result':payload}
@@ -39,7 +42,7 @@ class CompletedTests(unittest.TestCase):
                 self.assertEqual(fetched.json()['moisture_measurement'],saved.json())
                 changed=copy.deepcopy(body);changed['result']['samples'][0]['count']=401
                 self.assertEqual((await c.post('/api/skin/moisture/results',json=changed)).status_code,409)
-                other=await c.post('/api/skin/analyses',json={'moisture_source':'none'})
+                other=await post_skin(c, json={'moisture_source':'none'})
                 changed=copy.deepcopy(body);changed['analysis_id']=other.json()['id']
                 self.assertEqual((await c.post('/api/skin/moisture/results',json=changed)).status_code,409)
                 with Session(self.engine) as db:self.assertEqual(db.scalar(select(func.count()).select_from(MoistureObservation)),1)
@@ -52,7 +55,7 @@ class CompletedTests(unittest.TestCase):
     def test_rejects_invalid_and_missing_analysis(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                aid=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json()['id']
+                aid=(await post_skin(c, json={'moisture_source':'none'})).json()['id']
                 cases=[]
                 for k,v in [('site','finger'),('algorithm_version','anything'),('baseline',0),('samples',result()['samples'][:20]),('source','mock'),('score',20),('contact_threshold',-1),('release_threshold',2)]:
                     p=result();p[k]=v;cases.append(p)

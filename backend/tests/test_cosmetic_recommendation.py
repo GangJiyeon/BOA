@@ -301,7 +301,7 @@ class ApiDatabaseTests(unittest.TestCase):
 
     def test_all_feature_routes_registered(self):
         paths = app.openapi()["paths"]
-        for path in ["/api/cosmetics/recommendations/preview", "/api/skin/analyses", "/api/hair/recommend", "/api/hair/face-analysis"]:
+        for path in ["/api/cosmetics/recommendations/preview", "/api/skin/analyses/debug", "/api/hair/recommend", "/api/hair/face-analysis"]:
             self.assertIn(path, paths)
 
 

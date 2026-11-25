@@ -19,10 +19,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.api.deps import Actor, get_actor
-from app.api.routes import hair, moisture, skin
+from app.api.routes import hair, moisture, skin, skin_tone
 from app.db.base import Base
 from app.db.session import get_db
-from app.models import (FaceAnalysis, GuestSession, HairRecommendation, HairRecRun,
+from app.models import (FaceAnalysis, GuestSession, HairRecommendation, HairRecRun, HairRender,
                         HairStyleCatalog, Image, Kiosk, SkinAnalysis, SkinMetric,
                         SkinMetricCategory, SkinScore, Terms, User)
 from app.models.moisture import MoistureObservation
@@ -35,12 +35,15 @@ def sqlite_jsonb(type_, compiler, **kw):
     return 'JSON'
 
 
+from skin_test_helpers import post_skin
+
+
 class OwnershipTests(unittest.TestCase):
     def setUp(self):
         self.engine = create_engine('sqlite://', connect_args={'check_same_thread': False}, poolclass=StaticPool)
         models = (User, Terms, Kiosk, GuestSession, Image, SkinMetric, SkinMetricCategory,
                   SkinAnalysis, SkinScore, MoistureObservation, FaceAnalysis,
-                  HairStyleCatalog, HairRecRun, HairRecommendation)
+                  HairStyleCatalog, HairRecRun, HairRecommendation, HairRender)
         Base.metadata.create_all(self.engine, tables=[m.__table__ for m in models])
         self.guest_id = uuid4()
         with Session(self.engine) as db:
@@ -49,7 +52,7 @@ class OwnershipTests(unittest.TestCase):
             db.commit()
         self.actor = Actor(kind='member', user_id=7)
         self.app = FastAPI()
-        for router in (skin.router, hair.router, moisture.router):
+        for router in (skin.router, hair.router, moisture.router, skin_tone.router):
             self.app.include_router(router, prefix='/api')
         def database():
             with Session(self.engine) as db:
@@ -72,7 +75,7 @@ class OwnershipTests(unittest.TestCase):
         self.engine.dispose()
 
     def skin(self, **body):
-        response = self.client.post('/api/skin/analyses', json={'moisture_source': 'none', **body})
+        response = post_skin(self.client, json={'moisture_source': 'none', **body})
         self.assertEqual(response.status_code, 201, response.text)
         return response.json()['id']
 
@@ -109,7 +112,7 @@ class OwnershipTests(unittest.TestCase):
         self.assertEqual(bad.status_code, 400)
         for _ in range(3):
             self.skin()
-        response = self.client.post('/api/skin/analyses', json={})
+        response = post_skin(self.client, json={})
         self.assertEqual(response.status_code, 429, response.text)
         self.assertEqual(response.json()['detail']['code'], 'GUEST_DAILY_LIMIT')
         with Session(self.engine) as db:
@@ -161,10 +164,30 @@ class OwnershipTests(unittest.TestCase):
     def test_anonymous_and_kiosk_without_session_rejected_before_analysis(self):
         for actor in (Actor(kind='anonymous'), Actor(kind='kiosk', kiosk_id=1)):
             self.actor = actor
-            self.assertEqual(self.client.post('/api/skin/analyses', json={}).status_code, 403)
+            self.assertEqual(post_skin(self.client, json={}).status_code, 403)
             self.assertEqual(self.client.post('/api/skin/analyses/debug', files={'file': ('a.jpg', b'a', 'image/jpeg')}).status_code, 403)
             self.assertEqual(self.client.post('/api/hair/face-analysis', json={'sex': 'male', 'landmark_sets': [{}]}).status_code, 403)
         self.photo_mock.assert_not_called()
+
+    def test_photo_only_endpoints_require_consent(self):
+        # 저장 없는 사진 분석도 얼굴 이미지 처리라 동의(세션) 필요
+        self.actor = Actor(kind='anonymous')
+        photo = {'file': ('a.jpg', b'a', 'image/jpeg')}
+        self.assertEqual(self.client.post('/api/skin/tone', files=photo).status_code, 403)
+
+    def test_hair_photo_over_10mb_rejected(self):
+        big = b'0' * (10 * 1024 * 1024 + 1)
+        response = self.client.post('/api/hair/face-analysis/photos', data={'sex': 'male'},
+            files=[('photos', ('face.jpg', big, 'image/jpeg'))])
+        self.assertEqual(response.status_code, 413)
+
+    def test_transfer_moves_studio_renders(self):
+        with Session(self.engine) as db:
+            db.add(HairRender(guest_id=self.guest_id, style_id='bob', asset_dir='guest-render'))
+            db.commit()
+            guest.transfer_to_user(db, db.get(GuestSession, self.guest_id), 7)
+            db.commit()
+            self.assertEqual(db.scalar(select(HairRender.user_id)), 7)
 
     def test_moisture_write_and_idempotent_read_check_owner(self):
         aid = self.skin()
@@ -201,7 +224,7 @@ class OwnershipTests(unittest.TestCase):
             db.commit()
         self.actor = Actor(kind='guest', guest_id=self.guest_id)
         with patch.object(settings, 'ip_daily_limit', 1):
-            response = self.client.post('/api/skin/analyses', json={})
+            response = post_skin(self.client, json={})
         self.assertEqual(response.status_code, 429, response.text)
         self.assertEqual(response.json()['detail']['code'], 'IP_DAILY_LIMIT')
 
@@ -209,7 +232,7 @@ class OwnershipTests(unittest.TestCase):
         from app.core.security import create_access_token
         self.app.dependency_overrides.pop(get_actor)
         self.client.cookies.set('access_token', create_access_token(999))
-        response = self.client.post('/api/skin/analyses', json={})
+        response = post_skin(self.client, json={})
         self.assertEqual(response.status_code, 401, response.text)
 
 

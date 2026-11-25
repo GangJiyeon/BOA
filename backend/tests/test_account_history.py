@@ -21,7 +21,7 @@ class HistoryTests(unittest.TestCase):
         self.app.include_router(me.router, prefix='/api')
         self.base = datetime(2026, 11, 14, 1, tzinfo=UTC)
         with Session(self.engine) as db:
-            db.add_all([User(id=i, email=f'member{i}@example.com', language='ko') for i in (7, 8)])
+            db.add_all([User(id=i, email=f'member{i}@example.com') for i in (7, 8)])
             db.commit()
 
     tearDown = fixture.OwnershipTests.tearDown

@@ -17,6 +17,9 @@ def measured(count=488):
     return r
 
 
+from skin_test_helpers import post_skin
+
+
 class SignalTests(unittest.TestCase):
     def test_offset_formula_and_span(self):
         self.assertAlmostEqual(capacitance_change(506,493.71),3.73771307455)
@@ -60,7 +63,7 @@ class SignalApiTests(unittest.TestCase):
     def test_save_to_recommendation_with_no_fake_clinical_score(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                analysis=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json()
+                analysis=(await post_skin(c, json={'moisture_source':'none'})).json()
                 aid=analysis['id'];r=measured()
                 saved=await c.post('/api/skin/moisture/results',json={'analysis_id':aid,'result':r})
                 self.assertEqual(saved.status_code,200,saved.text)

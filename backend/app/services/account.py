@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     ConsentHistory,
-    EmailVerification,
     FaceAnalysis,
     HairRecRun,
     HairRender,
@@ -85,7 +84,6 @@ def delete_user(db: Session, user: User) -> None:
     분석 결과 테이블엔 아직 회원 FK가 없어 직접 삭제 (점수 등 하위 행은 각 테이블 CASCADE)
     동의 이력·리프레시 토큰·비회원 세션은 users CASCADE로 삭제
     """
-    db.execute(delete(EmailVerification).where(EmailVerification.email == user.email))
     for model in RESULT_MODELS:
         db.execute(delete(model).where(model.user_id == user.id))
     db.delete(user)

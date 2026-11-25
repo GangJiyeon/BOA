@@ -18,12 +18,13 @@ from app.schemas.hair import (
     HairRecommendRequest,
     HairRecommendResult,
     HairRecommendationItem,
-    HairStyleCreate,
     HairStyleRead,
 )
 from app.services.face_shape_analysis import analyze_face_shape
 from app.services.hair_recommend import recommend_hairstyles
 from app.services.landmark_extraction import extract_landmarks_from_bytes
+
+MAX_PHOTO_BYTES = 10 * 1024 * 1024
 
 router = APIRouter(prefix="/hair", tags=["hair"])
 
@@ -95,7 +96,9 @@ async def create_face_analysis_from_photos(
 
     landmark_sets = []
     for photo in photos:
-        content = await photo.read()
+        content = await photo.read(MAX_PHOTO_BYTES + 1)
+        if len(content) > MAX_PHOTO_BYTES:
+            raise HTTPException(413, "사진은 10MB 이하로 올려 주세요.")
         try:
             landmark_sets.append(extract_landmarks_from_bytes(content))
         except ValueError as e:
@@ -164,15 +167,6 @@ def list_styles(db: Session = Depends(get_db)) -> list[HairStyleRead]:
         HairStyleCatalog.style_id,
     )).all()
     return [HairStyleRead.model_validate(s, from_attributes=True) for s in styles]
-
-
-@router.post("/styles", status_code=201)
-def create_style(body: HairStyleCreate, db: Session = Depends(get_db)) -> HairStyleRead:
-    style = HairStyleCatalog(**body.model_dump())
-    db.add(style)
-    db.commit()
-    db.refresh(style)
-    return HairStyleRead.model_validate(style, from_attributes=True)
 
 
 # ------------------------------------------------------------------

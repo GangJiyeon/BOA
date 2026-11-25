@@ -11,6 +11,9 @@ from app.services.hydration_estimate import estimate, VERSION, DISPLAY_VERSION
 from test_moisture_fixed import actual
 
 
+from skin_test_helpers import post_skin
+
+
 class EstimatorTests(unittest.TestCase):
     def test_actual_before_after_wash_values_keep_state_and_expand_display_only(self):
         # Actual representative counts from audit(3), not clinical truth labels.
@@ -70,7 +73,7 @@ class EstimatorFlowTests(unittest.TestCase):
     def test_display_v2_persists_and_does_not_change_products_or_policy(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
-                aid=(await client.post('/api/skin/analyses',json={'moisture_source':'none'})).json()['id']
+                aid=(await post_skin(client, json={'moisture_source':'none'})).json()['id']
                 request=None;previous=None
                 for i,version in enumerate((VERSION,DISPLAY_VERSION)):
                     result=actual(True);result['normalization_version']=version
@@ -94,7 +97,7 @@ class EstimatorFlowTests(unittest.TestCase):
     def test_display_changes_cannot_change_sensor_policy_or_products(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
-                aid=(await client.post('/api/skin/analyses',json={'moisture_source':'none'})).json()['id']
+                aid=(await post_skin(client, json={'moisture_source':'none'})).json()['id']
                 measured=actual(True)
                 saved=await client.post('/api/skin/moisture/results',json={'analysis_id':aid,'result':measured})
                 self.assertEqual(saved.status_code,200,saved.text)
@@ -149,7 +152,7 @@ class EstimatorFlowTests(unittest.TestCase):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
                 for count,state,category in ((2506,'low','개선 필요'),(1951,'normal','보통'),(1200,'sufficient','양호')):
-                    aid=(await client.post('/api/skin/analyses',json={'moisture_source':'none'})).json()['id']
+                    aid=(await post_skin(client, json={'moisture_source':'none'})).json()['id']
                     result=actual(True)
                     for sample in result['samples']:sample['count']=count
                     saved=await client.post('/api/skin/moisture/results',json={'analysis_id':aid,'result':result})
@@ -171,7 +174,7 @@ class EstimatorFlowTests(unittest.TestCase):
     def test_old_arbitrary_scale_cannot_create_a_new_hydration_classification(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as client:
-                aid=(await client.post('/api/skin/analyses',json={'moisture_source':'none'})).json()['id']
+                aid=(await post_skin(client, json={'moisture_source':'none'})).json()['id']
                 saved=await client.post('/api/skin/moisture/results',json={'analysis_id':aid,'result':actual()})
                 self.assertEqual(saved.status_code,200,saved.text)
                 self.assertFalse(saved.json()['used_for_scoring'])

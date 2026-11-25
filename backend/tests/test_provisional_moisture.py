@@ -6,6 +6,9 @@ from test_moisture_score60 import actual
 from app.main import app
 from app.services.moisture_scale60 import score_from_response, PROVISIONAL_GAINS, VERSION
 
+from skin_test_helpers import post_skin
+
+
 class ProvisionalTests(unittest.TestCase):
     setUp=f.ApiDatabaseTests.setUp
     tearDown=f.ApiDatabaseTests.tearDown
@@ -20,7 +23,7 @@ class ProvisionalTests(unittest.TestCase):
     def test_save_reload_recommend_and_preserve_version(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                aid=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json()['id']
+                aid=(await post_skin(c, json={'moisture_source':'none'})).json()['id']
                 receipts=[]
                 for version in [VERSION,*PROVISIONAL_GAINS]:
                     measured=actual(True);measured['normalization_version']=version

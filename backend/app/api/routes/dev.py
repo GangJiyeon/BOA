@@ -21,7 +21,7 @@ def dev_login(
     email = auth.normalize_email(body.email)
     user = auth.find_user_by_email(db, email)
     if user is None:
-        user = User(email=email, language="ko")
+        user = User(email=email)
         db.add(user)
         db.flush()
     auth.login(db, response, user)

@@ -14,6 +14,9 @@ def measurement():
         air_samples=[dict(sequence=i,uptime_ms=100+i*100,count=500) for i in range(21)],
         samples=[dict(sequence=40+i,uptime_ms=4000+i*100,count=497) for i in range(31)])
 
+from skin_test_helpers import post_skin
+
+
 class ContactTests(unittest.TestCase):
     def test_latest_descent_requires_stationary_window(self):
         r=json.loads((Path(__file__).parents[2]/'fixtures/skin-window-fine.json').read_text())
@@ -64,7 +67,7 @@ class ContactApiTests(unittest.TestCase):
     def test_real_value_saved_and_recomputed_for_recommendation(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                a=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json()
+                a=(await post_skin(c, json={'moisture_source':'none'})).json()
                 r=measurement();body={'analysis_id':a['id'],'result':r}
                 saved=await c.post('/api/skin/moisture/results',json=body)
                 self.assertEqual(saved.status_code,200,saved.text)
@@ -104,7 +107,7 @@ class GuardApiTests(unittest.TestCase):
     def test_weak_response_saved_but_not_used_to_rank_products(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                analysis=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json();aid=analysis['id']
+                analysis=(await post_skin(c, json={'moisture_source':'none'})).json();aid=analysis['id']
                 r=measurement();r['algorithm_version']='skin-auto-v4'
                 saved=await c.post('/api/skin/moisture/results',json={'analysis_id':aid,'result':r})
                 self.assertEqual(saved.status_code,200,saved.text)
@@ -129,7 +132,7 @@ class ConfirmedOnlyTests(unittest.TestCase):
     def test_v6_descent_not_saved_but_single_plateau_reaches_recommendation(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                analysis=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json();aid=analysis['id']
+                analysis=(await post_skin(c, json={'moisture_source':'none'})).json();aid=analysis['id']
                 r=json.loads((Path(__file__).parents[2]/'fixtures/skin-window-fine.json').read_text())
                 r.update(measurement_id=str(uuid4()),algorithm_version='skin-auto-v6')
                 saved=await c.post('/api/skin/moisture/results',json={'analysis_id':aid,'result':r})
@@ -151,7 +154,7 @@ class ConfirmedOnlyTests(unittest.TestCase):
     def test_v5_rejects_weak_upload_without_persisting(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                analysis=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json();aid=analysis['id']
+                analysis=(await post_skin(c, json={'moisture_source':'none'})).json();aid=analysis['id']
                 r=measurement();r['algorithm_version']='skin-auto-v5'
                 resp=await c.post('/api/skin/moisture/results',json={'analysis_id':aid,'result':r})
                 self.assertEqual(resp.status_code,422,resp.text)

@@ -4,8 +4,9 @@
 결과는 DB에 저장하지 않고, 사진은 메모리에서 분석 후 폐기한다 (기존 저장 정책과 동일).
 """
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
+from app.api.deps import require_analysis_actor
 from app.core.config import get_settings
 from app.schemas.skin_tone import SkinToneRead, TonePalette
 from app.services import makeup_palette, skin_tone
@@ -23,7 +24,7 @@ def _error(status: int, code: str, message: str, detail: dict | None = None) -> 
     return HTTPException(status, {"code": code, "message": message, "detail": detail or {}})
 
 
-@router.post("/tone", response_model=SkinToneRead)
+@router.post("/tone", response_model=SkinToneRead, dependencies=[Depends(require_analysis_actor)])
 def analyze_skin_tone(
     file: UploadFile = File(..., description="정면 얼굴 사진 1장 (jpeg/png/webp)"),
 ) -> SkinToneRead:

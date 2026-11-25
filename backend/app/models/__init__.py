@@ -1,7 +1,6 @@
 # Alembic autogenerate가 테이블을 인식하려면 모든 모델을 여기서 import 해야 한다
 from app.models.account import (
     ConsentHistory,
-    EmailVerification,
     GuestSession,
     Kiosk,
     RefreshToken,
@@ -26,7 +25,6 @@ from app.models.hair import (
 
 __all__ = [
     "ConsentHistory",
-    "EmailVerification",
     "GuestSession",
     "Kiosk",
     "RefreshToken",

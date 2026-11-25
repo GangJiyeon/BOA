@@ -12,7 +12,6 @@ from app.schemas.account import (
     ConsentChangeRequest,
     ConsentStatusRead,
     MeRead,
-    MeUpdate,
 )
 from app.services import account
 
@@ -30,7 +29,6 @@ def _get_user(db: Session, actor: Actor) -> User:
 def _to_read(user: User) -> MeRead:
     return MeRead(
         email=user.email,
-        language=user.language,
         nationality=user.nationality,
         resides_in_korea=user.resides_in_korea,
         google_linked=user.google_sub is not None,
@@ -40,17 +38,6 @@ def _to_read(user: User) -> MeRead:
 @router.get("")
 def read_me(actor: Actor = Depends(require_user), db: Session = Depends(get_db)) -> MeRead:
     return _to_read(_get_user(db, actor))
-
-
-@router.patch("")
-def update_me(
-    body: MeUpdate, actor: Actor = Depends(require_user), db: Session = Depends(get_db)
-) -> MeRead:
-    """언어 변경 (프론트는 응답의 language로 lang 쿠키 갱신)"""
-    user = _get_user(db, actor)
-    user.language = body.language
-    db.commit()
-    return _to_read(user)
 
 
 @router.get("/consents")

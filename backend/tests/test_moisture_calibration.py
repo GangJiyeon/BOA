@@ -20,6 +20,9 @@ def profile():
                 response_to_reference=[dict(x=0,y=0),dict(x=100,y=100)],
                 reference_to_score=[dict(x=0,y=0),dict(x=100,y=100)])
 
+from skin_test_helpers import post_skin
+
+
 class CalibrationTests(unittest.TestCase):
     def test_bounds_review_and_invalid_profiles(self):
         p=CompletedMoisture.model_validate(result())
@@ -40,7 +43,7 @@ class CalibratedFlowTests(unittest.TestCase):
     def test_measurement_changes_analysis_and_recommendation(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                created=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json();aid=created['id']
+                created=(await post_skin(c, json={'moisture_source':'none'})).json();aid=created['id']
                 before=await c.post('/api/cosmetics/recommendations/preview',json={'scores':created['scores']})
                 self.assertEqual(before.status_code,200,before.text)
                 self.assertIn('moisture',before.json()['missing_metrics'])
