@@ -6,7 +6,7 @@ type Props = { disabled?: boolean; onCode: (code: string) => void; onError: (mes
 
 // 계정 화면에서만 GIS 스크립트 로드
 export default function GoogleLoginButton(props: Props) {
-  if (!clientId) return <button type="button" disabled className="secondary">Google 로그인 · 클라이언트 ID 미설정</button>
+  if (!clientId) return null
   return <GoogleOAuthProvider clientId={clientId}><CodeButton {...props} /></GoogleOAuthProvider>
 }
 
