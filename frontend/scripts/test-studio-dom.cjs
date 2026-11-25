@@ -31,7 +31,7 @@ global.fetch=async(url,init={})=>{
  requests.push({url,init})
  if(url.startsWith('/static/studio/'))return new Response(new Uint8Array([1,2,3]))
  if(url==='/api/hair/styles')return catalogState==='fail'?json({detail:'카탈로그 오프라인'},503):json(catalogState==='empty'?[]:catalog)
- if(url==='/api/health')return json({status:'ok',db:true,s3:false})
+ if(url==='/api/health')return json({status:'ok',db:true})
  if(url==='/api/actor')return json({kind:'guest'})
  if(url==='/api/guest/quota')return json(Object.fromEntries(['skin','hair','studio'].map(k=>[k,{limit:3,used:0,remaining:3}])))
  if(url==='/api/skin/tone')return json({undertone:'warm',brightness_level:'medium',confidence:'high',raw:{L:60,ita_deg:40},palette:{tone_name:'웜톤',point:'테스트',cushion:'21호',lip:[],blush:[],eye:[]},notices:[]})

@@ -272,3 +272,7 @@ backend/static/hair/hairstyles/
 
 # 테스트용 얼굴 사진 (개인정보, 커밋 금지)
 /photos/
+
+# 개발용 헤어 데모 (로컬 전용)
+frontend/hair-demo.html
+frontend/src/demo/

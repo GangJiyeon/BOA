@@ -12,6 +12,7 @@ import { useTask } from '../hooks/useTask'
 import { measureSkinTone, type SkinToneResult } from '../api/skin'
 import { recommendHairColors, type HairColorRecommendation } from '../studio/hairColorRecommendations'
 import type { HairSessionResult, StudioMakeupResult } from '../types/sessionResults'
+import { useAdoptSessionPhoto, type SessionPhotoProps } from '../hooks/useSessionPhoto'
 import './StudioPage.css'
 
 const POLL_MS = 2000
@@ -88,11 +89,15 @@ function waitStyle(item:HairStyle|HairSessionResult['result']['recommendations']
   }
 }
 
-export default function StudioPage({hair,onUsed,onMakeup,makeupExport}:{hair:HairSessionResult|null;onUsed:()=>void;onMakeup:(result:StudioMakeupResult)=>void;makeupExport?:Ref<()=>boolean>}) {
+export default function StudioPage({hair,onUsed,onMakeup,makeupExport,sessionPhoto,onPhoto}:SessionPhotoProps&{hair:HairSessionResult|null;onUsed:()=>void;onMakeup:(result:StudioMakeupResult)=>void;makeupExport?:Ref<()=>boolean>}) {
   const task=useTask()
+  // 사진 출처(헤어 추천 사진·직접 업로드)와 스타일 목록(추천·전체)은 따로 고름
   const [mode,setMode]=useState<'catalog'|'recommendation'>(hair?'recommendation':'catalog')
   const activeMode=mode==='recommendation'&&hair?'recommendation':'catalog'
+  const [styleTab,setStyleTab]=useState<'recommended'|'all'>(hair?'recommended':'all')
+  const activeTab=styleTab==='recommended'&&hair?'recommended':'all'
   const [photos,setPhotos]=useState<File[]>([])
+  useAdoptSessionPhoto(sessionPhoto,photos.length===0&&!task.busy,file=>{if(file.size<=10*1024*1024)setPhotos([file])})
   const [photoError,setPhotoError]=useState('')
   const [styles,setStyles]=useState<HairStyle[]>([])
   const [loading,setLoading]=useState(true)
@@ -100,8 +105,16 @@ export default function StudioPage({hair,onUsed,onMakeup,makeupExport}:{hair:Hai
   const [revision,setRevision]=useState(0)
   const [catalogId,setCatalogId]=useState('')
   const [recommendedId,setRecommendedId]=useState(hair?.result.recommendations[0]?.style_id??'')
-  const [sex,setSex]=useState(''),[length,setLength]=useState(''),[texture,setTexture]=useState('')
+  // 전체 목록 구분 필터는 헤어 분석 때 고른 성별로 시작
+  const [sex,setSex]=useState<string>(hair?.analysis.sex??''),[length,setLength]=useState(''),[texture,setTexture]=useState('')
   const [render,setRender]=useState<{value:HairRender;styleName:string;photo:File}|null>(null)
+  // 스튜디오를 먼저 열어 둔 뒤 새 헤어 추천이 오면 추천 모드로 전환 (헤어색만 추가된 갱신은 run_id 같아서 유지, 합성 중엔 유지)
+  const runId=hair?.result.run_id??null
+  const [seenRunId,setSeenRunId]=useState(runId)
+  if(runId!==seenRunId){
+    setSeenRunId(runId)
+    if(runId!==null&&!task.busy){setMode('recommendation');setStyleTab('recommended');setSex(hair!.analysis.sex);setRecommendedId(hair!.result.recommendations[0]?.style_id??'');setRender(null)}
+  }
   // 추천 헤어색: 헤어 페이지에서 같은 사진으로 받아둔 게 있으면 그대로, 없으면 합성 사진으로 피부톤 분석 (실패하면 추천 없이)
   const [toneRecs,setToneRecs]=useState<{photo:File;colors:HairColorRecommendation[];basis:string;skinTone?:SkinToneResult}|null>(null)
   const sessionRecs=render&&hair?.recommendedColors&&render.photo===hair.photo?{colors:hair.recommendedColors,basis:hair.hairColorBasis,skinTone:hair.skinTone}:null
@@ -118,7 +131,7 @@ export default function StudioPage({hair,onUsed,onMakeup,makeupExport}:{hair:Hai
     return()=>controller.abort()
   },[needTone])
   useEffect(()=>{
-    // 추천 모드도 대기 화면 설명(길이·질감·얼굴형 적합도)용으로 카탈로그 조회
+    // 추천 목록도 대기 화면 설명(길이·질감·얼굴형 적합도)용으로 카탈로그 조회
     const controller=new AbortController()
     setLoading(true);setCatalogError('')
     getHairStyles(controller.signal).then(value=>{
@@ -127,27 +140,32 @@ export default function StudioPage({hair,onUsed,onMakeup,makeupExport}:{hair:Hai
       if(!controller.signal.aborted){setCatalogError(error instanceof Error?error.message:'카탈로그 조회 실패');setLoading(false)}
     })
     return()=>controller.abort()
-  },[activeMode,revision])
+  },[revision])
   const recs=hair?.result.recommendations??[]
   const visible=styles.filter(item=>(!sex||item.sex===sex||item.sex==='unisex')&&(!length||item.length===length)&&(!texture||item.texture===texture))
-  const selected=activeMode==='recommendation'?(recs.find(item=>item.style_id===recommendedId)??recs[0]):visible.find(item=>item.style_id===catalogId)
+  const rankOf=new Map(recs.map(item=>[item.style_id,item.rank]))
+  const selected=activeTab==='recommended'?(recs.find(item=>item.style_id===recommendedId)??recs[0]):visible.find(item=>item.style_id===catalogId)
   const photo=activeMode==='recommendation'?hair?.photo:photos[0]
-  const ready=!!photo&&!!selected&&!task.busy&&(activeMode==='recommendation'||(!loading&&!catalogError&&!photoError))
+  const ready=!!photo&&!!selected&&!task.busy&&(activeTab==='recommended'||(!loading&&!catalogError))&&(activeMode==='recommendation'||!photoError)
   function clearResult(){task.reset();setRender(null)}
   function changeMode(next:'catalog'|'recommendation'){
     if(task.busy||next===activeMode)return
     clearResult();setMode(next)
   }
+  function changeTab(next:'recommended'|'all'){
+    if(task.busy||next===activeTab)return
+    setStyleTab(next)
+  }
   function selectPhotos(files:File[]){
     if(task.busy)return
     clearResult()
     if(files.some(file=>file.size>10*1024*1024)){setPhotoError('사진은 10MB 이하로 올려 주세요.');return}
-    setPhotoError('');setPhotos(files)
+    setPhotoError('');setPhotos(files);onPhoto?.(files[0]??null,photos[0]??null)
   }
   function changeFilter(update:(value:string)=>void,value:string){clearResult();update(value);setCatalogId('')}
   function start(){
     if(!ready||!photo||!selected)return
-    const submittedPhoto=photo,style=selected,runId=activeMode==='recommendation'?hair!.result.run_id:null
+    const submittedPhoto=photo,style=selected,runId=hair&&rankOf.has(style.style_id)?hair.result.run_id:null
     setRender(null)
     void task.run(async signal=>{
       let value=await createHairRender(submittedPhoto,style.style_id,runId,signal)
@@ -183,8 +201,12 @@ export default function StudioPage({hair,onUsed,onMakeup,makeupExport}:{hair:Hai
         </>}
       </section>
       <section className="form-card options-panel studio-options">
-        <div className="card-heading"><span className="step-number">02</span><div><h3>{activeMode==='catalog'?'카탈로그에서 스타일 선택':'추천 스타일 선택'}</h3><p>입어 보고 싶은 스타일을 골라 주세요.</p></div></div>
-        {activeMode==='catalog'&&<>
+        <div className="card-heading"><span className="step-number">02</span><div><h3>스타일 선택</h3><p>입어 보고 싶은 스타일을 골라 주세요.</p></div></div>
+        {hair&&<div className="studio-entry"><div className="button-row" role="group" aria-label="스타일 목록">
+          <button type="button" aria-pressed={activeTab==='recommended'} disabled={task.busy} onClick={()=>changeTab('recommended')}>추천 스타일</button>
+          <button type="button" aria-pressed={activeTab==='all'} disabled={task.busy} onClick={()=>changeTab('all')}>전체 스타일</button>
+        </div></div>}
+        {activeTab==='all'&&<>
           <fieldset className="studio-catalog-filters" disabled={task.busy||loading}><legend className="sr-only">카탈로그 필터</legend>
             <label className="field">스타일 구분<select value={sex} onChange={e=>changeFilter(setSex,e.target.value)}><option value="">전체</option>{['female','male','unisex'].map(value=><option key={value} value={value}>{labels[value]}</option>)}</select></label>
             <label className="field">길이<select value={length} onChange={e=>changeFilter(setLength,e.target.value)}><option value="">전체</option>{[...new Set(styles.map(item=>item.length))].map(value=><option key={value} value={value}>{labels[value]??value}</option>)}</select></label>
@@ -194,20 +216,20 @@ export default function StudioPage({hair,onUsed,onMakeup,makeupExport}:{hair:Hai
           {catalogError&&<p role="alert" className="error-box">카탈로그 조회 실패: {catalogError} <button type="button" onClick={()=>setRevision(value=>value+1)}>다시 조회</button></p>}
           {!loading&&!catalogError&&!visible.length&&<p className="empty-box">{styles.length?'선택한 조건에 맞는 스타일이 없습니다. 필터를 바꿔 주세요.':'등록된 헤어스타일이 없습니다.'}</p>}
         </>}
-        <fieldset className="studio-styles" disabled={task.busy||(activeMode==='catalog'&&(loading||!!catalogError))}><legend className="sr-only">합성할 헤어스타일</legend>
-          {(activeMode==='recommendation'?recs:visible).map(item=><label key={item.style_id} className={`studio-style${item.style_id===selected?.style_id?' selected':''}`}>
-            <input type="radio" name="studio-style" value={item.style_id} checked={item.style_id===selected?.style_id} onChange={()=>{clearResult();if(activeMode==='recommendation')setRecommendedId(item.style_id);else setCatalogId(item.style_id)}}/>
+        <fieldset className="studio-styles" disabled={task.busy||(activeTab==='all'&&(loading||!!catalogError))}><legend className="sr-only">합성할 헤어스타일</legend>
+          {(activeTab==='recommended'?recs:visible).map(item=><label key={item.style_id} className={`studio-style${item.style_id===selected?.style_id?' selected':''}`}>
+            <input type="radio" name="studio-style" value={item.style_id} checked={item.style_id===selected?.style_id} onChange={()=>{clearResult();if(activeTab==='recommended')setRecommendedId(item.style_id);else setCatalogId(item.style_id)}}/>
             {item.image?<img src={hairImageUrl(item.image)} alt="" loading="lazy"/>:<span className="image-placeholder"/>}
-            <span><small>{'rank' in item?`추천 ${item.rank}`:`${labels[item.sex]??item.sex} · ${labels[item.length]??item.length}`}</small>{item.name}</span>
+            <span><small>{'rank' in item?`추천 ${item.rank}`:`${rankOf.has(item.style_id)?`추천 ${rankOf.get(item.style_id)} · `:''}${labels[item.sex]??item.sex} · ${labels[item.length]??item.length}`}</small>{item.name}</span>
           </label>)}
         </fieldset>
-        {activeMode==='recommendation'&&!recs.length&&<p className="empty-box">추천 스타일이 없습니다. 직접 선택을 이용해 주세요.</p>}
+        {activeTab==='recommended'&&!recs.length&&<p className="empty-box">추천 스타일이 없습니다. 전체 스타일에서 골라 주세요.</p>}
         {selected&&<p className="input-note studio-selected">선택한 스타일: <strong>{selected.name}</strong></p>}
         <button className="recommend-button" type="button" disabled={!ready} onClick={start}>{task.busy?'합성하고 있어요…':'AI로 헤어 합성하기'}<Icon name="arrow" size={18}/></button>
         <p className="input-note">사진은 합성을 위해 Google AI로 전송됩니다. 비회원은 하루 이용 횟수가 정해져 있어요.</p>
       </section>
     </div>
-    {task.busy&&<StudioProgress style={selected&&waitStyle(selected,styles.find(item=>item.style_id===selected.style_id),activeMode==='recommendation'?hair!.analysis.face_shape:null)}/>}
+    {task.busy&&<StudioProgress style={selected&&waitStyle(selected,styles.find(item=>item.style_id===selected.style_id),activeMode==='recommendation'&&hair?hair.analysis.face_shape:null)}/>}
     <TaskStatus busy={false} error={task.error}/>
     {render&&<section className="form-card studio-result"><div className="card-heading"><span className="step-number">03</span><div><h3>머리색 바꿔보기</h3><p>{render.styleName} · 색을 누르면 바로 바뀌어요.</p></div></div><HairColorStudio key={render.value.id} render={render.value} styleName={render.styleName} recommendedColors={colorRecs?.colors} basis={colorRecs?.basis} skinTone={colorRecs?.skinTone}
       makeupExport={makeupExport} onMakeup={photo=>onMakeup({photo,sourcePhoto:render.photo,styleName:render.styleName})}/></section>}

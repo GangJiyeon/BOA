@@ -26,7 +26,6 @@ def create_user(
     db: Session,
     *,
     email: str,
-    language: str,
     nationality: str,
     resides_in_korea: bool,
     agreed_terms: list[Terms],
@@ -36,7 +35,6 @@ def create_user(
     user = User(
         email=email,
         google_sub=google_sub,
-        language=language,
         nationality=nationality,
         resides_in_korea=resides_in_korea,
     )

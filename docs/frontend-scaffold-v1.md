@@ -11,8 +11,8 @@
 | 화면 | 폼·동작 | 백엔드 |
 | --- | --- | --- |
 | 시작·계정 | 현재 사용자 판별, 촬영 동의, 비회원 시작 | GET `/actor`, GET `/terms/current`, POST `/guest/session` |
-| 이메일 로그인·가입 | 이메일 코드 요청·확인, 가입 정보·약관 id 제출 | POST `/auth/email/send`, `/auth/email/verify`, `/auth/signup` |
-| 내 계정 | 회원 조회, 언어 저장, 세션 갱신·로그아웃 | GET·PATCH `/me`, POST `/auth/refresh`, `/auth/logout` |
+| 가입 | (이메일 로그인은 2026-11-25 제거) 가입 정보·약관 id 제출 | POST `/auth/signup` |
+| 내 계정 | 회원 조회, 세션 갱신·로그아웃 (언어 저장은 2026-11-25 제거) | GET `/me`, POST `/auth/refresh`, `/auth/logout` |
 | 피부·화장품 | 사진·선택 수분값 → 분석 scores → 추천 | POST `/skin/analyses/debug` (multipart), POST `/cosmetics/recommendations/preview` |
 | 얼굴형·헤어 | 사진 1장 또는 3장, 스타일 구분, 길이·질감 → 얼굴 분석 → 추천 | GET `/hair/styles`, POST `/hair/face-analysis/photos` (multipart), POST `/hair/recommend` |
 | 결과 확인 | 이번 실행의 요약, QR 토큰 조회·회원 이관, 분석 번호 조회 | GET `/qr/{token}`, POST `/qr/{token}/claim`, GET `/skin/analyses/{id}`, GET `/hair/recommend/{id}` |

@@ -12,6 +12,9 @@ from app.services.hydration_estimate import estimate, VERSION as OLD_VERSION, DI
 from test_moisture_fixed import actual
 
 
+from skin_test_helpers import post_skin
+
+
 class Score60Tests(unittest.TestCase):
     def test_sqrt_changes_only_within_level_and_preserves_old_records(self):
         for i in range(100001):
@@ -78,7 +81,7 @@ class Score60FlowTests(unittest.TestCase):
     def test_v1_and_v2_persist_separately_with_same_recommendations(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                aid=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json()['id']
+                aid=(await post_skin(c, json={'moisture_source':'none'})).json()['id']
                 saved_results=[];previews=[]
                 for version in (LEGACY_VERSION,VERSION):
                     measured=actual(True);measured['normalization_version']=version
@@ -103,7 +106,7 @@ class Score60FlowTests(unittest.TestCase):
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
                 # A valid small reaction must remain zero; failure has no receipt.
                 for count,level in ((2538,1),(2215,2),(2032,3),(1850,4),(1687,5),(1322,6),(510,6)):
-                    aid=(await c.post('/api/skin/analyses',json={'moisture_source':'none'})).json()['id']
+                    aid=(await post_skin(c, json={'moisture_source':'none'})).json()['id']
                     measured=actual(True);measured['normalization_version']=VERSION
                     for sample in measured['samples']:sample['count']=count
                     body={'analysis_id':aid,'result':measured}

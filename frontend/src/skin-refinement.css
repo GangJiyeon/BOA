@@ -11,12 +11,7 @@
 .cosmetic-preview .upload-zone strong { font-size: 20px; }
 .cosmetic-preview .upload-zone p { font-size: 13px; line-height: 1.8; }
 .cosmetic-preview .photo-frame { aspect-ratio: 1 / 1; max-height: 600px; border-radius: 14px; }
-.capture-checklist { list-style: none; padding: 0 0 20px; margin: 18px 0; border-bottom: 1px solid #d8dfd2; }
-.capture-checklist li { display: flex; align-items: center; gap: 8px; font-size: 12px; line-height: 2; color: #53634e; }
-.capture-checklist svg { width: 15px; height: 15px; flex-shrink: 0; }
-.scope-caption { font-weight: 600; font-size: 13px; }
-.care-types { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
-.care-types span { background: #fff; border: 1px solid #dce2d8; border-radius: 30px; padding: 5px 12px; font-size: 12px; }
+
 .cosmetic-preview .developer-tools { margin-top: 20px; background: transparent; border: 0; border-top: 1px solid #dce2d8; border-radius: 0; font-size: 12px; }
 .section-kicker { color: #57705c; font-size: 11px; letter-spacing: .08em; font-weight: 600; margin: 25px 0 12px; }
 .product-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
@@ -48,7 +43,6 @@
   .cosmetic-preview .input-panel, .cosmetic-preview .options-panel { padding: 18px; }
 }
 
-.capture-checklist ul { list-style: none; padding: 0; margin: 10px 0 0; }
 .cosmetic-preview .recommend-button { min-height: 54px; border-radius: 10px; }
 .cosmetic-preview .recommend-button:disabled { opacity: .5; cursor: not-allowed; }
 .score-card { border-radius: 14px; }

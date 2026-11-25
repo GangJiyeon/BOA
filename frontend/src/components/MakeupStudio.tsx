@@ -148,7 +148,12 @@ export default function MakeupStudio({file,profile}:{file:File|null;profile:Make
   const previewFace=faces.preview
   // 입술이 창백한 사진은 립 베이지를 덜 섞고 강도를 살짝 올림 (워커에서 잰 값)
   const lipPale=face?.lipPale??0
-  const looks=useMemo(()=>recommendMakeupLooks({tone,brightness,faceShape,sex,lipPale,cushion:profile.cushion},occasion),[tone,brightness,faceShape,sex,occasion,lipPale,profile.cushion?.shade,profile.cushion?.base])
+  // 쿠션은 매번 새 객체로 와서 값(호수·베이스)으로 고정 (객체 기준이면 룩 추천이 매 렌더 다시 계산)
+  const cushionShade=profile.cushion?.shade,cushionBase=profile.cushion?.base
+  const looks=useMemo(()=>{
+    const cushion=cushionShade!==undefined&&cushionBase!==undefined?{shade:cushionShade,base:cushionBase}:undefined
+    return recommendMakeupLooks({tone,brightness,faceShape,sex,lipPale,cushion},occasion)
+  },[tone,brightness,faceShape,sex,occasion,lipPale,cushionShade,cushionBase])
   const [selectedId,setSelectedId]=useState<LookId>('daily-light'),[intensity,setIntensity]=useState(1)
   // 속눈썹: 고르기 전에는 룩 값
   // 사진별 눈 화장 기본값: 사용자 눈매(속눈썹 라인)가 연하면 아이라인·섀도·속눈썹 기본 강도를 낮춤 (슬라이더에도 그 값이 보임)
@@ -260,13 +265,14 @@ export default function MakeupStudio({file,profile}:{file:File|null;profile:Make
   },[file])
   // 눈썹 교체(여성): 원래 눈썹을 지운 사진을 섞는 비율 (워커에서 섞음)
   const browWeight=browImages&&!browFill&&brows.on&&brows.amount>0?Math.min(1,scale)*Math.min(1,brows.amount/.3):0
-  const ownBrow=ownFill&&brows.on&&brows.amount>0?{amount:Math.min(1,brows.amount*scale),hex:brows.hex}:undefined
-  const ownBrowPreview=ownFill&&brows.on&&brows.amount>0?{amount:brows.amount,hex:brows.hex}:undefined
-  useEffect(()=>{if(face)post({type:'render',key:'main',target:'main',settings,browWeight,browFill:ownBrow})},[face,settings,browWeight,ownBrow?.amount,ownBrow?.hex,post])
+  // 값이 같으면 같은 객체 (워커 렌더 요청이 매 렌더 다시 가지 않게)
+  const ownBrow=useMemo(()=>ownFill&&brows.on&&brows.amount>0?{amount:Math.min(1,brows.amount*scale),hex:brows.hex}:undefined,[ownFill,brows.on,brows.amount,brows.hex,scale])
+  const ownBrowPreview=useMemo(()=>ownFill&&brows.on&&brows.amount>0?{amount:brows.amount,hex:brows.hex}:undefined,[ownFill,brows.on,brows.amount,brows.hex])
+  useEffect(()=>{if(face)post({type:'render',key:'main',target:'main',settings,browWeight,browFill:ownBrow})},[face,settings,browWeight,ownBrow,post])
   useEffect(()=>{
     if(!previewFace||mode!=='look')return
     for(const look of looks)post({type:'render',key:`look:${look.id}`,target:'preview',settings:fittedLooks[look.id],browWeight:browImages&&!browFill&&brows.on?Math.min(1,brows.amount/.3):0,browFill:ownBrowPreview})
-  },[previewFace,mode,looks,fittedLooks,browImages,browFill,brows.on,brows.amount,ownBrowPreview?.hex,post])
+  },[previewFace,mode,looks,fittedLooks,browImages,browFill,brows.on,brows.amount,ownBrowPreview,post])
   const mainFrame=frames.main&&face&&frames.main.token===face.token?frames.main:null
   useEffect(()=>{
     if(!loaded||!crop||!canvas.current)return

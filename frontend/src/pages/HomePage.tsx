@@ -44,6 +44,7 @@ export default function HomePage() {
   const [latestHair, setLatestHair] = useState<HairSessionResult | null>(null)
   const [latestCosmetics, setLatestCosmetics] = useState<CosmeticSessionResult | null>(null)
   const [studioMakeup, setStudioMakeup] = useState<StudioMakeupResult | null>(null)
+  const [sessionPhoto, setSessionPhoto] = useState<File | null>(null)
   const studioExport = useRef<(() => boolean) | null>(null)
   const healthRequest = useRef<AbortController | null>(null)
   const actorRequest = useRef<AbortController | null>(null)
@@ -102,7 +103,7 @@ export default function HomePage() {
     setLatestCosmetics(value); setLatestSkin(value.analysis)
   }, [])
   function clearSession() {
-    setLatestSkin(null); setLatestHair(null); setLatestCosmetics(null); setStudioMakeup(null)
+    setLatestSkin(null); setLatestHair(null); setLatestCosmetics(null); setStudioMakeup(null); setSessionPhoto(null)
     setSessionVersion(value => value + 1)
   }
   useEffect(() => {
@@ -118,6 +119,11 @@ export default function HomePage() {
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, expired)
   }, [refreshActor])
   const startAnalysis = () => { window.location.hash = '/skin' }
+  // 새 사진은 세션 사진으로, 삭제는 그 화면 사진이 세션 사진일 때만 세션에서도 지움
+  const updateSessionPhoto = useCallback((next: File | null, prev: File | null) => {
+    setSessionPhoto(current => next ?? (current === prev ? null : current))
+  }, [])
+  const photoProps = { sessionPhoto, onPhoto: updateSessionPhoto }
   function openStudioMakeup(result: StudioMakeupResult) {
     setStudioMakeup(result)
     window.location.hash = '/makeup'
@@ -140,14 +146,14 @@ export default function HomePage() {
     <div className="page-content">
       {current.page === 'home' && <LandingPage skin={latestSkin} hair={latestHair?.result ?? null} cosmetics={latestCosmetics} />}
       {visited.skin && <div hidden={current.page !== 'skin'} key={`skin:${sessionVersion}`}><CosmeticPreview active={current.page === 'skin'} onAnalysis={handleSkinAnalysis} onRecommendation={handleCosmeticResult} /></div>}
-      {visited.hair && <div hidden={current.page !== 'hair'} key={`hair:${sessionVersion}`}><HairPage onResult={value => { setLatestHair(value); void refreshQuota() }} /></div>}
+      {visited.hair && <div hidden={current.page !== 'hair'} key={`hair:${sessionVersion}`}><HairPage onResult={value => { setLatestHair(value); void refreshQuota() }} {...photoProps} /></div>}
       {current.page === 'start' && <AccountPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onLogin={clearSession} onLogout={clearSession} onSignup={clearSession} onStart={startAnalysis} />}
       {current.page === 'results' && <ResultsPage key={current.token} latestSkin={latestSkin} latestHair={latestHair} cosmetics={latestCosmetics} hasSharedToken={Boolean(current.token)} />}
       {current.page === 'kiosk' && <KioskPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onEnd={clearSession} onStart={startAnalysis} />}
-      {current.page === 'makeup' && <MakeupPage key={sessionVersion} hair={latestHair} studioResult={studioMakeup} onDiscardStudioResult={() => setStudioMakeup(null)} />}
-      {visited.studio && <div hidden={current.page !== 'studio'} key={`studio:${sessionVersion}`}><StudioPage hair={latestHair} onUsed={() => void refreshQuota()} onMakeup={openStudioMakeup} makeupExport={studioExport} /></div>}
+      {current.page === 'makeup' && <MakeupPage key={sessionVersion} hair={latestHair} studioResult={studioMakeup} onDiscardStudioResult={() => setStudioMakeup(null)} {...photoProps} />}
+      {visited.studio && <div hidden={current.page !== 'studio'} key={`studio:${sessionVersion}`}><StudioPage hair={latestHair} onUsed={() => void refreshQuota()} onMakeup={openStudioMakeup} makeupExport={studioExport} {...photoProps} /></div>}
     </div>
-    <footer className="app-footer"><span>BOA · 분석 및 추천</span>{showDevTools && <details><summary>연결 상태 확인</summary><ul className="health-status"><li>API: {health?.status ?? '연결 확인 필요'}</li><li>DB: {health?.db ? '연결됨' : '연결 확인 필요'}</li><li>S3: {health?.s3 ? '설정됨' : '미설정'}</li>{quota && <li>횟수 조회 · 피부 {quota.skin.remaining ?? '제한 없음'} / 헤어 {quota.hair.remaining ?? '제한 없음'} / AI 스튜디오 {quota.studio?.remaining ?? '제한 없음'}</li>}</ul>{quotaError && <p>{quotaError}</p>}<button className="secondary" onClick={() => { void refreshHealth(); void refreshActor() }}>상태 다시 확인</button></details>}</footer>
+    <footer className="app-footer"><span>BOA · 분석 및 추천</span>{showDevTools && <details><summary>연결 상태 확인</summary><ul className="health-status"><li>API: {health?.status ?? '연결 확인 필요'}</li><li>DB: {health?.db ? '연결됨' : '연결 확인 필요'}</li>{quota && <li>횟수 조회 · 피부 {quota.skin.remaining ?? '제한 없음'} / 헤어 {quota.hair.remaining ?? '제한 없음'} / AI 스튜디오 {quota.studio?.remaining ?? '제한 없음'}</li>}</ul>{quotaError && <p>{quotaError}</p>}<button className="secondary" onClick={() => { void refreshHealth(); void refreshActor() }}>상태 다시 확인</button></details>}</footer>
     </main></div>
   </div>
 }

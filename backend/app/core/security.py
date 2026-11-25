@@ -73,12 +73,6 @@ def decode_signup_token(token: str) -> SignupClaims | None:
     return SignupClaims(email=payload["sub"], google_sub=payload.get("google_sub"))
 
 
-def hash_email_code(email: str, code: str) -> str:
-    """6자리 코드는 경우의 수가 적어 HMAC 사용 (DB 유출 시 대입 방지), 이메일에 묶음"""
-    key = get_settings().jwt_secret.encode()
-    return hmac.new(key, f"{email}:{code}".encode(), hashlib.sha256).hexdigest()
-
-
 def new_token() -> str:
     return secrets.token_urlsafe(32)
 

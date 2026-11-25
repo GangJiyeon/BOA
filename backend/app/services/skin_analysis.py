@@ -17,7 +17,6 @@
 주의: 아래 임계값 상수는 샘플 사진으로 맞춰야 하는 잠정값이다.
 """
 
-import hashlib
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -62,7 +61,6 @@ DEFAULT_MIN_FACE_WIDTH = 250
 # 분위수를 다시 계산해 갱신해야 한다.
 BRIGHTNESS_RANGE = (100.0, 210.0)    # 피부 영역 L 채널 평균 (0~255)
 REDNESS_RANGE = (6.0, 14.0)          # 볼·이마의 홍조 지수 (R/G 로그비). 기본(phone) 프로필 값
-TROUBLE_RANGE = (0.0, 0.028)         # 반점 픽셀 비율. 참고용 (점수는 TROUBLE_COUNT_POINTS 개수 기준)
 
 # 트러블 점수: 면적 비율 대신 트러블 덩어리 개수로 매긴다 (개수, 점수) — 사이는 직선 보간.
 # 면적 비율(0~2.8%)은 중간 정도 여드름부터 100점으로 꽉 차 중간·심함을 구분하지 못했고,
@@ -639,23 +637,6 @@ def get_camera_profile(name: str | None) -> CameraProfile:
     return CAMERA_PROFILES[key]
 
 
-def _white_balance(image: np.ndarray) -> np.ndarray:
-    """이미지 전체 기준 그레이월드 보정을 적용한 BGR 이미지를 돌려준다.
-
-    기준을 피부 영역으로 잡으면 피부 평균색이 회색으로 강제되어
-    홍조 신호가 통째로 사라진다. 그래서 화면 전체를 기준으로 삼는다.
-    절대 밝기까지 맞추지는 않으므로, 촬영 가이드(조명 조건)는 여전히 필요하다.
-    """
-    return _apply_gains(image, _gray_world_gains(image))
-
-
-def _gray_world_gains(image: np.ndarray) -> np.ndarray:
-    """그레이월드 보정의 채널별 이득(B, G, R)을 계산한다."""
-    means = np.array(cv2.mean(image)[:3])  # B, G, R
-    target = float(np.mean(means))
-    return np.where(means > 1.0, target / np.maximum(means, 1.0), 1.0).astype(np.float32)
-
-
 def _apply_gains(image: np.ndarray, gains: np.ndarray) -> np.ndarray:
     """채널별 이득을 곱한 BGR 이미지를 돌려준다."""
     balanced = image.astype(np.float32) * gains.reshape(1, 1, 3)
@@ -1060,38 +1041,6 @@ def _sample_skin_lightness(
 # ── 공개 함수 ───────────────────────────────────────────────────────
 
 
-def measure_skin_lightness(
-    image_bytes: bytes,
-    *,
-    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
-    camera_profile: str = DEFAULT_CAMERA_PROFILE,
-) -> float:
-    """촬영 품질을 통과한 피부 영역의 CIELAB 명도(L*, 0~100)."""
-    sample = _sample_skin_lightness(
-        image_bytes, min_face_width=min_face_width, profile=get_camera_profile(camera_profile)
-    )
-    return round(sample.mean_l * 100 / 255, 2)
-
-
-def measure_skin_color(
-    image_bytes: bytes,
-    *,
-    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
-    camera_profile: str = DEFAULT_CAMERA_PROFILE,
-) -> dict[str, float]:
-    """촬영 품질을 통과한 사진에서 피부의 CIELAB 색을 표본 추출한다."""
-    sample = _sample_skin_lightness(
-        image_bytes, min_face_width=min_face_width, profile=get_camera_profile(camera_profile)
-    )
-    # 양볼의 중앙값을 같은 비중으로 반영한다.
-    cheeks = [sample.regions[name] for name in SKIN_REFERENCE_REGIONS if name in sample.regions]
-    patches = cheeks or list(sample.regions.values())
-    lab = sample.face.lab
-    colors = [np.median(lab[patch > 0][:, 1:], axis=0) for patch in patches]
-    a, b = np.median(colors, axis=0) - 128
-    return {"lightness": round(sample.mean_l * 100 / 255, 2), "a": float(a), "b": float(b)}
-
-
 def analyze_image_detail(
     image_bytes: bytes,
     *,
@@ -1216,32 +1165,6 @@ def analyze_image_detail(
         raw[f"{name}_l"] = round(cv2.mean(lab[:, :, 0], mask=mask)[0], 2)
 
     return scores, raw
-
-
-def analyze_image(
-    image_bytes: bytes,
-    *,
-    min_face_width: int = DEFAULT_MIN_FACE_WIDTH,
-    camera_profile: str = DEFAULT_CAMERA_PROFILE,
-) -> dict[str, int]:
-    """사진에서 지표 점수 4개를 산출한다."""
-    scores, _ = analyze_image_detail(
-        image_bytes, min_face_width=min_face_width, camera_profile=camera_profile
-    )
-    return scores
-
-
-def analyze_image_dummy(seed_key: str) -> Mapping[str, int]:
-    """사진 없이 쓰는 임시 점수.
-
-    S3가 아직 준비되지 않은 환경에서 파이프라인을 돌려보기 위한 것이다.
-    같은 seed_key면 같은 점수가 나오도록 해시를 쓴다.
-    """
-    digest = hashlib.sha256(seed_key.encode()).digest()
-    return {
-        code: _clamp(round(digest[i * 4] / 255 * 100))
-        for i, code in enumerate(PHOTO_METRIC_CODES)
-    }
 
 
 def moisture_score_from_raw(raw: int) -> int:

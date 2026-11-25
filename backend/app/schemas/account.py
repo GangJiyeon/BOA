@@ -47,38 +47,15 @@ class DevLoginRead(BaseModel):
     email: str
 
 
-# 이메일 형식만 간단히 확인 (실제 존재 여부는 코드 수신으로 확인)
-EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
-
-
-class EmailSendRequest(BaseModel):
-    email: str = Field(pattern=EMAIL_PATTERN, max_length=255)
-
-
-class EmailSendRead(BaseModel):
-    resend_seconds: int = Field(description="재발송 버튼 비활성화 시간")
-    dev_code: str | None = Field(default=None, description="DEV_LOGIN=true일 때만 포함")
-
-
-class EmailVerifyRequest(BaseModel):
-    email: str = Field(pattern=EMAIL_PATTERN, max_length=255)
-    code: str = Field(pattern=r"^\d{6}$")
-
-
 class LoginResultRead(BaseModel):
-    """이메일·구글 로그인 공통: 기존 회원이면 로그인(쿠키 발급), 처음이면 가입 토큰 반환"""
+    """구글 로그인: 기존 회원이면 로그인(쿠키 발급), 처음이면 가입 토큰 반환"""
 
     signup_required: bool
     signup_token: str | None = Field(default=None, description="가입 API에 전달, 10분 유효")
-    language: str | None = Field(default=None, description="로그인 시 저장된 언어")
-
-
-Language = Literal["ko", "en", "zh", "ja"]
 
 
 class SignupRequest(BaseModel):
-    signup_token: str = Field(description="email/verify 또는 google 응답의 signup_token")
-    language: Language
+    signup_token: str = Field(description="google 응답의 signup_token")
     nationality: str = Field(pattern=r"^[A-Z]{2}$", description="ISO 3166-1 alpha-2 (예: KR, US)")
     resides_in_korea: bool
     agreed_terms_ids: list[int] = Field(description="체크한 약관 id, 필수 4종 포함")
@@ -86,7 +63,6 @@ class SignupRequest(BaseModel):
 
 class SignupRead(BaseModel):
     user_id: int
-    language: str
 
 
 class GoogleLoginRequest(BaseModel):
@@ -137,16 +113,9 @@ class KioskStatusRead(KioskRead):
 
 class MeRead(BaseModel):
     email: str
-    language: str
     nationality: str | None
     resides_in_korea: bool | None
     google_linked: bool
-
-
-class MeUpdate(BaseModel):
-    """명세상 수정 가능한 건 언어뿐"""
-
-    language: Language
 
 
 class ConsentStatusRead(BaseModel):

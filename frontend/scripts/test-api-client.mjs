@@ -125,5 +125,36 @@ try {
     if (savedWindow === undefined) delete globalThis.window
     else globalThis.window = savedWindow
   }
+  // 탭 두 개가 동시에 만료 → 갱신은 한 번만, 두 탭 모두 로그인 유지 (리프레시 토큰은 쓸 때마다 교체)
+  if (globalThis.navigator?.locks) {
+    const loadTab = async tab => (await import(`data:text/javascript;base64,${Buffer.from(outputText + `\n// ${tab}`).toString('base64')}`)).api
+    const [tabA, tabB] = [await loadTab('a'), await loadTab('b')]
+    const store = new Map()
+    const savedTabWindow = globalThis.window
+    globalThis.window = Object.assign(new EventTarget(), { localStorage: { getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) } })
+    let expired = 0
+    globalThis.window.addEventListener('boa:session-expired', () => expired++)
+    let refreshToken = 'r0', accessValid = false, rotations = 0, staleRefreshes = 0
+    const cookieAtSend = () => refreshToken
+    try {
+      globalThis.fetch = async url => {
+        if (url === '/api/auth/refresh') {
+          const sent = cookieAtSend()
+          await new Promise(resolve => setTimeout(resolve, 20))
+          if (sent !== refreshToken) { staleRefreshes++; return unauthorized() }
+          refreshToken = `r${++rotations}`; accessValid = true
+          return new Response(null, {status:204})
+        }
+        return accessValid ? new Response('{"ok":true}') : unauthorized()
+      }
+      assert.deepEqual(await Promise.all([tabA('/me'), tabB('/guest/quota')]), [{ok:true}, {ok:true}])
+      assert.equal(rotations, 1)
+      assert.equal(staleRefreshes, 0)
+      assert.equal(expired, 0)
+    } finally {
+      if (savedTabWindow === undefined) delete globalThis.window
+      else globalThis.window = savedTabWindow
+    }
+  }
   console.log('API client: existing checks and automatic refresh scenarios passed')
 } finally { globalThis.fetch = savedFetch }

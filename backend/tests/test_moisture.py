@@ -15,6 +15,9 @@ def measurement(**changes):
     return value
 
 
+from skin_test_helpers import post_skin
+
+
 class MoistureTests(unittest.TestCase):
     setUp = fixture.ApiDatabaseTests.setUp
     tearDown = fixture.ApiDatabaseTests.tearDown
@@ -55,7 +58,7 @@ class MoistureTests(unittest.TestCase):
     def test_existing_analysis_and_recommendation_unchanged(self):
         async def flow():
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),base_url='http://test') as c:
-                before = await c.post('/api/skin/analyses',json={'moisture_source':'manual','moisture_score':25})
+                before = await post_skin(c, json={'moisture_source':'manual','moisture_score':25})
                 self.assertEqual(before.status_code,201)
                 analysis_id = before.json()['id']
                 rec1 = await c.post('/api/cosmetics/recommendations/preview',json={'scores':before.json()['scores']})
@@ -63,7 +66,8 @@ class MoistureTests(unittest.TestCase):
                 self.assertEqual(r.status_code,200)
                 self.assertEqual(r.json()['analysis_id'],analysis_id)
                 after = await c.get(f'/api/skin/analyses/{analysis_id}')
-                self.assertEqual(before.json(),after.json())
+                # debug 응답에만 있는 raw(원시값) 제외하고 비교
+                self.assertEqual({k:v for k,v in before.json().items() if k!='raw'},after.json())
                 rec2 = await c.post('/api/cosmetics/recommendations/preview',json={'scores':after.json()['scores']})
                 self.assertEqual(rec1.json()['recommendations'],rec2.json()['recommendations'])
         asyncio.run(flow())

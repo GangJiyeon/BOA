@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.core.security import hash_token, new_token
-from app.models import FaceAnalysis, GuestSession, HairRecRun, SkinAnalysis
+from app.models import FaceAnalysis, GuestSession, HairRecRun, HairRender, SkinAnalysis
 
 
 def find_active_session(db: Session, guest_id: UUID | None) -> GuestSession | None:
@@ -76,5 +76,6 @@ def transfer_to_user(db: Session, session: GuestSession, user_id: int) -> None:
         .where(SkinAnalysis.guest_id == session.id)
         .values(user_id=user_id, expires_at=None)
     )
-    for model in (HairRecRun, FaceAnalysis):
+    # AI 스튜디오 합성 결과도 이관 (안 하면 가입 직후 합성 결과 404)
+    for model in (HairRecRun, FaceAnalysis, HairRender):
         db.execute(update(model).where(model.guest_id == session.id).values(user_id=user_id))

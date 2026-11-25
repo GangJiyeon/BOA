@@ -6,7 +6,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import CHAR, DateTime, ForeignKey, SmallInteger, String, UniqueConstraint, func
+from sqlalchemy import CHAR, DateTime, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin
@@ -20,7 +20,6 @@ class User(TimestampMixin, Base):
     google_sub: Mapped[str | None] = mapped_column(String(255), unique=True)
     # 항상 소문자로 저장 (Jiyeon@gmail.com = jiyeon@gmail.com)
     email: Mapped[str] = mapped_column(String(255), unique=True)
-    language: Mapped[str] = mapped_column(String(5))  # ko / en / zh / ja
     nationality: Mapped[str | None] = mapped_column(CHAR(2))  # ISO 3166-1 alpha-2
     resides_in_korea: Mapped[bool | None]
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -60,18 +59,6 @@ class RefreshToken(Base):
     # 원문은 쿠키에만, DB에는 SHA-256 해시(64자)만 저장
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-
-
-class EmailVerification(Base):
-    """이메일 인증 코드, 이메일당 한 행이라 이메일이 기본키 (인증 성공 시 행 삭제)"""
-
-    __tablename__ = "email_verifications"
-
-    email: Mapped[str] = mapped_column(String(255), primary_key=True)
-    code_hash: Mapped[str] = mapped_column(String(64))
-    attempt_count: Mapped[int] = mapped_column(SmallInteger, default=0, server_default="0")
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class Kiosk(Base):

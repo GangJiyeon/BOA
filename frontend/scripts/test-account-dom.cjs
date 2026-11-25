@@ -32,8 +32,7 @@ global.fetch = async (url, init = {}) => {
     if (pendingDelete) await new Promise(resolve => { releaseDelete = resolve })
     return deleteFails ? json({ detail: '탈퇴 처리에 실패했습니다' }, 503) : new Response(null, { status: 204 })
   }
-  if (url === '/api/me' && init.method === 'PATCH') return json({ email: 'member@example.com', language: JSON.parse(init.body).language, nationality: 'KR', resides_in_korea: true, google_linked: false })
-  if (url === '/api/me') return json({ email: 'member@example.com', language: 'ko', nationality: 'KR', resides_in_korea: true, google_linked: false })
+  if (url === '/api/me') return json({ email: 'member@example.com', nationality: 'KR', resides_in_korea: true, google_linked: false })
   if (url === '/api/me/consents' && init.method === 'POST') {
     const body = JSON.parse(init.body)
     assert.notEqual(body.type, 'SERVICE')
@@ -68,14 +67,9 @@ async function mount() {
   await mount()
   assert(document.querySelector('.account-history'))
   assert(document.querySelector('.account-profile-top .account-email').textContent.includes('member@example.com'))
-  assert(document.querySelector('.account-profile-bottom .account-language'))
+  assert(!document.querySelector('.account-language'))
   assert(!document.querySelector('.account-preferences'))
   assert(!requests.some(r => r.url === '/api/me/consents'))
-  assert(button('저장').disabled)
-  await act(async () => { const select = document.getElementById('account-language'); select.value = 'en'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })) })
-  await click('저장')
-  assert(document.body.textContent.includes('언어 설정을 저장했습니다.'))
-  assert(button('저장').disabled)
   assert.equal(document.querySelector('.account-settings-link').getAttribute('href'), '#/start?view=settings')
   await navigate('#/start?view=settings')
   assert(!document.querySelector('.account-history'))
@@ -138,7 +132,7 @@ async function mount() {
   loadFails = false
   await click('동의 정보 다시 조회')
   assert(checkbox('마케팅 수신').checked)
-  console.log('Account UI: compact profile/language, separate settings navigation/back, consent and withdrawal regression passed')
+  console.log('Account UI: compact profile, separate settings navigation/back, consent and withdrawal regression passed')
 })().catch(err => { console.error(err); process.exitCode = 1 }).finally(async () => {
   if (root) await act(async () => root.unmount())
   dom.window.close(); fs.rmSync(dir, { recursive: true, force: true })

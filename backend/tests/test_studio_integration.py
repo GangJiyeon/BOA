@@ -35,6 +35,12 @@ def seed_style(db):
     db.commit()
 
 
+def add_removed_account_schema(db):
+    """현재 모델에 없는 예전 스키마 (이메일 로그인·언어, f1210a1b2c3d에서 삭제)"""
+    db.execute(text("ALTER TABLE users ADD COLUMN language VARCHAR(5) NOT NULL DEFAULT 'ko'"))
+    db.execute(text('CREATE TABLE email_verifications (email VARCHAR(255) PRIMARY KEY, code_hash VARCHAR(64) NOT NULL, attempt_count SMALLINT NOT NULL DEFAULT 0, expires_at DATETIME NOT NULL, sent_at DATETIME NOT NULL)'))
+
+
 class StudioIntegrationTests(unittest.TestCase):
     def test_create_poll_and_ownership_with_mocked_ai(self):
         engine=create_engine('sqlite://',connect_args={'check_same_thread':False},poolclass=StaticPool)
@@ -76,6 +82,7 @@ class StudioIntegrationTests(unittest.TestCase):
             with Session(engine) as db:seed_style(db)
             with engine.begin() as db:
                 db.execute(text('ALTER TABLE category_ingredients DROP COLUMN photo_eligible'))
+                add_removed_account_schema(db)
                 db.execute(text('CREATE TABLE alembic_version (version_num VARCHAR(32) PRIMARY KEY)'))
                 db.execute(text("INSERT INTO alembic_version VALUES ('f0910a1b2c3d')"))
             config=Config(str(Path(__file__).parents[1]/'alembic.ini'))
@@ -83,7 +90,7 @@ class StudioIntegrationTests(unittest.TestCase):
                 command.upgrade(config,'heads')
             self.assertIn('hair_renders',inspect(engine).get_table_names())
             with engine.connect() as db:
-                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f1110a1b2c3d'})
+                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f1210a1b2c3d'})
                 self.assertEqual(db.scalar(text('SELECT count(*) FROM hair_style_catalog')),1)
             engine.dispose()
 
@@ -98,6 +105,7 @@ class StudioIntegrationTests(unittest.TestCase):
                 db.commit()
             with engine.begin() as db:
                 db.execute(text('ALTER TABLE category_ingredients DROP COLUMN photo_eligible'))
+                add_removed_account_schema(db)
                 db.execute(text('CREATE TABLE alembic_version (version_num VARCHAR(32) PRIMARY KEY)'))
                 db.execute(text("INSERT INTO alembic_version VALUES ('b2c3d4e5f6a7')"))
             config=Config(str(Path(__file__).parents[1]/'alembic.ini'))
@@ -106,7 +114,7 @@ class StudioIntegrationTests(unittest.TestCase):
                 command.upgrade(config,'head')
             self.assertIn('moisture_observations',inspect(engine).get_table_names())
             with engine.connect() as db:
-                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f1110a1b2c3d'})
+                self.assertEqual(set(db.scalars(text('SELECT version_num FROM alembic_version'))),{'f1210a1b2c3d'})
                 self.assertEqual(db.scalar(text('SELECT hair_hex FROM hair_renders')),'#342820')
                 self.assertEqual(db.scalar(text('SELECT count(*) FROM hair_style_catalog')),1)
             engine.dispose()

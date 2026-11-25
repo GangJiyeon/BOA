@@ -222,6 +222,10 @@ class QuotaTest(unittest.TestCase):
             self.assertEqual(quota._limit("hair"), 3)
 
 
+# 눈꼬리·코·입·턱·눈썹 (나머지 점 채우기용)
+FILL_POINTS = [33, 133, 362, 263, 1, 4, 61, 291, 13, 14, 152, 168, 6, 197, 70, 63, 105, 66, 107, 336, 296, 334, 293, 300]
+
+
 def fake_landmarks(cx=200.0, chin=300.0, face_w=160.0, roll=0.0, yaw=0.0) -> np.ndarray:
     """prepare_photo·생성 검사에 쓰는 점만 채운 가짜 랜드마크"""
     lb = np.zeros((478, 2), np.float32)
@@ -234,7 +238,7 @@ def fake_landmarks(cx=200.0, chin=300.0, face_w=160.0, roll=0.0, yaw=0.0) -> np.
     for i, k in enumerate(hair_studio.FACE_OVAL):
         a = 2 * np.pi * i / len(hair_studio.FACE_OVAL)
         lb[k] = (cx + face_w / 2 * np.cos(a), chin - 110 + 110 * np.sin(a))
-    for k in hair_studio.ANCHORS + hair_studio.HAIR_ANCHORS:
+    for k in FILL_POINTS:
         if not lb[k].any():
             lb[k] = (cx + (k % 7 - 3) * 10, chin - 60 + (k % 5) * 8)
     return lb
