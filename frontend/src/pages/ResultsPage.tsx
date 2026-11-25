@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { showDevTools } from '../utils/uiFeatures'
 import PageIntro from '../components/PageIntro'
 import { getHairResult, type HairResult } from '../api/hair'
 import { getSkinAnalysis, type SkinAnalysis } from '../api/skin'
@@ -80,12 +81,12 @@ export default function ResultsPage({ latestSkin, latestHair, cosmetics, hasShar
         </> : <div className="empty-box"><p>아직 헤어 추천을 진행하지 않았습니다.</p><a className="text-action" href="#/hair">헤어 추천 시작 →</a></div>}
       </section>
     </>}
-    <details className="form-card result-debug-tools" onToggle={event => { if (!event.currentTarget.open) resetQuery() }}>
+    {showDevTools && <details className="form-card result-debug-tools" onToggle={event => { if (!event.currentTarget.open) resetQuery() }}>
       <summary>개발용 도구 · 분석 번호로 연결 확인</summary>
       <p className="input-note">저장된 결과의 API 연결을 확인하는 도구입니다. 조회한 결과는 이번 분석 목록에 추가하지 않습니다.</p>
       <form onSubmit={queryId}><div className="form-grid"><label className="field">결과 종류<select value={kind} onChange={e => { resetQuery(); setKind(e.target.value as 'skin' | 'hair') }}><option value="skin">피부 분석</option><option value="hair">헤어 추천</option></select></label><label className="field">번호<input type="number" min={1} step={1} required value={id} onChange={e => { resetQuery(); setId(e.target.value) }} /></label></div><button disabled={task.busy}>번호로 조회</button></form>
       <TaskStatus busy={task.busy} error={task.error} />
       {queriedSkin && <SkinSummary analysis={queriedSkin} />}{queriedHair && <HairResults result={queriedHair} />}
-    </details>
+    </details>}
   </section>
 }

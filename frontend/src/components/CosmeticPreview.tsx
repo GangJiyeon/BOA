@@ -1,3 +1,4 @@
+import { showDevTools } from '../utils/uiFeatures'
 import { scoreMaximum } from '../moisture/hydrationEstimate'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { getCosmeticPreview, type AnalysisMetricScore, type MetricCode, type PreviewRequest, type PreviewResponse, type ProductCategory } from '../api/cosmetics'
@@ -266,12 +267,12 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
             <button className="recommend-button" type="submit" disabled={loading || (inputMode === 'photo' && !photo)}>{loading ? '처리 중…' : inputMode === 'photo' ? '분석 시작' : '추천 제품 확인하기'}<Icon name="arrow" size={18} /></button>
           </div>
           </section></div>
-          <details className="developer-tools"><summary>연동 테스트 도구 {inputMode !== 'photo' && <span className="category-pill">테스트 모드</span>}</summary><label className="field">입력 방식<select value={inputMode} onChange={e => { setMeasurementScope(x => x + 1); clearResult(); setInputMode(e.target.value as 'photo' | 'analysis' | 'development') }}><option value="photo">사진 분석 후 자동 추천</option><option value="analysis">분석 결과 JSON · 연동 확인</option><option value="development">임시 점수 실험 · 개발용 가정</option></select></label></details>
+          {showDevTools && <details className="developer-tools"><summary>연동 테스트 도구 {inputMode !== 'photo' && <span className="category-pill">테스트 모드</span>}</summary><label className="field">입력 방식<select value={inputMode} onChange={e => { setMeasurementScope(x => x + 1); clearResult(); setInputMode(e.target.value as 'photo' | 'analysis' | 'development') }}><option value="photo">사진 분석 후 자동 추천</option><option value="analysis">분석 결과 JSON · 연동 확인</option><option value="development">임시 점수 실험 · 개발용 가정</option></select></label></details>}
         </fieldset>
       </form>
       {result && <div className="result-shortcut"><p role="status">추천 조회 완료 · {result.recommendations.length ? `${result.recommendations.length}개 제품을 확인할 수 있습니다.` : '제품이 없는 이유를 아래에서 확인해 주세요.'}</p><SectionJump targetId="results-title">결과로 이동</SectionJump></div>}
       {loading && <div className="request-progress" role="status"><span className="spinner" /><div><strong>{stage === 'analysis' ? '사진에서 피부 지표를 분석하고 있어요' : '분석 점수에 맞는 성분을 비교하고 있어요'}</strong><p>완료되면 아래에 결과가 표시됩니다. 메뉴를 이동해도 요청은 계속 진행됩니다.</p></div></div>}
-      {analysis && <p className="saved-status"><Icon name="check" size={16} />피부 분석 #{analysis.id} 완료 · 실제 분석 점수를 추천에 전달했습니다.</p>}
+      {analysis && <p className="saved-status"><Icon name="check" size={16} />피부 분석이 완료됐어요.</p>}
       {analysis && !result && <MetricScores scores={analysis.scores} moisture={relativeMoisture} />}
       {error && <p role="alert" className="error-box">{error}</p>}
       <div aria-live="polite" aria-busy={loading || pendingCategory !== null}>
@@ -308,7 +309,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
           {result.deferred_metrics.some(code => ['brightness', 'uniformity', 'trouble'].includes(code)) && <p>사진의 밝기·명도 편차·붉은 반점으로는 색소침착이나 모공 막힘을 확인할 수 없어 관련 성분 매칭을 보류합니다.</p>}
           {result.deferred_metrics.includes('redness') && <p>현재 규칙에서는 홍조 개선 매칭을 보류하며 조건부 배제와 보습 관리 후보 우선 표시에 반영합니다.</p>}
           </details>
-          <details className="method-details"><summary>추천 범위와 제한 확인</summary>{rednessCare && <p>{result.recommendation_notice}</p>}<p>전체 {result.stats.total_products.toLocaleString()}개 중 조건을 충족한 제품은 {result.stats.eligible_products.toLocaleString()}개입니다.</p><ul><li>종류 조건 제외: {result.stats.unsupported_category}</li><li>전성분 확인 미완료: {result.stats.incomplete_ingredients}</li><li>사용 방식 조건 제외: {result.stats.excluded_by_usage}</li><li>제외 성분 포함: {result.stats.excluded_by_ingredient}</li>{dailyCare ? <li>일상 관리 성분 기준 미충족: {result.stats.no_daily_care_ingredient ?? 0}</li> : <li>개선 지표 매칭 없음: {result.stats.no_matching_metric}</li>}</ul>{result.notices.filter(note => !note.startsWith('정렬 기준:') && !note.startsWith('제품명·종류로')).map(note => <p key={note}>{note}</p>)}<small>{result.rule_version}</small></details>
+          <details className="method-details"><summary>추천 범위와 제한 확인</summary>{rednessCare && <p>{result.recommendation_notice}</p>}<p>전체 {result.stats.total_products.toLocaleString()}개 중 조건을 충족한 제품은 {result.stats.eligible_products.toLocaleString()}개입니다.</p><ul><li>종류 조건 제외: {result.stats.unsupported_category}</li><li>전성분 확인 미완료: {result.stats.incomplete_ingredients}</li><li>사용 방식 조건 제외: {result.stats.excluded_by_usage}</li><li>제외 성분 포함: {result.stats.excluded_by_ingredient}</li>{dailyCare ? <li>일상 관리 성분 기준 미충족: {result.stats.no_daily_care_ingredient ?? 0}</li> : <li>개선 지표 매칭 없음: {result.stats.no_matching_metric}</li>}</ul>{result.notices.filter(note => !note.startsWith('정렬 기준:') && !note.startsWith('제품명·종류로') && (showDevTools || !/^센서 보조값은/.test(note))).map(note => <p key={note}>{showDevTools ? note : note.replace('개발용 추천 미리보기입니다. ', '').replace('피부 판정 구간은 DB의 임시 개발 기준입니다.', '피부 지표는 BOA 기준으로 분류합니다.')}</p>)}{showDevTools && <small>{result.rule_version}</small>}</details>
           <div className="result-return"><a className="button" href="#/results">이번 분석 결과 모아보기</a><SectionJump targetId="skin-input-title">입력·추천 조건으로 돌아가기</SectionJump></div>
         </section>}
       </div>

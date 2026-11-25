@@ -1,6 +1,7 @@
 import { hairImageUrl } from '../api/hair-image'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { analyzeFace, getHairStyles, recommendHair, type FaceAnalysis, type HairResult, type HairStyle, type Sex } from '../api/hair'
+import SkinToneSummary from '../components/SkinToneSummary'
 import { measureSkinTone } from '../api/skin'
 import { SectionJump, TaskStatus } from '../components/Shared'
 import PhotoUpload from '../components/PhotoUpload'
@@ -60,7 +61,7 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
       const skinTone = await measureSkinTone(session.photo, signal)
       if (signal.aborted) return
       const { colors, basis } = recommendHairColors(skinTone)
-      const updated = { ...session, recommendedColors: colors, hairColorBasis: basis }
+      const updated = { ...session, recommendedColors: colors, hairColorBasis: basis, skinTone }
       setSession(updated)
       onResult(updated)
     })
@@ -71,7 +72,7 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
   const labels: Record<string, string> = { short: '짧게', medium: '중간', long: '길게', straight: '직모', wavy: '웨이브', curly: '컬' }
   return <section><PageIntro eyebrow="FACE & HAIR" title="얼굴형 · 헤어 추천">얼굴형을 분석하고 원하는 길이와 질감으로 나에게 어울리는 스타일을 찾아보세요.</PageIntro><ProgressSteps labels={['사진 입력', '얼굴형 분석', '스타일 추천']} current={result ? 3 : stage === '헤어 추천 중' ? 2 : task.busy || analysis ? 1 : 0} />
     {catalogError && <p role="alert" className="error-box">헤어 목록 조회 실패: {catalogError} <button onClick={() => { setCatalogError(''); setCatalogLoaded(false); setRevision(n => n + 1) }}>다시 조회</button></p>}
-    {catalogLoaded && !styles.length && <p className="empty-box">헤어 스타일 데이터가 없습니다. 백엔드에서 카탈로그를 가져온 뒤 다시 조회해 주세요. <button onClick={() => { setCatalogError(''); setCatalogLoaded(false); setRevision(n => n + 1) }}>다시 조회</button></p>}
+    {catalogLoaded && !styles.length && <p className="empty-box">지금은 추천할 헤어스타일이 없어요. 잠시 후 다시 조회해 주세요. <button onClick={() => { setCatalogError(''); setCatalogLoaded(false); setRevision(n => n + 1) }}>다시 조회</button></p>}
     <form onSubmit={submit}><fieldset className="analysis-fieldset" disabled={task.busy}><legend className="sr-only">헤어 분석 입력</legend><div className="analysis-layout">
       <section className="form-card input-panel"><div className="card-heading"><span className="step-number">01</span><div><h3 id="hair-input-title" className="section-target" tabIndex={-1}>얼굴형을 확인할 사진</h3><p>빠른 분석은 정면 1장, 여러 각도는 3장으로.</p></div></div><PhotoUpload files={photos} multiple disabled={task.busy} onChange={files => { clear(true); setPhotos(files) }} /></section>
       <section className="form-card options-panel"><div className="card-heading"><span className="step-number">02</span><div><h3>원하는 스타일</h3><p>선호 없음으로 얼굴형 중심 추천도 가능해요.</p></div></div>
@@ -95,6 +96,7 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
         <div aria-live="polite">
           {colorTask.error && <p className="error-box">{colorTask.error}</p>}
           {session.recommendedColors && <>
+            {session.skinTone && <SkinToneSummary result={session.skinTone} recommendations={session.recommendedColors} basis={session.hairColorBasis} source="hair-recommendation" />}
             <p className="input-note">{session.hairColorBasis}</p>
             <HairColorSwatches colors={session.recommendedColors} showDescriptions />
             <p className="input-note">화면은 색상 미리보기예요. 실제 발색과 밝히는 시술의 필요 여부는 현재 모발색과 염색·탈색 이력에 따라 달라져요.</p>
@@ -119,7 +121,7 @@ export function HairColorSwatches({ colors, showDescriptions = false }: {
 }
 
 export function HairResults({ result, titleId }: { result: HairResult; titleId?: string }) {
-  return <section className="hair-results"><div className="results-heading"><h3 id={titleId} className="section-target" tabIndex={-1}>헤어 추천 #{result.run_id}</h3><span>{result.recommendations.length}개 스타일</span></div>{!result.recommendations.length && <p className="empty-box">현재 조건에 맞는 스타일이 없습니다. 선호 조건이나 카탈로그를 확인해 주세요.</p>}
+  return <section className="hair-results"><div className="results-heading"><h3 id={titleId} className="section-target" tabIndex={-1}>헤어 추천</h3><span>{result.recommendations.length}개 스타일</span></div>{!result.recommendations.length && <p className="empty-box">현재 조건에 맞는 스타일이 없습니다. 선호 조건이나 카탈로그를 확인해 주세요.</p>}
     <ul className="hair-grid">{result.recommendations.map(style => <li className="hair-card" key={style.style_id}>
       <HairImage key={style.image} url={style.image} name={style.name} /><div className="hair-card-body"><span className="hair-rank">추천 {style.rank}</span><h4>{style.name}</h4><p className="hair-score">매칭 점수 <strong>{style.score.toFixed(2)}</strong></p>{style.note && <details><summary>스타일 안내</summary><p>{style.note}</p></details>}</div>
     </li>)}</ul>

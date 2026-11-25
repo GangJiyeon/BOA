@@ -1,5 +1,5 @@
 import { hairImageUrl } from '../api/hair-image'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type Ref } from 'react'
 import { createHairRender, getHairRender, type HairRender } from '../api/studio'
 import { getHairStyles, type HairStyle } from '../api/hair'
 import PageIntro, { ProgressSteps } from '../components/PageIntro'
@@ -9,9 +9,9 @@ import PhotoUpload from '../components/PhotoUpload'
 import { TaskStatus } from '../components/Shared'
 import HairColorStudio from '../components/HairColorStudio'
 import { useTask } from '../hooks/useTask'
-import { measureSkinTone } from '../api/skin'
+import { measureSkinTone, type SkinToneResult } from '../api/skin'
 import { recommendHairColors, type HairColorRecommendation } from '../studio/hairColorRecommendations'
-import type { HairSessionResult } from '../types/sessionResults'
+import type { HairSessionResult, StudioMakeupResult } from '../types/sessionResults'
 import './StudioPage.css'
 
 const POLL_MS = 2000
@@ -88,7 +88,7 @@ function waitStyle(item:HairStyle|HairSessionResult['result']['recommendations']
   }
 }
 
-export default function StudioPage({hair,onUsed}:{hair:HairSessionResult|null;onUsed:()=>void}) {
+export default function StudioPage({hair,onUsed,onMakeup,makeupExport}:{hair:HairSessionResult|null;onUsed:()=>void;onMakeup:(result:StudioMakeupResult)=>void;makeupExport?:Ref<()=>boolean>}) {
   const task=useTask()
   const [mode,setMode]=useState<'catalog'|'recommendation'>(hair?'recommendation':'catalog')
   const activeMode=mode==='recommendation'&&hair?'recommendation':'catalog'
@@ -103,8 +103,8 @@ export default function StudioPage({hair,onUsed}:{hair:HairSessionResult|null;on
   const [sex,setSex]=useState(''),[length,setLength]=useState(''),[texture,setTexture]=useState('')
   const [render,setRender]=useState<{value:HairRender;styleName:string;photo:File}|null>(null)
   // 추천 헤어색: 헤어 페이지에서 같은 사진으로 받아둔 게 있으면 그대로, 없으면 합성 사진으로 피부톤 분석 (실패하면 추천 없이)
-  const [toneRecs,setToneRecs]=useState<{photo:File;colors:HairColorRecommendation[];basis:string}|null>(null)
-  const sessionRecs=render&&hair?.recommendedColors&&render.photo===hair.photo?{colors:hair.recommendedColors,basis:hair.hairColorBasis}:null
+  const [toneRecs,setToneRecs]=useState<{photo:File;colors:HairColorRecommendation[];basis:string;skinTone?:SkinToneResult}|null>(null)
+  const sessionRecs=render&&hair?.recommendedColors&&render.photo===hair.photo?{colors:hair.recommendedColors,basis:hair.hairColorBasis,skinTone:hair.skinTone}:null
   const colorRecs=sessionRecs??(render&&toneRecs?.photo===render.photo?toneRecs:null)
   const needTone=render&&!sessionRecs&&toneRecs?.photo!==render.photo?render.photo:null
   useEffect(()=>{
@@ -113,7 +113,7 @@ export default function StudioPage({hair,onUsed}:{hair:HairSessionResult|null;on
     measureSkinTone(needTone,controller.signal).then(sample=>{
       if(controller.signal.aborted)return
       const {colors,basis}=recommendHairColors(sample)
-      setToneRecs({photo:needTone,colors,basis})
+      setToneRecs({photo:needTone,colors,basis,skinTone:sample})
     }).catch(()=>{if(!controller.signal.aborted)setToneRecs({photo:needTone,colors:[],basis:''})})
     return()=>controller.abort()
   },[needTone])
@@ -178,7 +178,7 @@ export default function StudioPage({hair,onUsed}:{hair:HairSessionResult|null;on
           {photoError&&<p role="alert" className="error-box">{photoError}</p>}
           {!hair&&<p className="input-note">헤어 추천 결과도 사용할 수 있어요. <a href="#/hair">얼굴형 · 헤어 추천 받기</a></p>}
         </>:<>
-          <p className="input-note">얼굴형 분석 #{hair!.analysis.id} · {hair!.analysis.face_shape} 추천에 사용한 정면 사진이에요.</p>
+          <p className="input-note">얼굴형 분석({hair!.analysis.face_shape})에 사용한 정면 사진이에요.</p>
           <div className="studio-hair-photo"><PhotoPreview file={hair!.photo}/></div>
         </>}
       </section>
@@ -209,6 +209,7 @@ export default function StudioPage({hair,onUsed}:{hair:HairSessionResult|null;on
     </div>
     {task.busy&&<StudioProgress style={selected&&waitStyle(selected,styles.find(item=>item.style_id===selected.style_id),activeMode==='recommendation'?hair!.analysis.face_shape:null)}/>}
     <TaskStatus busy={false} error={task.error}/>
-    {render&&<section className="form-card studio-result"><div className="card-heading"><span className="step-number">03</span><div><h3>머리색 바꿔보기</h3><p>{render.styleName} · 색을 누르면 바로 바뀌어요.</p></div></div><HairColorStudio key={render.value.id} render={render.value} styleName={render.styleName} recommendedColors={colorRecs?.colors} basis={colorRecs?.basis}/></section>}
+    {render&&<section className="form-card studio-result"><div className="card-heading"><span className="step-number">03</span><div><h3>머리색 바꿔보기</h3><p>{render.styleName} · 색을 누르면 바로 바뀌어요.</p></div></div><HairColorStudio key={render.value.id} render={render.value} styleName={render.styleName} recommendedColors={colorRecs?.colors} basis={colorRecs?.basis} skinTone={colorRecs?.skinTone}
+      makeupExport={makeupExport} onMakeup={photo=>onMakeup({photo,sourcePhoto:render.photo,styleName:render.styleName})}/></section>}
   </section>
 }

@@ -1,9 +1,10 @@
 import { SESSION_EXPIRED_EVENT } from '../api/client'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react'
 import { getHealth, type Health } from '../api/health'
 import { getActor, getQuota, type Actor, type Quota } from '../api/account'
 import type { SkinAnalysis } from '../api/skin'
-import type { CosmeticSessionResult, HairSessionResult } from '../types/sessionResults'
+import type { CosmeticSessionResult, HairSessionResult, StudioMakeupResult } from '../types/sessionResults'
+import { showDevTools } from '../utils/uiFeatures'
 import CosmeticPreview from '../components/CosmeticPreview'
 import AccountPage from './AccountPage'
 import HairPage from './HairPage'
@@ -27,10 +28,11 @@ function route() {
   const page = path?.replace(/^\//, '')
   return { page: (pages.some(item => item.id === page) ? page : 'home') as Page, token: new URLSearchParams(query).get('token') ?? '' }
 }
+const sidebarPages = pages.filter(page => page.id !== 'start' && page.id !== 'kiosk')
 const actorNames = { anonymous: '비로그인', guest: '비회원', member: '회원', kiosk: '키오스크' }
 export default function HomePage() {
   const [current, setCurrent] = useState(route)
-  const [visited, setVisited] = useState(() => ({ skin: route().page === 'skin', hair: route().page === 'hair' }))
+  const [visited, setVisited] = useState(() => ({ skin: route().page === 'skin', hair: route().page === 'hair', studio: route().page === 'studio' }))
   const [sessionVersion, setSessionVersion] = useState(0)
   const [health, setHealth] = useState<Health | null>(null)
   const [healthError, setHealthError] = useState('')
@@ -41,6 +43,8 @@ export default function HomePage() {
   const [latestSkin, setLatestSkin] = useState<SkinAnalysis | null>(null)
   const [latestHair, setLatestHair] = useState<HairSessionResult | null>(null)
   const [latestCosmetics, setLatestCosmetics] = useState<CosmeticSessionResult | null>(null)
+  const [studioMakeup, setStudioMakeup] = useState<StudioMakeupResult | null>(null)
+  const studioExport = useRef<(() => boolean) | null>(null)
   const healthRequest = useRef<AbortController | null>(null)
   const actorRequest = useRef<AbortController | null>(null)
   const quotaRequest = useRef<AbortController | null>(null)
@@ -62,7 +66,7 @@ export default function HomePage() {
     const update = () => {
       const next = route()
       setCurrent(next)
-      if (next.page === 'skin' || next.page === 'hair') setVisited(value => ({ ...value, [next.page]: true }))
+      if (next.page === 'skin' || next.page === 'hair' || next.page === 'studio') setVisited(value => ({ ...value, [next.page]: true }))
     }
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)
@@ -97,7 +101,10 @@ export default function HomePage() {
   const handleCosmeticResult = useCallback((value: CosmeticSessionResult) => {
     setLatestCosmetics(value); setLatestSkin(value.analysis)
   }, [])
-  function clearSession() { setLatestSkin(null); setLatestHair(null); setLatestCosmetics(null); setSessionVersion(value => value + 1) }
+  function clearSession() {
+    setLatestSkin(null); setLatestHair(null); setLatestCosmetics(null); setStudioMakeup(null)
+    setSessionVersion(value => value + 1)
+  }
   useEffect(() => {
     const expired = () => {
       actorRequest.current?.abort()
@@ -111,16 +118,25 @@ export default function HomePage() {
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, expired)
   }, [refreshActor])
   const startAnalysis = () => { window.location.hash = '/skin' }
+  function openStudioMakeup(result: StudioMakeupResult) {
+    setStudioMakeup(result)
+    window.location.hash = '/makeup'
+  }
+  function handleSidebarClick(event: MouseEvent<HTMLElement>) {
+    if (current.page !== 'studio' || event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+    if (!(event.target instanceof window.Element) || !event.target.closest('a[href="#/makeup"]')) return
+    if (studioExport.current?.()) event.preventDefault()
+  }
   return <div className="app-shell">
     <a className="skip-link" href="#page-content" onClick={event => { event.preventDefault(); document.getElementById('page-content')?.focus() }}>본문으로 이동</a>
-    <aside className="tablet-sidebar">
+    <aside className="tablet-sidebar" onClick={handleSidebarClick}>
       <a href="#/home" className="tablet-brand" aria-label="BOA 홈">BOA<span>분석 · 추천</span></a>
-      <nav className="app-nav" aria-label="주요 메뉴">{pages.map(page => <a key={page.id} href={`#/${page.id}`} aria-current={current.page === page.id ? 'page' : undefined}><Icon name={page.icon as IconName} size={23} /><span>{page.label}</span></a>)}</nav>
+      <nav className="app-nav" aria-label="주요 메뉴">{sidebarPages.map(page => <a key={page.id} href={`#/${page.id}`} aria-current={current.page === page.id ? 'page' : undefined}><Icon name={page.icon as IconName} size={23} /><span>{page.label}</span></a>)}</nav>
     </aside>
     <div className="workspace">
       <header className="tablet-topbar"><span>{pages.find(page => page.id === current.page)?.label}</span><div><span className={`connection-badge ${health?.db ? 'connected' : ''}`}><i />{health?.db ? '연결됨' : '연결 확인 필요'}</span><a href="#/start" className="account-link" aria-label="계정 화면 열기"><Icon name="user" size={20} />{actor ? actorNames[actor.kind] : '계정'}</a></div></header>
     <main id="page-content" tabIndex={-1}>
-    {(healthError || actorError) && <div role="alert" className="error-box">{healthError && `백엔드 연결 실패: ${healthError}`}{actorError && ` 세션 확인 실패: ${actorError}`} <button onClick={() => { void refreshHealth(); void refreshActor() }}>연결 다시 확인</button></div>}
+    {(healthError || actorError) && <div role="alert" className="error-box">{healthError && `서비스 연결 실패: ${healthError}`}{actorError && ` 세션 확인 실패: ${actorError}`} <button onClick={() => { void refreshHealth(); void refreshActor() }}>연결 다시 확인</button></div>}
     <div className="page-content">
       {current.page === 'home' && <LandingPage skin={latestSkin} hair={latestHair?.result ?? null} cosmetics={latestCosmetics} />}
       {visited.skin && <div hidden={current.page !== 'skin'} key={`skin:${sessionVersion}`}><CosmeticPreview active={current.page === 'skin'} onAnalysis={handleSkinAnalysis} onRecommendation={handleCosmeticResult} /></div>}
@@ -128,10 +144,10 @@ export default function HomePage() {
       {current.page === 'start' && <AccountPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onLogin={clearSession} onLogout={clearSession} onSignup={clearSession} onStart={startAnalysis} />}
       {current.page === 'results' && <ResultsPage key={current.token} latestSkin={latestSkin} latestHair={latestHair} cosmetics={latestCosmetics} hasSharedToken={Boolean(current.token)} />}
       {current.page === 'kiosk' && <KioskPage actor={actor} onActorChange={refreshActor} onSession={clearSession} onEnd={clearSession} onStart={startAnalysis} />}
-      {current.page === 'makeup' && <MakeupPage hair={latestHair} />}
-      {current.page === 'studio' && <StudioPage hair={latestHair} onUsed={() => void refreshQuota()} />}
+      {current.page === 'makeup' && <MakeupPage key={sessionVersion} hair={latestHair} studioResult={studioMakeup} onDiscardStudioResult={() => setStudioMakeup(null)} />}
+      {visited.studio && <div hidden={current.page !== 'studio'} key={`studio:${sessionVersion}`}><StudioPage hair={latestHair} onUsed={() => void refreshQuota()} onMakeup={openStudioMakeup} makeupExport={studioExport} /></div>}
     </div>
-    <footer className="app-footer"><span>BOA · 분석 및 추천</span><details><summary>연결 상태 확인</summary><ul className="health-status"><li>API: {health?.status ?? '연결 확인 필요'}</li><li>DB: {health?.db ? '연결됨' : '연결 확인 필요'}</li><li>S3: {health?.s3 ? '설정됨' : '미설정'}</li>{quota && <li>횟수 조회 · 피부 {quota.skin.remaining ?? '제한 없음'} / 헤어 {quota.hair.remaining ?? '제한 없음'} / AI 스튜디오 {quota.studio?.remaining ?? '제한 없음'}</li>}</ul>{quotaError && <p>{quotaError}</p>}<button className="secondary" onClick={() => { void refreshHealth(); void refreshActor() }}>상태 다시 확인</button></details></footer>
+    <footer className="app-footer"><span>BOA · 분석 및 추천</span>{showDevTools && <details><summary>연결 상태 확인</summary><ul className="health-status"><li>API: {health?.status ?? '연결 확인 필요'}</li><li>DB: {health?.db ? '연결됨' : '연결 확인 필요'}</li><li>S3: {health?.s3 ? '설정됨' : '미설정'}</li>{quota && <li>횟수 조회 · 피부 {quota.skin.remaining ?? '제한 없음'} / 헤어 {quota.hair.remaining ?? '제한 없음'} / AI 스튜디오 {quota.studio?.remaining ?? '제한 없음'}</li>}</ul>{quotaError && <p>{quotaError}</p>}<button className="secondary" onClick={() => { void refreshHealth(); void refreshActor() }}>상태 다시 확인</button></details>}</footer>
     </main></div>
   </div>
 }
