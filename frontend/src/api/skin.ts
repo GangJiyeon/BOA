@@ -23,11 +23,17 @@ export const getSkinAnalysis = (id: number, signal?: AbortSignal) => api<SkinAna
 
 export type SkinColorSample = { lightness: number; a: number; b: number }
 
-// 헤어색 추천에 필요한 톤 분석 응답 필드만 사용한다.
+// 헤어색 추천 알고리즘의 입력과 화면 표시용 API 응답을 구분한다.
 export type SkinToneSample = { undertone: string; confidence: string; raw: { L: number } }
+
+export type SkinToneResult = SkinToneSample & {
+  brightness_label: string
+  undertone_label: string
+  palette: { cushion: string }
+}
 
 export function measureSkinTone(file: File, signal?: AbortSignal) {
   const body = new FormData()
   body.append('file', file)
-  return api<SkinToneSample>('/skin/tone', { method: 'POST', body, signal })
+  return api<SkinToneResult>('/skin/tone', { method: 'POST', body, signal })
 }

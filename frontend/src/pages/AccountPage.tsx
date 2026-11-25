@@ -7,6 +7,7 @@ import { useTask } from '../hooks/useTask'
 import GoogleLoginButton from '../components/GoogleLoginButton'
 import AccountPreferences from '../components/AccountPreferences'
 import AccountHistory from '../components/AccountHistory'
+import { emailLoginEnabled, showDevTools } from '../utils/uiFeatures'
 import Icon from '../components/Icon'
 
 function settingsView() { return new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('view') === 'settings' }
@@ -122,6 +123,7 @@ export default function AccountPage({ actor, onActorChange, onSession, onLogin, 
     })
   }
   return <section className="account-page"><PageIntro eyebrow={actor?.kind === 'member' ? 'MY ACCOUNT' : 'WELCOME TO BOA'} title={actor?.kind === 'member' ? (showSettings ? '계정 설정' : '내 계정') : '시작하기 · 계정'}>{actor?.kind === 'member' ? (showSettings ? '약관 동의와 계정 이용 설정을 관리하세요.' : '내 정보와 저장된 분석 기록을 확인하세요.') : '비회원으로 시작하거나 이메일 인증 후 로그인하세요.'}</PageIntro>
+    <p><a className="text-action" href="#/kiosk">키오스크 기기 관리</a></p>
     {actor?.kind !== 'member' && termsError && <p role="alert" className="error-box">{termsError} <button type="button" onClick={() => { setFace(false); setAge(false); setAgreed([]); retry() }}>약관 다시 조회</button></p>}
     {actor?.kind === 'member' ? showSettings ? <>
       <a className="account-back" href="#/start" aria-disabled={task.busy} onClick={event => { if (task.busy) event.preventDefault() }}>← 내 계정으로</a>
@@ -157,11 +159,12 @@ export default function AccountPage({ actor, onActorChange, onSession, onLogin, 
           <button type="submit" disabled={task.busy || !actor || (actor.kind !== 'guest' && (!faceTerm || !face || !age))}>{actor?.kind === 'guest' ? '세션 이어서 시작' : '동의하고 시작'}</button>
         </>}
       </form>
-      <section className="form-card"><h3>이메일 로그인</h3>{actor?.kind === 'kiosk' ? <p>일반 계정으로 로그인하려면 <a href="#/kiosk">키오스크 등록을 해제</a>해 주세요.</p> : <><p className="input-note">현재 메일 발송은 서버 로그 출력 단계입니다. 테스트 코드는 백엔드 담당자에게 확인하세요.</p>
+      <section className="form-card"><h3>로그인</h3>{actor?.kind === 'kiosk' ? <p>일반 계정으로 로그인하려면 <a href="#/kiosk">키오스크 등록을 해제</a>해 주세요.</p> : <>{emailLoginEnabled && <>
         <form onSubmit={send}><label className="field">이메일<input type="email" required autoComplete="email" value={email} onChange={e => { task.reset(); setEmail(e.target.value); setSentEmail(''); setSignupToken(null); setCode(''); setDevCode(null); setMessage('') }} /></label>
           <button type="submit" disabled={task.busy || seconds > 0}>{seconds ? `${seconds}초 후 재요청` : '인증 코드 요청'}</button></form>
         {sentEmail && !signupToken && <form onSubmit={verify}><label className="field">인증 코드<input required inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value)} /></label>
-          {devCode && <p>개발 환경 인증 코드: <strong>{devCode}</strong></p>}<button type="submit" disabled={task.busy}>코드 확인</button></form>}
+          {showDevTools && devCode && <p>개발 환경 인증 코드: <strong>{devCode}</strong></p>}<button type="submit" disabled={task.busy}>코드 확인</button></form>}</>}
+        {!emailLoginEnabled && !import.meta.env.VITE_GOOGLE_CLIENT_ID && <p className="input-note">이 환경에서는 비회원으로 이용해 주세요.</p>}
         <GoogleLoginButton disabled={task.busy} onCode={loginWithGoogle} onError={setMessage} /></>}
       </section>
     </div>}

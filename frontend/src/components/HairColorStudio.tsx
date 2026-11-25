@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react'
 import { type HairRender, type HairRenderBase } from '../api/studio'
 import { PALETTE, type HairBase, type HairColor } from '../studio/palette'
+import type { SkinToneResult } from '../api/skin'
+import SkinToneSummary from './SkinToneSummary'
 import type { HairColorRecommendation } from '../studio/hairColorRecommendations'
 import { hexToRgb, loadPixels, prepareBase, renderColor, rgbToLab, type PreparedBase } from '../studio/recolor'
 
@@ -15,18 +17,35 @@ async function prepare(base: HairRenderBase, size: readonly [number, number] | n
   return prepareBase(image, mask.data)
 }
 
+function paint(canvas: HTMLCanvasElement, image: ImageData, base: PreparedBase, color: HairColor | null) {
+  if (canvas.width !== image.width) canvas.width = image.width
+  if (canvas.height !== image.height) canvas.height = image.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return false
+  if (color) renderColor(base, color, image.data)
+  else image.data.set(base.src)
+  ctx.putImageData(image, 0, 0)
+  return true
+}
+
 // 합성 결과 위에서 프리셋으로 머리색만 바꿔봄
 // recommendedColors가 있으면 사용자가 고르기 전까지 첫 추천색을 입혀서 보여줌, basis: 추천 이유 한 줄
-export default function HairColorStudio({ render, styleName, recommendedColors = [], basis }: {
+export default function HairColorStudio({ render, styleName, recommendedColors = [], basis, skinTone, onMakeup, makeupExport }: {
   render: HairRender
   styleName: string
   recommendedColors?: HairColorRecommendation[]
+  skinTone?: SkinToneResult
   basis?: string
+  onMakeup: (photo: File) => void
+  makeupExport?: Ref<() => boolean>
 }) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const out = useRef<ImageData | null>(null)
   const [bases, setBases] = useState<Partial<Record<HairBase, PreparedBase>>>({})
   const [error, setError] = useState('')
+  const [exportError, setExportError] = useState('')
+  const [exporting, setExporting] = useState(false)
+  const exportPending = useRef(false)
   const [picked, setPicked] = useState<HairColor | null>(null)
   // 직접 고르거나 기본 색으로 되돌리기 전에는 첫 추천색
   const [touched, setTouched] = useState(false)
@@ -68,12 +87,7 @@ export default function HairColorStudio({ render, styleName, recommendedColors =
   useEffect(() => {
     const el = canvas.current, image = out.current
     if (!el || !base || !image) return
-    el.width = image.width; el.height = image.height
-    const ctx = el.getContext('2d')
-    if (!ctx) return
-    if (!color || holding) image.data.set(base.src)
-    else renderColor(base, color, image.data)
-    ctx.putImageData(image, 0, 0)
+    paint(el, image, base, holding ? null : color)
   }, [base, color, holding])
 
   function save() {
@@ -81,6 +95,34 @@ export default function HairColorStudio({ render, styleName, recommendedColors =
     link.download = `boa-${styleName}-${color?.name ?? '기본'}.png`
     link.href = canvas.current?.toDataURL('image/png') ?? ''
     link.click()
+  }
+
+  useImperativeHandle(makeupExport, () => () => {
+    if (!base || !canvas.current || !out.current) return false
+    void openMakeup()
+    return true
+  })
+
+  async function openMakeup() {
+    const el = canvas.current, image = out.current
+    if (!el || !image || !base || exportPending.current) return
+    exportPending.current = true
+    const from = window.location.hash
+    setExportError('')
+    setExporting(true)
+    try {
+      // 현재 선택한 머리색을 포함하고, 비교용으로 잠시 보이는 염색 전 이미지는 넘기지 않는다.
+      if (!paint(el, image, base, color)) throw new Error()
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        el.toBlob(result => result ? resolve(result) : reject(new Error()), 'image/png')
+      })
+      if (canvas.current === el && window.location.hash === from) onMakeup(new File([blob], `boa-ai-studio-${render.id}.png`, { type: blob.type }))
+    } catch {
+      if (canvas.current === el) setExportError('메이크업에 보낼 사진을 만들지 못했어요. 다시 시도해 주세요.')
+    } finally {
+      exportPending.current = false
+      if (canvas.current === el) setExporting(false)
+    }
   }
 
   const ready = Boolean(base)
@@ -96,13 +138,16 @@ export default function HairColorStudio({ render, styleName, recommendedColors =
         <button type="button" className="secondary" disabled={!color || !base}
           onPointerDown={() => setHolding(true)} onPointerUp={() => setHolding(false)} onPointerLeave={() => setHolding(false)} onPointerCancel={() => setHolding(false)}
           onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setHolding(true) } }} onKeyUp={() => setHolding(false)}>누르는 동안 염색 전 보기</button>
-        <button type="button" disabled={!base} onClick={save}>이미지 저장</button>
+        <button type="button" className="secondary" disabled={!base} onClick={save}>이미지 저장</button>
+        <button type="button" disabled={!base || holding || exporting} onClick={() => void openMakeup()}>{exporting ? '사진 준비 중…' : '메이크업에 적용하기'}</button>
       </div>}
+      {exportError && <p role="alert" className="error-box">{exportError}</p>}
     </div>
     <div className="color-studio-palette">
       <div className="color-studio-current"><span className="eyebrow">HAIR COLOR</span><strong>{color?.name ?? '기본 (중간 갈색)'}</strong></div>
       {recommendedColors.length > 0 && <fieldset className="swatch-group" disabled={!ready}>
         <legend>추천 헤어색</legend>
+        {skinTone && <SkinToneSummary result={skinTone} recommendations={recommendedColors} basis={basis} source="ai-studio" />}
         {basis && <p className="color-studio-basis">{basis}</p>}
         <div className="swatches">{recommendedColors.map(({ color }) => swatch(color))}</div>
         {color && recommendedColors.find(item => item.color.name === color.name) && <p className="color-studio-basis">{recommendedColors.find(item => item.color.name === color.name)!.label}</p>}

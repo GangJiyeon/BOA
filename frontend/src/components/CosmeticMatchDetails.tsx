@@ -52,12 +52,12 @@ export default function CosmeticMatchDetails({ matches }: { matches: Matches }) 
       {[...bases].map(([text, names]) => <p key={text}>{scope(names)}{text}</p>)}
     </section>}
     <section>
-      <h5>지표별 연결 가정 · 개발용</h5>
+      <h5>피부 지표별 추천 근거</h5>
       {matches.map(match => <div key={match.metric_code}>
         <p><strong>{match.metric_name} · {match.ingredients.join(', ')}</strong><br />{match.interpretation?.metric_assumption}</p>
         {match.rule_details.map(rule => <p key={rule.rule_code}>{rule.ingredient}: {rule.rationale}</p>)}
       </div>)}
-      {missingDetails.length > 0 && <p>{missingDetails.join(' · ')}: 상세 가정 정보가 없는 이전 API 응답입니다. 연구 근거가 개별 제품 효과를 보증하지는 않습니다.</p>}
+      {missingDetails.length > 0 && <p>{missingDetails.join(' · ')}: 자세한 추천 근거를 확인할 수 없습니다. 연구 근거가 개별 제품 효과를 보증하지는 않습니다.</p>}
     </section>
     {unknowns.size > 0 && <section>
       <h5>확인하지 못한 정보</h5>
