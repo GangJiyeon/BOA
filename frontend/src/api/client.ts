@@ -36,12 +36,41 @@ async function request(path: string, init: RequestInit): Promise<Response> {
   }
 }
 
-function refreshSession(): Promise<void> {
+// 탭 간 갱신 공유: 리프레시 토큰은 쓸 때마다 교체돼서 두 탭이 동시에 갱신하면 늦은 쪽이 401 → 로그아웃
+const REFRESH_LOCK = 'boa-auth-refresh'
+const REFRESHED_AT_KEY = 'boa-auth-refreshed-at'
+let lastRefreshedAt = 0
+
+function refreshedAt(): number {
+  try { return Math.max(lastRefreshedAt, Number(window.localStorage.getItem(REFRESHED_AT_KEY)) || 0) }
+  catch { return lastRefreshedAt }
+}
+
+function markRefreshed() {
+  lastRefreshedAt = Date.now()
+  try { window.localStorage.setItem(REFRESHED_AT_KEY, String(lastRefreshedAt)) } catch { /* 저장 불가 환경은 탭 내부 값만 사용 */ }
+}
+
+// 갱신은 모든 탭 통틀어 한 번에 하나, 기다리는 동안 다른 탭이 갱신했으면 생략 (쿠키 공유라 새 토큰이 이미 있음)
+async function refreshOnce(sentAt: number): Promise<Response | null> {
+  const run = async () => {
+    if (refreshedAt() > sentAt) return null
+    const response = await request('/auth/refresh', { method: 'POST' })
+    // 잠금 안에서 기록해야 다음 탭이 바로 확인 가능
+    if (response.ok) markRefreshed()
+    return response
+  }
+  const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined
+  return locks ? locks.request(REFRESH_LOCK, run) : run()
+}
+
+function refreshSession(sentAt: number): Promise<void> {
   if (!refreshPromise) {
     // 개별 요청 취소가 다른 요청의 쿠키 갱신을 취소하지 않도록 signal을 공유하지 않는다.
     refreshPromise = (async () => {
       try {
-        const response = await request('/auth/refresh', { method: 'POST' })
+        const response = await refreshOnce(sentAt)
+        if (!response) { refreshError = null; return }
         if (!response.ok) {
           if (response.status === 401 && typeof window !== 'undefined') {
             window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT))
@@ -71,11 +100,12 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
   const options = { ...init, headers }
   const version = refreshVersion
+  const sentAt = Date.now()
   let res = await request(path, options)
   // 로그인·가입 자체의 401(인증 코드/가입 토큰 오류)은 갱신 대상이 아니다.
   if (res.status === 401 && !path.startsWith('/auth/')) {
     init?.signal?.throwIfAborted()
-    if (version === refreshVersion) await refreshSession()
+    if (version === refreshVersion) await refreshSession(sentAt)
     else if (refreshError) throw refreshError
     init?.signal?.throwIfAborted()
     res = await request(path, options)
