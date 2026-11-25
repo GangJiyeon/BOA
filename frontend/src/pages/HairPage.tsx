@@ -10,8 +10,9 @@ import Icon from '../components/Icon'
 import { useTask } from '../hooks/useTask'
 import { recommendHairColors, type HairColorRecommendation } from '../studio/hairColorRecommendations'
 import type { HairSessionResult } from '../types/sessionResults'
+import { useAdoptSessionPhoto, type SessionPhotoProps } from '../hooks/useSessionPhoto'
 
-export default function HairPage({ onResult }: { onResult: (value: HairSessionResult) => void }) {
+export default function HairPage({ onResult, sessionPhoto, onPhoto }: SessionPhotoProps & { onResult: (value: HairSessionResult) => void }) {
   const task = useTask()
   const colorTask = useTask()
   const [styles, setStyles] = useState<HairStyle[]>([])
@@ -19,6 +20,7 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
   const [catalogLoaded, setCatalogLoaded] = useState(false)
   const [revision, setRevision] = useState(0)
   const [photos, setPhotos] = useState<File[]>([])
+  useAdoptSessionPhoto(sessionPhoto, photos.length === 0 && !task.busy, file => setPhotos([file]))
   const [sex, setSex] = useState<Sex>('female')
   const [length, setLength] = useState('')
   const [texture, setTexture] = useState('')
@@ -74,7 +76,7 @@ export default function HairPage({ onResult }: { onResult: (value: HairSessionRe
     {catalogError && <p role="alert" className="error-box">헤어 목록 조회 실패: {catalogError} <button onClick={() => { setCatalogError(''); setCatalogLoaded(false); setRevision(n => n + 1) }}>다시 조회</button></p>}
     {catalogLoaded && !styles.length && <p className="empty-box">지금은 추천할 헤어스타일이 없어요. 잠시 후 다시 조회해 주세요. <button onClick={() => { setCatalogError(''); setCatalogLoaded(false); setRevision(n => n + 1) }}>다시 조회</button></p>}
     <form onSubmit={submit}><fieldset className="analysis-fieldset" disabled={task.busy}><legend className="sr-only">헤어 분석 입력</legend><div className="analysis-layout">
-      <section className="form-card input-panel"><div className="card-heading"><span className="step-number">01</span><div><h3 id="hair-input-title" className="section-target" tabIndex={-1}>얼굴형을 확인할 사진</h3><p>빠른 분석은 정면 1장, 여러 각도는 3장으로.</p></div></div><PhotoUpload files={photos} multiple disabled={task.busy} onChange={files => { clear(true); setPhotos(files) }} /></section>
+      <section className="form-card input-panel"><div className="card-heading"><span className="step-number">01</span><div><h3 id="hair-input-title" className="section-target" tabIndex={-1}>얼굴형을 확인할 사진</h3><p>빠른 분석은 정면 1장, 여러 각도는 3장으로.</p></div></div><PhotoUpload files={photos} multiple disabled={task.busy} onChange={files => { clear(true); setPhotos(files); onPhoto?.(files[0] ?? null, photos[0] ?? null) }} /></section>
       <section className="form-card options-panel"><div className="card-heading"><span className="step-number">02</span><div><h3>원하는 스타일</h3><p>선호 없음으로 얼굴형 중심 추천도 가능해요.</p></div></div>
       <label className="field">스타일 구분<select value={sex} onChange={e => { clear(true); setSex(e.target.value as Sex); setLength(''); setTexture('') }}><option value="female">여성 스타일</option><option value="male">남성 스타일</option><option value="unisex">공용 스타일</option></select></label>
       <label className="field">선호 길이<select value={length} onChange={e => { clear(false); setLength(e.target.value) }}><option value="">선호 없음</option>{lengths.map(value => <option key={value} value={value}>{labels[value] ?? value}</option>)}</select></label>

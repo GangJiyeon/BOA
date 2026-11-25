@@ -78,21 +78,12 @@ AROUND THE HAIR: where skin shows between fringe strands, keep the same warm nat
 Keep the FIRST image's face, eyebrows, ears, skin, head angle, gaze, clothing and background. Do NOT rotate the head to frontal. Keep the body proportions. Face preservation does not mean preserving the original hairstyle.
 FINAL CHECK: only the hair is different from the source photo. The face, eyebrows, face size and background are identical."""
 
-# 윤곽 맞춤 때 고정할 점: 눈꼬리·코·입꼬리·턱
-ANCHORS = [33, 133, 362, 263, 1, 4, 61, 291, 13, 14, 152, 168, 6, 197]
-# 머리 정렬 기준점: 눈꼬리·콧대·코·눈썹 (머리는 얼굴 위쪽에 붙음, 입·턱까지 쓰면 AI 표정 차이에 끌려 눈썹 위가 평균 3.7px·최대 6.9px 뜸 → 2.2·3.2px)
-# 아래 얼굴은 원본, 턱선·몸은 따로 맞춤
-HAIR_ANCHORS = [33, 133, 362, 263, 168, 6, 197, 1, 4, 70, 63, 105, 66, 107, 336, 296, 334, 293, 300]
 FACE_OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109]
 BROWS = [70, 63, 105, 66, 107, 336, 296, 334, 293, 300]
 UPPER_LIDS = [159, 386]
-# 눈·코·입 (AI·원본 얼굴이 원래 달라 색 차이로 가닥 판정하면 오판)
-FACE_CORE = [33, 133, 362, 263, 61, 291, 1, 4, 13, 14, 152, 168]
 # 눈 윤곽 (눈꺼풀·눈꼬리)
 EYES = [[33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246],
         [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398]]
-# 눈 보호 범위 (눈썹~눈 간격 대비, 아이라인 꼬리·쌍꺼풀까지)
-EYE_GUARD = 0.7
 # 눈썹 윤곽 (윗선 바깥→안, 아랫선 안→바깥)
 BROW_POLYS = [[70, 63, 105, 66, 107, 55, 65, 52, 53, 46], [300, 293, 334, 296, 336, 285, 295, 282, 283, 276]]
 
@@ -363,48 +354,40 @@ def _fill_rows(img: np.ndarray, mask: np.ndarray) -> np.ndarray:
     return (out * (1 - m) + soft * m).astype(np.uint8)
 
 
-# 눈썹 자리 중 원본 앞머리에 덮인 비율이 이 이상이면 그 눈썹은 AI 눈썹으로 바꿈
-BROW_COVER_SWAP = 0.25
-# 짝 맞추려 바꾸는 눈썹은 AI 머리가 그 자리를 이 비율 넘게 덮으면 안 바꿈
-BROW_AI_HAIR_MAX = 0.2
+def _ai_brows(base: np.ndarray, ai: np.ndarray, lb: np.ndarray, la: np.ndarray, gap: float) -> np.ndarray:
+    """두 눈썹 모두 AI 눈썹으로 (원본 눈썹 위치·길이에 맞춰 옮기고 크기만, 휘지 않음)
 
-
-def _swap_covered_brows(base: np.ndarray, ai: np.ndarray, lb: np.ndarray, la: np.ndarray, covered: np.ndarray, gap: float,
-                        ai_hair: np.ndarray | None = None) -> np.ndarray:
-    """많이 덮인 원본 눈썹만 AI 눈썹으로 (눈썹 하나 통째로, 원본 눈썹 위치·길이에 맞춰 옮기고 크기만, 휘지 않음)
-
-    눈썹 일부만 바꾸면 원본·AI가 반씩 섞여 이음매가 어색 → 하나씩 통째로
-    한쪽만 바꾸면 AI 눈썹(또렷)·원본 눈썹(가닥 메워 번짐)이 짝짝이 → 하나라도 바꾸면 둘 다
-    단 짝 맞추려 바꾸는 쪽은 AI 머리가 그 눈썹을 덮지 않을 때만 (덮였으면 AI 눈썹 자리가 앞머리 그늘이라 회색 얼룩)
-    색은 눈썹 둘레 피부 기준으로 원본에 맞춤
+    2026-11-26: 원본 눈썹 유지는 앞머리 가닥 메운 자리 얼룩·한쪽만 바꿀 때 짝짝이·섞기 번짐 → 항상 AI 눈썹
+    눈썹 하나 통째로 (일부만 바꾸면 이음매 어색)
+    피부 톤은 원본: AI 덩어리의 저주파(피부 톤·음영)를 원본 피부 저주파로 교체, 털·결만 AI
+    (평균색 하나로만 맞추면 AI 눈썹뼈 그늘이 둘레 얼룩으로 남음)
     """
     h, w = base.shape[:2]
     out = base
-    regions = []
+    # 피부 톤 잴 때 눈썹 털을 확실히 지우는 크기 (작으면 굵은 눈썹 진하기까지 톤으로 빠져 눈썹이 연해짐)
+    kc = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (max(5, int(gap * 0.9)) | 1,) * 2)
+    sig = max(3.0, gap * 0.25)
+
+    def skin_tone(lab: np.ndarray) -> np.ndarray:
+        return cv2.GaussianBlur(np.stack([cv2.morphologyEx(lab[..., i], cv2.MORPH_CLOSE, kc) for i in range(3)], -1), (0, 0), sig)
+
     for poly in BROW_POLYS:
         region = np.zeros((h, w), np.uint8)
         cv2.fillPoly(region, [lb[poly].round().astype(np.int32)], 1)
-        regions.append(region)
-    cover = [(covered[r > 0] > 0).mean() if r.any() else 0.0 for r in regions]
-    if max(cover) < BROW_COVER_SWAP:
-        return out
-    for poly, region, c in zip(BROW_POLYS, regions, cover):
         if not region.any():
-            continue
-        if c < BROW_COVER_SWAP and ai_hair is not None and (ai_hair[region > 0] > 0.5).mean() > BROW_AI_HAIR_MAX:
             continue
         m, _ = cv2.estimateAffinePartial2D(la[poly], lb[poly])
         if m is None:
             continue
         brow = cv2.warpAffine(ai, m, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
         k = max(3, int(gap * 0.3)) | 1
-        mask = cv2.dilate(region, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k)))
-        ring = (cv2.dilate(mask, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))) > 0) & (mask == 0) & (covered == 0)
-        if ring.sum() > 50:
-            lab_b = cv2.cvtColor(out, cv2.COLOR_BGR2LAB).astype(np.float32)
-            lab_a = cv2.cvtColor(brow, cv2.COLOR_BGR2LAB).astype(np.float32)
-            lab_a += np.clip(np.median(lab_b[ring], 0) - np.median(lab_a[ring], 0), -25, 25)
-            brow = cv2.cvtColor(np.clip(lab_a, 0, 255).astype(np.uint8), cv2.COLOR_LAB2BGR)
+        ell = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+        mask = cv2.dilate(region, ell)
+        # 원본 눈썹 지운 피부 → 톤 기준
+        clean = cv2.inpaint(out, mask * 255, max(3, int(gap * 0.15)), cv2.INPAINT_TELEA)
+        lab_a = cv2.cvtColor(brow, cv2.COLOR_BGR2LAB).astype(np.float32)
+        lab_a += skin_tone(cv2.cvtColor(clean, cv2.COLOR_BGR2LAB).astype(np.float32)) - skin_tone(lab_a)
+        brow = cv2.cvtColor(np.clip(lab_a, 0, 255).astype(np.uint8), cv2.COLOR_LAB2BGR)
         soft = cv2.GaussianBlur(mask.astype(np.float32), (0, 0), max(1.5, gap * 0.08))[..., None]
         out = (out * (1 - soft) + brow * soft).astype(np.uint8)
     return out
@@ -509,7 +492,8 @@ def transplant_hair(base: np.ndarray, gen: np.ndarray, fit=None) -> np.ndarray:
     """원본 사진 위에 AI 머리를 얹음 (결과 크기 = 원본, 원본 얼굴은 크기·위치·모양 그대로)
 
     1. AI 이미지를 원본에 통째로 겹침 (회전·크기·위치만, 휘지 않음)
-    2. 원본은 눈썹 조금 위~턱 끝 얼굴만, 나머지는 AI, 얼굴 위로 내려온 AI 머리(앞머리 등)는 맨 위
+    2. 원본은 윗눈꺼풀 바로 위~턱 끝 얼굴 + 원본 자리에 옮긴 AI 눈썹, 이마·눈썹 둘레는 원본 톤 맞춘 AI 피부
+       얼굴 위로 내려온 AI 머리(앞머리 등)는 맨 위
     3. 다중 해상도로 섞음 (이마·볼 경계의 색·질감 차이가 이어짐)
     """
     h, w = base.shape[:2]
@@ -527,11 +511,18 @@ def transplant_hair(base: np.ndarray, gen: np.ndarray, fit=None) -> np.ndarray:
     aligned = _match_background(base, aligned, old_bg, new_bg)
     aligned = _match_region_tone(base, aligned, (face, body, gen_skin, gbody, old_hair, new_hair), lb, yy)
 
-    # 원본은 눈썹 조금 위~턱 끝 얼굴 윤곽 안 (눈썹·눈이 둘 다 원본이라 비율 그대로, 귀 제외), 나머지(이마 위쪽·목·옷·배경)는 AI
+    # 원본은 윗눈꺼풀 바로 위~턱 끝 얼굴 윤곽 안 (귀 제외), 나머지(이마·목·옷·배경)는 AI
+    # 2026-11-26: 예전엔 눈썹 조금 위부터 원본 → 원본 앞머리 지운 자리(inpaint) 회색 얼룩이 눈썹 둘레에 남음
+    # 눈썹은 _ai_brows가 원본 눈썹 자리에 옮긴 AI 눈썹 덩어리를 그대로 씀 (눈썹·눈 간격은 원본 그대로)
     oval = np.zeros((h, w), np.uint8)
     cv2.fillConvexPoly(oval, cv2.convexHull(lb[FACE_OVAL].round().astype(np.int32)), 1)
-    above_brow = np.clip((yy - (brow - gap * 0.6)) / max(1.0, gap * 0.4), 0, 1)
-    face_keep = oval.astype(np.float32) * above_brow
+    above_lid = np.clip((yy - (lid - gap * 0.45)) / max(1.0, gap * 0.2), 0, 1)
+    brow_patch = np.zeros((h, w), np.uint8)
+    for poly in BROW_POLYS:
+        cv2.fillPoly(brow_patch, [lb[poly].round().astype(np.int32)], 1)
+    kp = max(3, int(gap * 0.3)) | 1
+    brow_patch = cv2.GaussianBlur(cv2.dilate(brow_patch, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kp, kp))).astype(np.float32), (0, 0), max(1.5, gap * 0.1))
+    face_keep = oval.astype(np.float32) * np.maximum(above_lid, brow_patch)
     # 원래 머리가 덮던 곳은 AI 피부, 눈썹 자리는 제외 (눈썹을 지나는 원본 가닥 몇 개 때문에 AI로 바꾸면 눈썹이 조각나 보임)
     brow_zone = np.zeros((h, w), np.uint8)
     for poly in BROW_POLYS:
@@ -549,8 +540,8 @@ def transplant_hair(base: np.ndarray, gen: np.ndarray, fit=None) -> np.ndarray:
     brow_strands = _brow_strands(base, lb, gap)
     if brow_strands.any():
         base = _fill_rows(base, brow_strands)
-    # 앞머리가 눈썹을 많이 덮었으면 (아래 눈썹이 안 찍힘) 그 눈썹만 AI 눈썹을 원본 눈썹 자리로 옮겨 씀
-    base = _swap_covered_brows(base, aligned, lb, landmarks(aligned), np.maximum(brow_strands, (old_hair > 0.5).astype(np.uint8)), gap, new_hair)
+    # 눈썹은 AI 눈썹을 원본 눈썹 자리로 옮겨 씀
+    base = _ai_brows(base, aligned, lb, landmarks(aligned), gap)
     # 맨 위: 얼굴 위로 내려온 AI 머리
     face_keep = face_keep * (1 - np.clip((new_hair - 0.3) / 0.4, 0, 1))
     keep = cv2.GaussianBlur(face_keep.astype(np.float32), (0, 0), max(1.5, gap * 0.04))

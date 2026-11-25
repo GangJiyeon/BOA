@@ -7,13 +7,15 @@ import MakeupStudio from '../components/MakeupStudio'
 import { analyzeSkinTone, type SkinTone } from '../api/makeup'
 import { BRIGHTNESS, FACE_SHAPES, MAKEUP_SEXES, TONES, brightnessFromAnalysis, cushionFromAnalysis, faceShapeFromAnalysis, type Brightness, type FaceShape, type MakeupSex, type Undertone } from '../studio/makeup-looks'
 import type { HairSessionResult, StudioMakeupResult } from '../types/sessionResults'
+import type { SessionPhotoProps } from '../hooks/useSessionPhoto'
 import './MakeupPage.css'
 
 
 // 얼굴형·헤어 추천 페이지와 같은 흐름: 01 사진 · 02 추천 기준 → 추천받기 → 03 결과
 // 사진을 올리면 바로 피부톤 분석(/skin/tone)으로 톤·밝기·쿠션을 채움, 직접 고른 값이 있으면 덮어쓰지 않음, 실패하면 직접 고른 값으로 진행
-export default function MakeupPage({hair,studioResult,onDiscardStudioResult}:{hair:HairSessionResult|null;studioResult:StudioMakeupResult|null;onDiscardStudioResult:()=>void}) {
-  const initialPhoto=studioResult?.photo??hair?.photo
+export default function MakeupPage({hair,studioResult,onDiscardStudioResult,sessionPhoto,onPhoto}:SessionPhotoProps&{hair:HairSessionResult|null;studioResult:StudioMakeupResult|null;onDiscardStudioResult:()=>void}) {
+  // 시작 사진: AI Studio 합성 사진 > 세션 사진(가장 최근에 올린 정면 사진) > 헤어 분석 사진
+  const initialPhoto=studioResult?.photo??sessionPhoto??hair?.photo
   const [photos,setPhotos]=useState<File[]>(initialPhoto?[initialPhoto]:[])
   // 추천받기를 누른 사진 (사진을 바꾸면 다시 눌러야 결과가 바뀜, 톤·밝기·얼굴형은 결과를 보면서 바로 반영)
   const [submitted,setSubmitted]=useState<File|null>(null)
@@ -48,6 +50,8 @@ export default function MakeupPage({hair,studioResult,onDiscardStudioResult}:{ha
   function changePhoto(files:File[]){
     if(imported&&files[0]!==imported.photo)onDiscardStudioResult()
     setPhotos(files);setSubmitted(null);resetManual()
+    // 합성 사진은 세션 사진으로 안 씀
+    if(files[0]!==studioResult?.photo)onPhoto?.(files[0]??null,file===studioResult?.photo?null:file)
   }
   function applyTone(result:SkinTone){setTone(result.undertone);setBrightness(brightnessFromAnalysis(result.brightness_level,result.raw?.ita_deg));setManual(false)}
   // 사진이 바뀌면 바로 분석 (이전 요청은 취소), 분석 중에 직접 고르면 그 값 유지
