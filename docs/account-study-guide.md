@@ -64,10 +64,8 @@ Google 인증 ─────┘
 
 | 파일 | 역할 |
 |---|---|
-| [기존 결정 기록](../jy-docs/account-decisions.md) | 구현 선택과 그 이유를 가장 직접적으로 설명 |
-| [기존 명세](../jy-docs/account-spec.md) | 계정 기능 범위와 API 계약. 일부는 현재 코드보다 과거 상태 |
-| [기존 진행 기록](../jy-docs/account-plan.md) | 단계별 개발 순서와 당시 검증 기록 |
-| [기존 참고사항](../jy-docs/account-notes.md) | 다른 파트 연동 지침, 알려진 제약 |
+| [설계 결정](account-decisions.md) | 구현 선택과 그 이유를 가장 직접적으로 설명 |
+| [API·데이터](account-api.md) | 계정 기능 범위, 테이블, 쿠키, API 계약 |
 | [계정 모델](../backend/app/models/account.py) | 테이블·필드·유일성·외래키 |
 | [요청/응답 스키마](../backend/app/schemas/account.py) | 클라이언트 입력 검증과 응답 형식 |
 | [인증 라우트](../backend/app/api/routes/auth.py) | 이메일·Google·가입·갱신·로그아웃 API |
@@ -76,7 +74,6 @@ Google 인증 ─────┘
 | [보안 함수](../backend/app/core/security.py) | JWT·무작위 토큰·HMAC·해시 |
 | [쿠키 함수](../backend/app/core/cookies.py) | HttpOnly, SameSite, Secure, 경로·만료 |
 | [인증 서비스](../backend/app/services/auth.py) | 회원 찾기·Google 연결·로그인·갱신 |
-| [이메일 인증 서비스](../backend/app/services/email_auth.py) | 코드 발급·재발송 제한·시도 횟수 |
 | [가입 서비스](../backend/app/services/signup.py) | 현재 약관 검증·회원과 동의 이력 생성 |
 | [Google 서비스](../backend/app/services/google.py) | 인가 코드 교환·ID 토큰 검증 |
 | [계정 서비스](../backend/app/services/account.py) | 현재 동의 상태·동의 변경·탈퇴 데이터 삭제 |
@@ -84,8 +81,6 @@ Google 인증 ─────┘
 | [프론트 API 클라이언트](../frontend/src/api/client.ts) | 공통 fetch·자동 갱신·오류 처리 |
 | [프론트 계정 API](../frontend/src/api/account.ts) | 타입과 계정 API 호출 함수 |
 | [프론트 상위 화면](../frontend/src/pages/HomePage.tsx) | actor 상태·결과 초기화·만료 이벤트 처리 |
-
-`jy-docs`는 결정 기록상 개인 문서로 관리된다. 다른 환경으로 파일을 옮길 때는 해당 문서가 저장소에 포함돼 있는지 확인해야 한다.
 
 ## 3. 계층을 나눈 이유와 요청 처리 방식
 
@@ -718,7 +713,7 @@ DB 행 삭제와 S3·로컬 파일 삭제는 다른 작업이다. 현재 delete_
 - 늦게 도착한 401의 기존 갱신 결과 재사용.
 - refresh 401에 만료 이벤트, 503에는 만료 이벤트를 보내지 않음.
 
-기존 `jy-docs/account-spec.md`·plan에는 계정 통합 테스트와 Google 실계정 테스트 기록이 있다. 이는 작성 당시 기록이다. **이 문서를 만들면서 운영 DB·Google 로그인·이메일 발송 테스트를 새로 수행한 것은 아니다.** 과거 통과 기록과 현재 실행 검증 결과를 구분한다.
+개발 당시(개인 작업 기록)에는 계정 통합 테스트 60개와 Google 실계정 가입·재로그인 확인 기록이 있다. 이는 작성 당시 기록이다. **이 문서를 만들면서 운영 DB·Google 로그인·이메일 발송 테스트를 새로 수행한 것은 아니다.** 과거 통과 기록과 현재 실행 검증 결과를 구분한다.
 
 DB를 쓰는 계정 테스트·시드·마이그레이션은 데이터를 바꿀 수 있다. 학습 문서 작성에는 실행하지 않았다. 특히 최초 계정 마이그레이션에는 이전 단수형 테이블을 DROP하는 코드가 있어 단순 조회 명령으로 생각하면 안 된다.
 
