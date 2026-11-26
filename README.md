@@ -1,126 +1,100 @@
 # BOA
 
-화장품 추천 미리보기: [입력·추천 규칙·실행 방법](docs/cosmetic-recommendation-preview.md)
+얼굴 사진 한 장으로 **피부 상태를 분석하고, 맞는 화장품·헤어스타일·메이크업을 추천하고 미리 입혀보는** 웹 서비스
 
-React(Vite) 프론트엔드 + FastAPI 백엔드 모노레포.
+- 개발 기간: 2026.09 – 2026.11
+- 형태: 캡스톤 디자인 팀 프로젝트 (4인)
+- 사용 환경: 개인 웹 + 행사장 키오스크(공용 태블릿)
 
-```
-frontend/   React 19 + Vite 8 + TypeScript   → 로컬에서 직접 실행 (나중에 Vercel 배포)
-backend/    FastAPI + PostgreSQL 17           → API는 Docker, DB는 각자 PC에 설치 (나중에 EC2 + RDS 배포)
-```
+## 팀
 
-| 항목 | 버전 |
+| 팀원 | 담당 |
 |---|---|
-| Node / pnpm | 24 LTS / 10 |
-| Python | 3.12 (Docker 이미지) |
-| PostgreSQL | 17 (각자 PC에 설치) |
+| GangJiyeon | 계정·인증 (Google 로그인, 비회원 세션, QR, 키오스크, 탈퇴·만료 정리), AI 헤어 스튜디오 (합성·머리색 변경), 메이크업 스튜디오 |
+| Johndoe557 | 피부 분석 (홍조·밝기·트러블·균일도), 피부톤·쿠션 호수 추정, 카메라별 보정 |
+| sby09122222 | 화장품 추천 (성분 규칙·순위), 피부 수분 센서 (Arduino) 연동, 프론트 화면 흐름, 피부톤 기반 헤어색 추천 |
+| teahoonlee | 얼굴형·코·광대 분석, 얼굴 랜드마크 추출, 헤어스타일 추천·카탈로그 |
 
-## 처음 한 번 설치
+하드웨어(수분 센서) 조립은 팀 전체가 함께 진행
 
-### 공통
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- Node 24 — 아래 OS별 방법 참고
-- pnpm: `npm install -g pnpm@10`
+## 주요 기능
 
-### Windows
-1. BIOS에서 가상화(VT-x / AMD-V)가 켜져 있는지 확인
-2. PowerShell(관리자)에서 `wsl --install` → **재부팅**
-3. `wsl -l -v`로 VERSION이 2인지 확인 (1이면 `wsl --set-version Ubuntu 2`)
-4. Docker Desktop 설치 (Settings → General → "Use the WSL 2 based engine" 체크)
-5. Node 설치: `winget install Schniz.fnm` → `fnm install 24` → `fnm use 24`
-   - PowerShell 프로필에 `fnm env --use-on-cd | Out-String | Invoke-Expression` 추가
-6. Git 줄바꿈 설정은 저장소의 `.gitattributes`가 처리하므로 따로 할 필요 없음
+### 피부 분석
+얼굴 사진에서 이마·양볼·턱 등 영역을 나눠 **홍조, 밝기, 트러블, 균일도**를 0~100점으로 산출하고 구간별로 판정. 피부톤은 보정 ITA°로 웜·뉴트럴·쿨과 추정 쿠션 호수를 계산
 
-7. PostgreSQL 17 설치: [EDB 설치 프로그램](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)로 설치 (포트 `5432`, 설치 중 정한 `postgres` 비밀번호는 기억해둘 것)
+- 카메라 기종별 색 보정 프로필, 정답 호수 CSV로 현장 보정 스크립트
+- 고정 장소 반복 촬영에서 h° ±0.8°, ITA° ±1.3°
+- 판정 구간은 DB에서 읽어 코드 수정 없이 조정
+- 설계: [피부분석_로직_설계서.docx](피부분석_로직_설계서.docx)
 
-### Mac
-```sh
-brew install fnm && fnm install 24
-brew install postgresql@17 && brew services start postgresql@17
+### 피부 수분 측정 (Arduino)
+UNO R4 WiFi + 정전용량 센서(FDC2112)를 Bluetooth LE로 웹에 연결해 뺨에 한 번 대면 3초간 측정. 측정값은 화장품 추천의 수분 지표로 연결
+
+- 상대 수분 지표이며 임상 수분율 측정기는 아님
+- 문서: [현장 연결 가이드](docs/arduino-integration-guide.md) · [최신 신호 취득(v11)](docs/moisture-v11.md)
+
+### 화장품 추천
+피부 지표 5개(수분·홍조·밝기·트러블·균일도)를 받아 DB의 제품 전성분과 **성분 규칙표**를 대조해 최대 5개 추천. 제품마다 어떤 성분이 왜 맞는지 근거와 한계를 함께 표시
+
+- 홍조 유발 성분·직접 지정 성분 제외
+- 규칙은 근거·버전 테이블로 관리 (활성 매칭 6, 조건부 배제 8, 보류 6)
+- 18개 시나리오로 추천 품질 검수
+- 문서: [추천 API](docs/cosmetic-recommendation-preview.md) · [성분 규칙표](docs/cosmetic-ingredient-rulebook.md)
+
+### 헤어스타일 추천
+사진 3장에서 MediaPipe 얼굴 랜드마크로 **얼굴형·코·광대 폭**을 분석해 성별별 카탈로그(여 40·남 40종)에서 어울리는 스타일 추천. 피부톤 밝기로 헤어색도 추천
+
+### AI 헤어 스튜디오
+내 사진에 카탈로그 스타일을 합성하고 **32가지 머리색**을 즉시 바꿔봄
+
+- 이미지 편집 AI는 합성 시작 때 1번만 호출, 색 변경은 브라우저에서 처리 (추가 AI 비용 없음)
+- 얼굴은 원본을 살리고 랜드마크로 AI 결과를 정렬한 뒤 경계를 섞음 (얼굴 형태는 변형하지 않음)
+- 얼굴 크기·기울기·좌우 회전이 기준을 넘으면 AI 호출 전에 거부
+- 문서: [헤어 스튜디오](docs/hair-studio-v1.md) · [합성 학습 가이드](docs/hair-synthesis-study-guide.md)
+
+### 메이크업 스튜디오
+피부톤 분석 결과를 바탕으로 **4가지 상황(데일리·격식·야외·파티) × 룩**을 성별별로 제공하고, 눈썹·속눈썹·아이섀도·블러셔·립을 사진 위에 가상으로 적용
+
+- 얼굴 사진을 외부 AI로 보내지 않고 서버 전처리 + 브라우저 Canvas·Web Worker로 렌더링
+- 눈썹 18종, 속눈썹 5종 에셋
+- 문서: [메이크업 표현](docs/makeup-eye-shades.md)
+
+### 계정·비회원·키오스크
+가입 없이 체험하고, 마음에 들면 가입해서 결과를 이어받는 흐름
+
+- **Google 로그인**: ID 토큰 서명 검증, JWT 액세스 15분 + 리프레시 30일(갱신마다 교체), 모든 토큰은 httpOnly 쿠키
+- **비회원**: 촬영 동의 후 7일 세션, 기능별 하루 횟수 + 같은 IP 상한
+- **결과 이관**: 가입하거나 QR로 저장하면 비회원 결과가 회원 계정으로 이동
+- **키오스크**: 관리자 코드로 등록한 공용 태블릿, 사용자마다 새 세션, 결과는 QR로 폰에서 확인
+- **개인정보**: 얼굴 원본 미저장, IP는 HMAC, 탈퇴 시 전체 결과 삭제, 매일 만료 데이터 정리
+- 문서: [설계 결정](docs/account-decisions.md) · [API·데이터](docs/account-api.md)
+
+## 기술 스택
+
+| 영역 | 사용 기술 |
+|---|---|
+| 프론트엔드 | React 19, Vite 8, TypeScript, Canvas, Web Worker, Web Bluetooth |
+| 백엔드 | FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 17, APScheduler |
+| 얼굴·이미지 | MediaPipe, OpenCV, Gemini 이미지 편집 |
+| 인증 | Google OAuth, PyJWT |
+| 하드웨어 | Arduino UNO R4 WiFi, FDC2112 Moisture click |
+| 실행 | Docker (백엔드), 로컬 실행 |
+
 ```
-
-### DB 만들기 (Mac/Windows 공통, 처음 한 번)
-```sh
-# Mac은 비밀번호 없이, Windows는 설치 때 정한 postgres 비밀번호 입력
-psql -h localhost -U postgres -d postgres -c "CREATE ROLE boa LOGIN PASSWORD 'boa';"   # Mac: -U postgres 빼기
-psql -h localhost -U postgres -d postgres -c "CREATE DATABASE boa OWNER boa;"          # Mac: -U postgres 빼기
+frontend/   React 앱
+backend/    FastAPI 서버, 분석·추천 로직, 정적 에셋 (헤어·메이크업)
+hardware/   Arduino 수분 센서 펌웨어
+docs/       기능별 문서
 ```
-그 다음 DBeaver 등에서 `boa` DB에 접속해 팀 스키마 SQL을 실행한다.
-- `psql`을 못 찾으면 Mac은 `/opt/homebrew/opt/postgresql@17/bin/psql`, Windows는 `C:\Program Files\PostgreSQL\17\bin\psql.exe`로 실행
 
 ## 실행
 
-### 백엔드 (터미널 1)
 ```sh
-cd backend
-cp .env.example .env        # 처음 한 번 (Windows: copy .env.example .env)
-docker compose up --build
-```
-- PostgreSQL이 먼저 켜져 있어야 한다 (Mac: `brew services start postgresql@17`, Windows: 설치 시 자동 실행)
-- API 문서: http://localhost:8000/api/docs
-- 코드를 수정하면 서버가 자동으로 재시작됨
+# 백엔드 (PostgreSQL 실행 중이어야 함)
+cd backend && cp .env.example .env && docker compose up --build   # http://localhost:8000/api/docs
 
-### 프론트엔드 (터미널 2)
-```sh
-cd frontend
-pnpm install
-pnpm dev
-```
-- http://localhost:5173 — 화면에 API/DB 상태가 나오면 연결 성공
-- 프론트에서는 항상 `/api/...` 경로로 호출 (Vite가 `localhost:8000`으로 전달)
-
-## DB 스키마 변경
-
-로컬에서는 Alembic을 쓰지 않는다. 스키마는 팀 스키마 SQL을 각자 로컬 DB에 직접 실행해서 맞춘다.
-- 스키마가 바뀌면 바뀐 SQL을 공유하고, 각자 DBeaver 등에서 실행한다.
-- 로컬에서 `alembic revision --autogenerate`는 실행하지 않는다. 모델에 없는 SQL 테이블을 지우는 마이그레이션이 만들어질 수 있다.
-
-### Alembic (서버 배포 이후 도입 예정)
-
-아래는 서버 배포 후 Alembic을 도입했을 때의 절차다. 모든 명령은 `backend/`에서 **컨테이너 안으로** 실행한다 (Mac/Windows 동일).
-
-```sh
-# 1. app/models/ 에서 모델 수정 (새 모델 파일이면 app/models/__init__.py 에 import 추가)
-# 2. 마이그레이션 파일 생성
-docker compose exec api alembic revision --autogenerate -m "add users table"
-# 3. alembic/versions/ 에 생긴 파일을 열어서 내용 확인 후 적용
-docker compose exec api alembic upgrade head
-# 4. 모델 변경 + 마이그레이션 파일을 같이 커밋
+# 프론트엔드
+cd frontend && pnpm install && pnpm dev                           # http://localhost:5173
 ```
 
-팀원이 올린 마이그레이션을 pull 받았으면 `docker compose exec api alembic upgrade head`.
-
-**규칙**
-- main에 머지된 마이그레이션 파일은 수정하지 않는다. 고칠 게 있으면 새 마이그레이션을 만든다.
-- 자동 생성 결과는 반드시 확인한다. 컬럼 이름 변경은 "삭제 후 추가"로 잘못 잡히는 경우가 있다.
-- `Multiple head revisions` 에러가 나면: `docker compose exec api alembic merge heads -m "merge"`
-
-## 자주 쓰는 명령
-
-| 하려는 것 | 명령 (`backend/`에서) |
-|---|---|
-| 서버 끄기 | `docker compose down` |
-| 의존성 추가 후 재빌드 | `uv add <패키지>` → `docker compose up --build` |
-| DB 직접 접속 | `psql -h localhost -U boa -d boa` |
-| 로그 보기 | `docker compose logs -f api` |
-
-DB GUI(DBeaver, DataGrip 등)로 접속할 때: `localhost:5432` / 사용자 `boa` / 비밀번호 `boa` / DB `boa`
-
-## 이미지 업로드 (S3)
-
-AWS가 준비되기 전까지는 `.env`의 `S3_BUCKET`을 비워둔다. 이 경우 `/api/images` API는 503을 반환하고 나머지 기능은 정상 동작한다.
-
-흐름: `POST /api/images/upload-url`로 presigned URL 발급 → 브라우저가 S3에 직접 `PUT` → `POST /api/images`로 key 저장.
-
-## 에디터 자동완성 (선택)
-
-Python은 컨테이너 안에서만 돌기 때문에 VS Code에서 import에 빨간 줄이 뜰 수 있다.
-[uv](https://docs.astral.sh/uv/)를 설치하고 `backend/`에서 `uv sync` 후, VS Code 인터프리터로 `backend/.venv`를 선택하면 된다. (실행은 계속 Docker로)
-
-## 문제 해결
-
-- **`port is already allocated`**: 8000 / 5173 포트를 다른 프로그램이 쓰고 있음
-- **API가 DB에 연결 못 함 (`connection refused`)**: PostgreSQL이 켜져 있는지 확인 (Mac: `brew services list`)
-- **`/bin/sh^M: not found`**: 스크립트 줄바꿈이 CRLF로 바뀐 것. VS Code 우측 하단의 `CRLF`를 눌러 `LF`로 바꾸고 저장한 뒤 `docker compose up --build`
-- **코드 수정이 반영 안 됨**: `docker compose logs api`에 "WatchFiles detected changes"가 찍히는지 확인
-- **import 경로 대소문자**: Windows에서는 `./button`과 `./Button`이 둘 다 되지만 배포 서버(Linux)에서는 빌드가 실패한다. 파일명과 정확히 맞출 것
+처음 설치·DB 생성·문제 해결은 [docs/setup.md](docs/setup.md), 전체 문서 목록은 [docs/README.md](docs/README.md)
