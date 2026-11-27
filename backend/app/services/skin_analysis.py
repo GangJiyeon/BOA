@@ -60,6 +60,11 @@ DEFAULT_MIN_FACE_WIDTH = 250
 # 즉 "이 점수는 표본 분포상의 상대 위치"라는 의미이며, 표본이 늘어나면
 # 분위수를 다시 계산해 갱신해야 한다.
 BRIGHTNESS_RANGE = (100.0, 210.0)    # 피부 영역 L 채널 평균 (0~255)
+# 피부 분석 밝기 점수의 기준 (2026-11-27)
+#   "l"     = 피부 영역 L 평균 (관리 화장품 추천용 지표, 피부톤 분석과 분리) ← 원래 의도
+#   "shade" = 피부톤 분석의 추정 쿠션 호수(보정 ITA°)로 계산 (2026-11-18~27에 쓰던 방식)
+# 되돌리려면 "shade"로 바꾸면 된다. 피부톤 분석(헤어 컬러·메이크업)은 이 값과 무관하게 항상 ITA를 쓴다.
+BRIGHTNESS_SCORE_BASIS = "l"
 REDNESS_RANGE = (6.0, 14.0)          # 볼·이마의 홍조 지수 (R/G 로그비). 기본(phone) 프로필 값
 
 # 트러블 점수: 면적 비율 대신 트러블 덩어리 개수로 매긴다 (개수, 점수) — 사이는 직선 보간.
@@ -583,6 +588,8 @@ class CameraProfile:
     color_check: bool                          # 홍조 지수가 지나치게 낮으면 측정 불가로 돌려보낼지
     # 균일도 편차 lo → 100점, hi → 0점. 기기마다 피부결을 매끈하게 처리하는 정도가 달라 따로 둔다.
     uniformity_std_range: tuple[float, float] = UNIFORMITY_STD_RANGE
+    # 밝기 L 평균 lo → 0점, hi → 100점. 기기마다 같은 피부를 기록하는 밝기가 달라 따로 둔다.
+    brightness_range: tuple[float, float] = BRIGHTNESS_RANGE
 
 
 CAMERA_PROFILES: dict[str, CameraProfile] = {
@@ -620,6 +627,10 @@ CAMERA_PROFILES: dict[str, CameraProfile] = {
         redness_range=REDNESS_RANGE,
         color_check=True,
         uniformity_std_range=(1.05, 3.0),
+        # 밝기 (2026-11-27): 같은 사람을 휴대폰·갤럭시북으로 찍으면 갤럭시북이 L* 약 7.6 어둡게 기록한다
+        # (skin_tone.py phone l_offset 근거와 같은 측정). L 채널(0~255)로 7.6 × 2.55 ≈ 19.4만큼
+        # 휴대폰 범위(100, 210)를 내려 같은 피부가 비슷한 점수가 되게 했다. 되돌리려면 이 줄을 지운다.
+        brightness_range=(81.0, 191.0),
     ),
 }
 DEFAULT_CAMERA_PROFILE = "phone"
@@ -659,9 +670,11 @@ def _redness_index(image: np.ndarray) -> np.ndarray:
     return 100.0 * np.log10(red / green)
 
 
-def _brightness(lab: np.ndarray, skin: np.ndarray) -> tuple[int, float]:
+def _brightness(
+    lab: np.ndarray, skin: np.ndarray, brightness_range: tuple[float, float] = BRIGHTNESS_RANGE
+) -> tuple[int, float]:
     mean_l = cv2.mean(lab[:, :, 0], mask=skin)[0]
-    return _linear_score(mean_l, *BRIGHTNESS_RANGE), mean_l
+    return _linear_score(mean_l, *brightness_range), mean_l
 
 
 def _redness(
@@ -983,7 +996,7 @@ def _sample_skin_lightness(
     for mask in regions.values():
         skin = cv2.bitwise_or(skin, mask)
 
-    brightness, mean_l = _brightness(lab, skin)
+    brightness, mean_l = _brightness(lab, skin, profile.brightness_range)
 
     # 노출이 극단적이면 어떤 보정으로도 피부 정보가 남아 있지 않다
     low, high = EXPOSURE_L_RANGE
@@ -1080,12 +1093,16 @@ def analyze_image_detail(
     bright_mask = exclude_trouble(bright_mask, trouble_result.mask, face_width)
     tone_L, tone_a, tone_b = cielab_mean(balanced, bright_mask)
     ita = ita_hue(tone_L, tone_a, tone_b)[0] if tone_b >= MIN_B_FOR_ITA else None  # 참고 기록용 (보정 전)
-    # 밝기 점수 = 피부톤과 같은 추정 호수 기준: 보정 ITA° → 호수 (호수 밝기 단계 경계 = 판정 구간 경계 33/67점)
+    # 피부톤 추정 호수 (기록용: 피부톤 분석·메이크업과 같은 값)
     ita_c = skin_tone.corrected_ita(tone_L, tone_b, tone_th)
     shade = skin_tone.estimate_shade(tone_L, tone_b, tone_th)
-    brightness = brightness_from_shade(shade)
-    # 1 = 보정 ITA 기준, 0 = L* 기준 (보정 파일에서 shade_method=l 이거나 노란 기가 너무 작을 때)
-    brightness_basis = "ita" if (tone_th.shade_method == "ita" and ita_c is not None) else "l_mean"
+    if BRIGHTNESS_SCORE_BASIS == "shade":
+        # 되돌리기용: 밝기 점수를 피부톤 추정 호수로 계산 (호수 밝기 단계 경계 = 판정 구간 경계 33/67점)
+        brightness = brightness_from_shade(shade)
+        brightness_basis = "ita" if (tone_th.shade_method == "ita" and ita_c is not None) else "l_mean"
+    else:
+        # 기본: 피부 영역 L 평균으로 계산한 점수(_brightness)를 그대로 쓴다 (관리 지표, 피부톤과 분리)
+        brightness_basis = "l_mean"
 
     # 홍조 지수가 보정 범위보다 지나치게 낮으면 피부색이 아니라 카메라·조명 문제다.
     # 0점(홍조 없음)으로 내보내지 않고 측정 불가로 돌려보낸다.
@@ -1130,10 +1147,10 @@ def analyze_image_detail(
         "redness_index": round(mean_index, 2),     # 카메라 프로필의 홍조 범위 기준 (트러블 덩어리 제외)
         "redness_index_all": round(mean_index_all, 2),  # 참고: 트러블 포함 홍조 지수 (예전 방식)
         "trouble_excluded_px": int(np.count_nonzero(red_mask) - np.count_nonzero(red_mask_clean)),
-        # 밝기 점수 기준: 1 = 카메라 보정 ITA° → 호수, 0 = 노란 기가 너무 작아 L* → 호수 대체 (raw는 숫자만 담는 스키마라 1/0)
+        # 밝기 점수 기준: 1 = 피부톤 추정 호수(보정 ITA°), 0 = 피부 L 평균 (raw는 숫자만 담는 스키마라 1/0)
         "brightness_from_ita": 1.0 if brightness_basis == "ita" else 0.0,
-        "cushion_shade": round(shade, 1),         # 밝기 점수 근거: 추정 쿠션 호수 (피부톤과 같은 값)
-        "mean_l_skin": round(mean_l, 2),           # 전체 패치 L 평균 (헤어 컬러·노출 검사용, BRIGHTNESS_RANGE 기준)
+        "cushion_shade": round(shade, 1),         # 피부톤 추정 쿠션 호수 (피부톤 분석과 같은 값, BRIGHTNESS_SCORE_BASIS="shade"일 때만 밝기 점수 근거)
+        "mean_l_skin": round(mean_l, 2),           # 피부 영역 L 평균 (밝기 점수 근거 · 헤어 컬러 · 노출 검사, 카메라별 brightness_range 기준)
         "saturated_ratio": round(saturated_ratio, 3),
         "trouble_count": trouble_count,            # 트러블 덩어리 개수 (TROUBLE_COUNT_POINTS 기준, 점수 근거)
         "blemish_ratio": round(blemish_ratio, 5),  # 참고용: 트러블 면적 비율 (예전 점수 기준, 재현성 검사가 사용)
