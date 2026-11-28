@@ -1,6 +1,5 @@
 #include "Fdc2112.h"
 #include "MoistureBle.h"
-#include "MoistureScore60.h"
 
 // Real sensor mode. Set to 1 explicitly for a sensor-free simulation.
 #ifndef BOA_SIMULATION
@@ -49,7 +48,7 @@ void setup() {
   Serial.begin(115200);
   const uint32_t start = millis();
   while (!Serial && millis() - start < 3000) {}
-  Serial.println("BOA firmware: moisture-score60-sqrt-v17");
+  Serial.println("BOA moisture firmware: BLE v5 raw samples");
   Serial.println("Serial commands: c=air calibration, r=initialize and calibrate");
   Serial.println(BOA_SIMULATION ? "BOA SIMULATION - NOT SKIN DATA" : "BOA FDC2112 RAW - UNCALIBRATED");
   if (!BOA_SIMULATION) initializeSensor();
@@ -149,18 +148,11 @@ void loop() {
     if (status == 0 && sensor.calibrated) Serial.print(sensor.capacitanceChangePercent()); else Serial.print("NA");
     Serial.print(" average_count=");
     if (sensor.referenceAvailable && !calibrationPending && sensorReady) Serial.print(sensor.averageCount); else Serial.print("NA");
-    // Raw BLE samples remain authoritative; never turn an error into score zero.
-    const int liveScore = status == 0 && sensorReady && sensor.calibrated && !calibrationPending
-      ? BoaMoisture60::instantaneousScore(sensor.baseline,raw,sensor.referenceDivider) : -1;
-    Serial.print(" instant_score60=");
-    if(liveScore>=0) Serial.print(liveScore); else Serial.print("NA");
-    Serial.print(" instant_level6=");
-    if(liveScore>=0) Serial.print(BoaMoisture60::levelFromScore(liveScore)); else Serial.print("NA");
     Serial.print(" quality=");
     Serial.print(calibrationPending ? "calibrating" :
       !sensor.calibrated ? "uncalibrated" :
       sensor.fault == Fdc2112::AMPLITUDE_WARNING ? "amplitude_warning_reference_only" :
-      status == 0 ? "no_data_warning" : "unavailable");
+      status == 0 ? "ready" : "unavailable");
     Serial.print(" reason="); Serial.print(sensorReady ? sensor.faultName() : "sensor_offline");
     Serial.print(" STATUS=0x"); Serial.print(sensor.lastStatus, HEX);
     if (sensor.hasData) {

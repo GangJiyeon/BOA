@@ -3,7 +3,7 @@ const path = require('node:path'), fs = require('node:fs'), os = require('node:o
 const modules = process.env.BOA_TEST_MODULES;
 if (!modules) throw new Error('Set BOA_TEST_MODULES; see docs/moisture-v7.md');
 const output = fs.mkdtempSync(path.join(os.tmpdir(),'boa-moisture-dom-'));
-require(path.join(modules,'esbuild')).buildSync({entryPoints:[path.join(__dirname,'moisture-dom-entry.tsx')],outfile:path.join(output,'bundle.cjs'),bundle:true,platform:'browser',format:'cjs',jsx:'automatic',loader:{'.css':'empty'},define:{'import.meta.env.DEV':'true','process.env.NODE_ENV':'"development"'},alias:{react:path.join(modules,'react'),'react-dom':path.join(modules,'react-dom')}});
+require(path.join(modules,'esbuild')).buildSync({entryPoints:[path.join(__dirname,'moisture-dom-entry.tsx')],outfile:path.join(output,'bundle.cjs'),bundle:true,platform:'browser',format:'cjs',jsx:'automatic',loader:{'.css':'empty'},define:{'import.meta.env':JSON.stringify({DEV:true,VITE_SHOW_DEV_TOOLS:'true'}),'process.env.NODE_ENV':'"development"'},alias:{react:path.join(modules,'react'),'react-dom':path.join(modules,'react-dom')}});
 const {JSDOM}=require(path.join(modules,'jsdom'));const assert=require('node:assert/strict');
 const dom=new JSDOM('<div id="root"></div>',{url:'http://localhost'});global.window=dom.window;global.document=dom.window.document;Object.defineProperty(global,'navigator',{value:dom.window.navigator,configurable:true});global.IS_REACT_ACT_ENVIRONMENT=true;
 global.ResizeObserver=class {observe(){} disconnect(){}};
@@ -68,13 +68,19 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
  // Full photo UI: measured score -> first photo -> stored analysis -> recommendation.
  await act(async()=>root.unmount());const flowRoot=createRoot(document.getElementById('root')),analyses=[]
  const flow=active=>act(async()=>flowRoot.render(React.createElement(CosmeticPreview,{active,onAnalysis:v=>analyses.push(v)})))
- await flow(true);await click('측정기 연결');await act(async()=>send(2540,0));await click('기준값 보정')
+ await flow(true);assert(!document.querySelector('.moisture-panel'))
+ await act(async()=>document.querySelector('input[name="moisture-answer"][value="10"]').click())
+ await act(async()=>document.querySelector('.moisture-submenu > summary').click())
+ await click('측정기 사용하기');assert(!document.querySelector('input[name="moisture-answer"]'))
+ await click('측정기 연결');await act(async()=>send(2540,0));await click('기준값 보정')
  for(let i=0;i<25;i++)await act(async()=>send(2540));for(let i=0;i<31;i++)await act(async()=>send(2500))
  assert(document.body.textContent.includes('수분 18/60'))
  const selectPhoto=async name=>{const input=document.querySelector('input[type=file]');Object.defineProperty(input,'files',{value:[new File(['image'],name,{type:'image/jpeg'})],configurable:true});await act(async()=>input.dispatchEvent(new dom.window.Event('change',{bubbles:true})))}
  const dryness=[...document.querySelectorAll('input[type=checkbox]')].find(e=>e.parentElement.textContent.includes('수분 부족이면 향료'));assert(dryness);await act(async()=>dryness.click())
  await selectPhoto('first.jpg');requests=[]
  await act(async()=>document.querySelector('form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true})))
+ assert.equal(requests[0].init.body.get('moisture_source'),'none')
+ assert(!requests[0].init.body.has('manual_moisture_index'),'sensor mode never sends the previous answer')
  const photoScores=['redness','brightness','trouble','uniformity'].map(metric_code=>({metric_code,metric_name:metric_code,score:50,category_name:'보통',higher_is_better:true}))
  await act(async()=>requests[0].resolve(new Response(JSON.stringify({id:77,logic_version:'photo_v1',moisture_source:'none',scores:photoScores}))))
  const save=requests.find(r=>r.url==='/api/skin/moisture/results');assert(save)
@@ -91,7 +97,25 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
  assert.equal(payload.avoid_dryness_triggers,true,'dryness option survives photo analysis and recommendation refresh')
  await act(async()=>refreshed.resolve(new Response(JSON.stringify({...preview,snapshot_token:'new'}))))
  await flow(true);await selectPhoto('replacement.jpg');assert(!document.body.textContent.includes('최근 측정 기록 · 수분'))
+ await click('문답으로 돌아가기');assert(!document.querySelector('.moisture-panel'))
+ for(const [answer,category] of [[10,'개선 필요'],[35,'보통'],[55,'양호'],['',null]]) {
+  await act(async()=>document.querySelector(`input[name="moisture-answer"][value="${answer}"]`).click())
+  requests=[]
+  await act(async()=>document.querySelector('form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true})))
+  assert.equal(requests.length,1)
+  const form=requests[0].init.body
+  assert.equal(form.get('moisture_source'),category?'manual':'none')
+  assert.equal(form.get('manual_moisture_index'),category?String(answer):null)
+  const scores=category?[{metric_code:'moisture',metric_name:'수분',score:42,category_name:category,higher_is_better:true},...photoScores]:photoScores
+  await act(async()=>requests[0].resolve(new Response(JSON.stringify({id:78,logic_version:'photo_v1',moisture_source:category?'manual':'none',scores}))))
+  assert.equal(requests.length,2,'only skin analysis and recommendation, no sensor result save')
+  assert.deepEqual(JSON.parse(requests[1].init.body).scores,scores)
+  await act(async()=>requests[1].resolve(new Response(JSON.stringify({...preview,assessments:category?[{code:'moisture',name:'수분',score:42,category}]:[]}))))
+  const card=document.querySelector('.recommendation-results .score-card')
+  assert(card.textContent.includes(category?'문답 응답':'미측정'))
+  assert(!card.textContent.includes('/ 100'))
+ }
  await act(async()=>flowRoot.unmount());assert.deepEqual(warnings,[])
- console.log('DOM: fixed 3-second timer, assumed-profile trace 18/60, one completion, no post recording, compact UI, fixed analysis binding, photo + normalized recommendation path passed')
+ console.log('DOM: sensor timing and save, source switching, question values and skip, and photo recommendation paths passed')
  dom.window.close();fs.rmSync(output,{recursive:true,force:true});process.exit(0)
 })().catch(e=>{console.error(e);process.exit(1)});

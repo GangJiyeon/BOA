@@ -223,6 +223,7 @@ node_modules/
 # 환경변수: .env 변형(.env.local, .env.production 등)도 전부 제외, 템플릿만 커밋
 .env.*
 !.env.example
+/backend/docker-compose.override.yml
 
 # OS
 .DS_Store
