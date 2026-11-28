@@ -3,7 +3,7 @@ const modules=process.env.BOA_TEST_MODULES
 if(!modules)throw new Error('Set BOA_TEST_MODULES to frontend/node_modules')
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'boa-studio-dom-')),src=path.resolve(__dirname,'../src')
 fs.writeFileSync(path.join(dir,'entry.tsx'),`export {default as React,act} from 'react';export {createRoot} from 'react-dom/client';export {default as HomePage} from ${JSON.stringify(src+'/pages/HomePage')};export {default as StudioPage} from ${JSON.stringify(src+'/pages/StudioPage')};`)
-require(path.join(modules,'esbuild')).buildSync({entryPoints:[path.join(dir,'entry.tsx')],outfile:path.join(dir,'bundle.cjs'),bundle:true,platform:'browser',format:'cjs',jsx:'automatic',loader:{'.css':'empty'},define:{'import.meta.env.DEV':'false','import.meta.env.VITE_GOOGLE_CLIENT_ID':'undefined','import.meta.url':'"http://localhost/src/pages/test.tsx"','process.env.NODE_ENV':'"development"'},alias:{react:path.join(modules,'react'),'react-dom':path.join(modules,'react-dom')}})
+require(path.join(modules,'esbuild')).buildSync({entryPoints:[path.join(dir,'entry.tsx')],outfile:path.join(dir,'bundle.cjs'),bundle:true,platform:'browser',format:'cjs',jsx:'automatic',loader:{'.css':'empty'},define:{'import.meta.env':'{"DEV":false}','import.meta.url':'"http://localhost/src/pages/test.tsx"','process.env.NODE_ENV':'"development"'},alias:{react:path.join(modules,'react'),'react-dom':path.join(modules,'react-dom')}})
 const {JSDOM}=require(path.join(modules,'jsdom')),dom=new JSDOM('<div id="root"></div>',{url:'http://localhost/#/home'})
 global.window=dom.window;global.document=dom.window.document;global.IS_REACT_ACT_ENVIRONMENT=true
 window.scrollTo=()=>{};window.matchMedia=()=>({matches:false});dom.window.HTMLElement.prototype.scrollIntoView=()=>{}
@@ -80,6 +80,13 @@ global.fetch=async(url,init={})=>{
  await act(async()=>await new Promise(resolve=>setTimeout(resolve,2100)))
  assert(rendered);assert(document.body.textContent.includes('머리색 바꿔보기'))
  assert.equal(document.querySelectorAll('details .swatch').length,32)
+ const presetByName=new Map([...document.querySelectorAll('details .swatch')].map(button=>[button.title,button]))
+ const recommended=[...document.querySelectorAll('.swatch-group')].find(group=>group.querySelector('legend')?.textContent==='추천 헤어색')
+ const suggested=[...recommended.querySelectorAll('.swatch')]
+ assert.equal(new Set(suggested.map(button=>button.title)).size,3)
+ for(const button of suggested)assert.equal(button.style.background,presetByName.get(button.title)?.style.background)
+ await act(async()=>suggested[0].click())
+ assert.equal(presetByName.get(suggested[0].title).getAttribute('aria-pressed'),'true')
  const swatch=document.querySelector('details .swatch')
  await act(async()=>swatch.click())
  const mainCanvas=document.querySelector('canvas')

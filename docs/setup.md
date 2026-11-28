@@ -43,15 +43,39 @@ psql -h localhost -U postgres -d postgres -c "CREATE DATABASE boa OWNER boa;"   
 
 ## 실행
 
+### 환경변수 (처음 한 번)
+
+저장소 루트에서 각 폴더의 예시를 복사한다. 기존 `.env` 파일은 덮어쓰지 않는다.
+
+```powershell
+if (!(Test-Path backend/.env)) { Copy-Item backend/.env.example backend/.env }
+if (!(Test-Path frontend/.env)) { Copy-Item frontend/.env.example frontend/.env }
+```
+
+```sh
+test -f backend/.env || cp backend/.env.example backend/.env
+test -f frontend/.env || cp frontend/.env.example frontend/.env
+```
+
+| 설정 | 입력 위치와 기준 |
+|---|---|
+| PostgreSQL | PC에 직접 띄운 API는 `backend/.env`의 `localhost:5432` 사용. Compose로 띄운 API는 `docker-compose.yml`의 `host.docker.internal:5432`가 우선 |
+| CORS | `backend/.env`의 `CORS_ORIGINS=http://localhost:5173` |
+| Google OAuth | `backend/.env`의 `GOOGLE_CLIENT_ID`와 `frontend/.env`의 `VITE_GOOGLE_CLIENT_ID`에 같은 공개 ID. `GOOGLE_CLIENT_SECRET`은 백엔드에만 입력 |
+| Gemini · 관리자 코드 | `GEMINI_API_KEY`, `ADMIN_CODE`는 `backend/.env`에만 입력. API 키와 관리자 코드는 팀이 승인한 별도 채널로 관리 |
+| 분석 카메라 | 팀 시연 기기는 `SKIN_CAMERA_PROFILE=galaxybook`. 기존 `.env`에는 템플릿 변경이 자동 반영되지 않으므로 직접 변경 |
+
+실제 `.env`와 개인용 `docker-compose.override.yml`은 커밋하지 않는다. DB 포트가 5433 등으로 다른 PC만 `backend/docker-compose.override.example.yml`을 `docker-compose.override.yml`로 복사해 포트와 계정을 맞춘다.
+
 ### 백엔드 (터미널 1)
 ```sh
 cd backend
-cp .env.example .env        # 처음 한 번 (Windows: copy .env.example .env)
 docker compose up --build
 ```
 - PostgreSQL이 먼저 켜져 있어야 한다 (Mac: `brew services start postgresql@17`, Windows: 설치 시 자동 실행)
 - API 문서: http://localhost:8000/api/docs
 - 코드를 수정하면 서버가 자동으로 재시작됨
+- `.env` 변경 후에는 `docker compose up -d --force-recreate api`로 API 컨테이너를 다시 만든다.
 
 ### 프론트엔드 (터미널 2)
 ```sh

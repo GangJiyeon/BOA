@@ -1,0 +1,6 @@
+# PostgreSQL 포트나 계정이 팀 기본값과 다른 PC에서만 필요하다.
+# 이 파일을 docker-compose.override.yml로 복사해 실제 로컬 값으로 변경한다. 복사본은 커밋하지 않는다.
+services:
+  api:
+    environment:
+      DATABASE_URL: postgresql+psycopg://boa:boa@host.docker.internal:5433/boa

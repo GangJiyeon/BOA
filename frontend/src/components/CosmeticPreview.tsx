@@ -26,6 +26,14 @@ const metrics: { code: MetricCode; name: string; direction: string }[] = [
   { code: 'uniformity', name: '균일도', direction: '높을수록 피부 톤이 균일' },
 ]
 const initialScores = { moisture: 25, redness: 75, brightness: 30, trouble: 75, uniformity: 30 }
+// Use a representative value inside each existing 0–60 API band. It is not a measurement.
+const moistureChoices = [
+  { value: 10, label: '건조해요', detail: '자주 당기거나 건조해요' },
+  { value: 35, label: '보통이에요', detail: '당김 없이 대체로 편안해요' },
+  { value: 55, label: '촉촉해요', detail: '평소 촉촉하게 느껴져요' },
+  { value: null, label: '건너뛰기', detail: '잘 모르거나 입력하지 않을래요' },
+] as const
+type MoistureAnswer = (typeof moistureChoices)[number]['value']
 
 export default function CosmeticPreview({ onAnalysis, onRecommendation, active = true }: {
   active?: boolean
@@ -35,12 +43,14 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
   const [inputMode, setInputMode] = useState<'photo' | 'analysis' | 'development'>('photo')
   const [analysisJson, setAnalysisJson] = useState('')
   const [photo, setPhoto] = useState<File | null>(null)
-  const [manualMoisture, setManualMoisture] = useState('')
+  const [moistureAnswer, setMoistureAnswer] = useState<MoistureAnswer>(null)
+  const [moistureMethod, setMoistureMethod] = useState<'question' | 'sensor'>('question')
   const [analysis, setAnalysis] = useState<SkinAnalysis | null>(null)
   const [measurementScope, setMeasurementScope] = useState(0)
-  const moistureResult = useMoistureResult(analysis?.id ?? null, measurementScope, active)
+  const usingSensor = inputMode === 'photo' && moistureMethod === 'sensor'
+  const moistureResult = useMoistureResult(usingSensor ? analysis?.id ?? null : null, measurementScope, active && usingSensor)
   const linkedElsewhere = analysis && moistureResult.targetAnalysisId !== null && analysis.id !== moistureResult.targetAnalysisId
-  const relativeMoisture = linkedElsewhere ? analysis.moisture_measurement ?? null : moistureResult.receipt ?? (moistureResult.draft ? summarize(moistureResult.draft) : analysis?.moisture_measurement ?? null)
+  const relativeMoisture = !usingSensor ? null : linkedElsewhere ? analysis.moisture_measurement ?? null : moistureResult.receipt ?? (moistureResult.draft ? summarize(moistureResult.draft) : analysis?.moisture_measurement ?? null)
   const [stage, setStage] = useState<'analysis' | 'recommendation' | null>(null)
   const cachedAnalysis = useRef<{ file: File; moisture: number | null; value: SkinAnalysis } | null>(null)
   const [scores, setScores] = useState(initialScores)
@@ -73,12 +83,12 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
 
   useEffect(() => {
     const observation = moistureResult.receipt
-    if (observation && analysis?.id === observation.analysis_id && analysis.moisture_measurement?.measurement_id !== observation.measurement_id) {
+    if (usingSensor && observation && analysis?.id === observation.analysis_id && analysis.moisture_measurement?.measurement_id !== observation.measurement_id) {
       const updated = { ...analysis, moisture_measurement: observation, scores: applyMoistureScore(analysis.scores, observation), moisture_source: observation.used_for_scoring ? 'sensor' as const : analysis.moisture_source }
       setAnalysis(updated); onAnalysis?.(updated)
       if (cachedAnalysis.current?.value.id === updated.id) cachedAnalysis.current.value = updated
     }
-  }, [moistureResult.receipt, analysis, onAnalysis])
+  }, [usingSensor, moistureResult.receipt, analysis, onAnalysis])
 
   const recommendationMeasurement = useRef<string | null>(null)
   useEffect(() => {
@@ -112,6 +122,15 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
     moreRequest.current = null
     submittedRequest.current = null
     setLoadingGroup(null); setStale(false); setResult(null); setError('')
+  }
+
+  function selectMoistureMethod(method: typeof moistureMethod) {
+    if (method === moistureMethod) return
+    moistureResult.clear()
+    setMeasurementScope(scope => scope + 1)
+    cachedAnalysis.current = null
+    clearResult()
+    setMoistureMethod(method)
   }
 
   async function loadMore(group: PreviewResponse['tie_groups'][number]) {
@@ -179,10 +198,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
       if (inputMode === 'photo') {
         if (!photo) throw new Error('정면 얼굴 사진을 선택해 주세요.')
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.type)) throw new Error('JPG, PNG, WEBP 사진을 사용해 주세요.')
-        const moisture = manualMoisture.trim() === '' ? null : Number(manualMoisture)
-        if (moisture !== null && (!Number.isInteger(moisture) || moisture < 0 || moisture > 60)) {
-          throw new Error('수분 지수는 0–60 정수로 입력하거나 미측정이면 비워 주세요.')
-        }
+        const moisture = usingSensor ? null : moistureAnswer
         setStage('analysis')
         const cached = cachedAnalysis.current
         const value = cached?.file === photo && cached.moisture === moisture ? cached.value
@@ -223,14 +239,26 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
     <section className="cosmetic-preview" aria-label="피부 분석 및 화장품 추천">
       <PageIntro eyebrow="BOA · SKIN & CARE" title="피부 분석 · 화장품 추천">정면 사진을 촬영하거나 선택하세요.</PageIntro>
       <ProgressSteps labels={['사진 입력', '피부 분석', '성분 기반 추천']} current={result ? 3 : stage === 'recommendation' ? 2 : loading || analysis ? 1 : 0} />
-      {active && inputMode === 'photo' && <MoisturePanel key={measurementScope} analysisId={analysis?.id ?? null} onComplete={moistureResult.complete} completedResult={moistureResult.draft} onRestart={moistureResult.clear} />}
-      {relativeMoisture && <div className="form-card" aria-label="자동 수분 측정 결과"><strong>최근 측정 기록 · {relativeMoisture.normalized_score != null ? `수분 ${relativeMoisture.normalized_score}/${scoreMaximum(relativeMoisture)}` : relativeMoisture.resolution_limited ? '신호 부족 · 수분값 확정 불가' : relativeMoisture.experimental_index != null ? `센서 반응 지수 ${relativeMoisture.experimental_index.toFixed(['skin-auto-v4','skin-auto-v5','skin-auto-v6'].includes(relativeMoisture.algorithm_version ?? '') ? 1 : 2)}%` : `이전 센서 변화율 ${relativeMoisture.relative_percent.toFixed(2)}%`}</strong><p role="status">{
-        moistureResult.status === 'saved' ? `분석 #${moistureResult.receipt?.analysis_id}에 저장 완료 · ${moistureScoringMessage(moistureResult.receipt!)}` :
-        moistureResult.status === 'saving' ? '현재 분석에 수분 결과 저장 중…' :
-        moistureResult.status === 'error' ? '측정은 완료됐지만 서버 저장에 실패했습니다.' :
-        '측정 완료 · 사진을 선택하고 분석을 시작하면 수분 항목에 자동 연결합니다.'}</p>
-        {moistureResult.error && <p role="alert">{moistureResult.error} <button type="button" onClick={moistureResult.retry}>같은 결과 저장 재시도</button></p>}
-      </div>}
+      {inputMode === 'photo' && <section className="form-card moisture-question-card" aria-labelledby="moisture-question-title">
+        <div className="moisture-question-heading">
+          <h3 id="moisture-question-title">수분 상태 문답</h3>
+          <span className="category-pill">선택 입력</span>
+        </div>
+        {usingSensor ? <p>수분 측정기를 선택했어요. 측정하거나 문답으로 돌아가려면 수분 측정기 메뉴를 열어 주세요.</p>
+          : <>
+            <p id="moisture-question-help">평소 볼 피부는 어떻게 느껴지나요? 응답은 제품 추천에 반영돼요.</p>
+            <fieldset className="moisture-question" disabled={loading} aria-describedby="moisture-question-help">
+              <legend className="sr-only">볼 피부 수분 상태</legend>
+              <div className="moisture-choices">
+                {moistureChoices.map(choice => <label className="moisture-choice" key={choice.label}>
+                  <input name="moisture-answer" type="radio" value={choice.value ?? ''} checked={moistureAnswer === choice.value}
+                    onChange={() => { clearResult(); setMoistureAnswer(choice.value) }} />
+                  <span><strong>{choice.label}</strong><small>{choice.detail}</small></span>
+                </label>)}
+              </div>
+            </fieldset>
+          </>}
+      </section>}
       <form onSubmit={submit} className={inputMode === 'photo' && !!photo && !result ? 'has-floating-action' : undefined}>
         <fieldset disabled={loading} className="analysis-fieldset"><legend className="sr-only">피부 분석 입력</legend>
 
@@ -260,7 +288,21 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
           <label className="check-row"><input type="checkbox" checked={!hasMoisture} onChange={e => { clearResult(); setHasMoisture(!e.target.checked) }} />수분 미측정 — 나머지 4개 지표만 사용</label>
           </>}
           </section><section className="form-card options-panel"><div className="card-heading"><span className="step-number">02</span><div><h3>분석 및 추천</h3><p>분석 결과로 화장품을 조회합니다.</p></div></div>
-          {inputMode === 'photo' && <details className="filter-details moisture-options"><summary>수분 측정값 추가 <small>선택{manualMoisture !== '' ? ` · ${manualMoisture}/60` : ''}</small></summary><label className="field">수분 지수 직접 입력 (0–60)<input type="number" min={0} max={60} step={1} value={manualMoisture} onChange={e => { setMeasurementScope(x => x + 1); clearResult(); setManualMoisture(e.target.value) }} placeholder="0–60" /><small>측정기와 같은 수분 판정 기준을 사용해요. 입력할 값이 없으면 비워 두세요.</small></label></details>}
+          {inputMode === 'photo' && <details className="filter-details moisture-submenu">
+              <summary>수분 측정기 <small>{usingSensor ? '선택됨' : '별도 연결'}</small></summary>
+              {usingSensor ? <>
+                <button type="button" className="secondary" onClick={() => selectMoistureMethod('question')}>문답으로 돌아가기</button>
+                {active && <MoisturePanel key={measurementScope} analysisId={analysis?.id ?? null} onComplete={moistureResult.complete} completedResult={moistureResult.draft} onRestart={moistureResult.clear} />}
+                {relativeMoisture && <div className="moisture-link-status" aria-label="수분 측정 연결 상태"><strong>최근 측정 기록 · {relativeMoisture.normalized_score != null ? `수분 ${relativeMoisture.normalized_score}/${scoreMaximum(relativeMoisture)}` : '센서 기록 확인'}</strong><p role="status">{
+                  moistureResult.status === 'saved' && moistureResult.receipt ? moistureScoringMessage(moistureResult.receipt) :
+                  moistureResult.status === 'saving' ? '현재 분석에 수분 결과 저장 중…' :
+                  moistureResult.status === 'error' ? '측정 결과를 저장하지 못했어요.' :
+                  '분석을 시작하면 측정 기록이 수분 항목에 연결돼요.'}</p>
+                  {moistureResult.error && <p role="alert">{moistureResult.error} <button type="button" onClick={moistureResult.retry}>같은 결과 저장 재시도</button></p>}
+                </div>}
+              </> : <><p>측정기를 쓰면 문답 대신 센서 결과를 사용해요. 측정하지 않으면 수분 항목은 비워 둡니다.</p>
+                <button type="button" className="secondary" onClick={() => selectMoistureMethod('sensor')}>측정기 사용하기</button></>}
+          </details>}
           <details className="filter-details"><summary>성분 제외 조건</summary><label className="field">직접 제외할 성분<input type="text" value={excluded} maxLength={1500} onChange={e => { clearResult(); setExcluded(e.target.value) }} placeholder="예: 향료, 살리실릭애씨드" /><small>정확한 성분명을 쉼표로 구분해 입력하세요.</small></label><label className="check-row"><input type="checkbox" checked={avoidTriggers} aria-describedby="redness-filter-help" onChange={e => { clearResult(); setAvoidTriggers(e.target.checked) }} />홍조가 높을 때 향료 등 주의 성분이 든 제품 숨기기</label><small id="redness-filter-help">끄면 해당 제품도 추천 후보에 포함될 수 있어요. 판테놀 우선 표시는 유지돼요.</small><label className="check-row"><input type="checkbox" checked={avoidDryness} onChange={e => { clearResult(); setAvoidDryness(e.target.checked) }} />수분 부족이면 향료·에탄올·변성알코올 제외</label></details>
           <div className={`analysis-actionbar${inputMode === 'photo' && !!photo && !result ? ' floating-action' : ''}`}>
             <div><strong>{loading ? stage === 'analysis' ? '사진 분석 중' : '추천 제품 조회 중' : photo ? '사진 입력 완료' : inputMode === 'photo' ? '사진을 입력하세요' : '추천 조회'}</strong><small>{loading ? '완료될 때까지 기다려 주세요.' : '원본 사진은 보관하지 않습니다.'}</small></div>
@@ -273,13 +315,13 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
       {result && <div className="result-shortcut"><p role="status">추천 조회 완료 · {result.recommendations.length ? `${result.recommendations.length}개 제품을 확인할 수 있습니다.` : '제품이 없는 이유를 아래에서 확인해 주세요.'}</p><SectionJump targetId="results-title">결과로 이동</SectionJump></div>}
       {loading && <div className="request-progress" role="status"><span className="spinner" /><div><strong>{stage === 'analysis' ? '사진에서 피부 지표를 분석하고 있어요' : '분석 점수에 맞는 성분을 비교하고 있어요'}</strong><p>완료되면 아래에 결과가 표시됩니다. 메뉴를 이동해도 요청은 계속 진행됩니다.</p></div></div>}
       {analysis && <p className="saved-status"><Icon name="check" size={16} />피부 분석이 완료됐어요.</p>}
-      {analysis && !result && <MetricScores scores={analysis.scores} moisture={relativeMoisture} />}
+      {analysis && !result && <MetricScores scores={analysis.scores} moisture={relativeMoisture} manualMoisture={analysis.moisture_source === 'manual' ? '문답 응답' : undefined} />}
       {error && <p role="alert" className="error-box">{error}</p>}
       <div aria-live="polite" aria-busy={loading || pendingCategory !== null}>
         {result && <section className="recommendation-results" aria-labelledby="results-title">
           <div className="results-heading"><h3 id="results-title" className="section-target" tabIndex={-1}>{rednessCare ? '홍조를 고려한 보습 관리' : dailyCare ? '일상 관리용 제품' : '화장품 추천 결과'}</h3><span>{category ? categoryNames[category] : '전체'} · {result.recommendations.length}개 제품{!dailyCare && ` · 개선 대상 ${result.target_count}개 지표`}</span></div>
           {result.hydration_policy && result.hydration_policy.strategy!==result.recommendation_notice && <p className="result-explanation">{result.hydration_policy.strategy}</p>}
-          <p className="section-kicker">01 / 피부 지표</p><MetricScores moisture={relativeMoisture} scores={result.assessments.map(a => ({ metric_code: a.code, metric_name: a.name, score: a.score, category_name: a.category, higher_is_better: !['redness', 'trouble'].includes(a.code) }))} />
+          <p className="section-kicker">01 / 피부 지표</p><MetricScores moisture={relativeMoisture} manualMoisture={analysis?.moisture_source === 'manual' ? '문답 응답' : undefined} scores={result.assessments.map(a => ({ metric_code: a.code, metric_name: a.name, score: a.score, category_name: a.category, higher_is_better: !['redness', 'trouble'].includes(a.code) }))} />
           {!!result.metric_strategies?.length && <div className="result-explanation"><strong>지표별 추천 반영</strong><ul>{result.metric_strategies.map(strategy => <li key={strategy.metric_code}>{strategy.description}</li>)}</ul></div>}
           {result.sensor_auxiliary && <p className="result-explanation">{result.sensor_auxiliary.applied ? '센서 상대 지수를 추천에 보조 반영했습니다. 기존 조건이 같은 후보 안에서만 보습 성분을 우선합니다.' : '별도 수분 점수가 있어 센서 지수를 중복 반영하지 않았습니다.'}</p>}
           {dailyCare ? <p className="result-explanation">{rednessCare ? '홍조가 높게 측정되어 같은 세트 조건의 후보 중 판테놀 함유 보습 제품을 우선 표시해요.' : result.recommendation_notice}</p>
