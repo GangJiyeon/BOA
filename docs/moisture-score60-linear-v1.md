@@ -10,7 +10,7 @@
 
 1. 현재 BOA-git 폴더를 복사해 백업한다. 이 ZIP은 최신 수분 추정기/추천 통합본에 덮어쓰는 변경분이다.
 2. ZIP을 임시 폴더에 풀고, `backend`, `frontend`, `hardware`, `fixtures` 폴더를 실제 BOA-git 안으로 복사한다. 같은 이름 파일은 교체한다.
-3. Arduino IDE에서 `hardware/arduino/moisture_sensor/moisture_sensor.ino`를 열어 UNO R4 WiFi에 업로드한다. 같은 폴더에 새 **MoistureScore60.h**와 기존 Fdc2112.h, MoistureBle.h가 있어야 한다. ArduinoBLE 라이브러리를 사용한다.
+3. Arduino IDE에서 `hardware/arduino/moisture_sensor/moisture_sensor.ino`를 열어 UNO R4 WiFi에 업로드한다. 같은 폴더에 `Fdc2112.h`, `MoistureBle.h`가 있어야 한다. ArduinoBLE 라이브러리를 사용한다.
 4. 시리얼 모니터 115200에서 `BOA firmware: moisture-score60-v16`을 확인한다. 부팅할 때 센서에서 손과 피부를 떼어 둔다.
 5. PowerShell:
 
@@ -80,7 +80,7 @@ X_ref = (X+170)*11/D - 170
 - 새 척도에서는 최종 정수 점수에서 등급과 추천 카테고리를 계산한다. 브라우저가 보내는 다른 점수·라벨로 저장된 센서 판정을 바꿀 수 없다.
 - 수분 측정→사진 분석→추천 요청은 분석 ID와 측정 ID를 함께 보내며, 기존 DB의 0~100 구간에 새 센서 점수를 잘못 대입하지 않는다.
 - 기존 `boa-capacitance-display-v2` 등 과거 기록은 자동 재환산하지 않는다. 이전 결과는 `/100`, 새 측정은 `/60`으로 구분한다. 기존 수동 입력 기능은 구형 0~100 계약이므로 UI에 명시했고, 새 센서 지수를 수동 입력 칸에 넣지 않는다.
-- 아두이노는 원시값과 실제 설정을 BLE v5로 계속 전송한다. 고정 3초의 마지막 1초 중앙값을 사용한 **최종 결과는 프론트와 서버가 동일 계산식으로 계산**한다. 펌웨어의 `instant_score60`·`instant_level6` 시리얼 출력은 현재 표본의 진단값이며 최종 3초 결과가 아니다. BLE 샘플을 미리 정수 점수로 바꿔 정밀도를 잃지 않는다.
+- 아두이노는 원시값과 실제 설정을 BLE v5로 계속 전송한다. 고정 3초의 마지막 1초 중앙값을 사용한 **최종 결과는 프론트와 서버가 동일 계산식으로 계산**한다. 펌웨어의 단일 표본 점수 출력은 제거했으며, BLE 샘플을 미리 정수 점수로 바꾸지 않는다.
 - 단일 접촉, 고정 3초, 마지막 1초의 중앙값, 경고 처리와 1회 종료 동작은 유지한다.
 
 ## 검증 및 제한
