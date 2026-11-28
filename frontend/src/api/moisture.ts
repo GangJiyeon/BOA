@@ -1,4 +1,3 @@
-import { scoreMaximum, levelDescription } from '../moisture/hydrationEstimate'
 import { api } from './client'
 import { rawSubmission, type Measurement } from '../moisture/protocol'
 export type MoistureReceipt = {
@@ -38,8 +37,7 @@ export function applyMoistureScore(scores: import('./cosmetics').AnalysisMetricS
     ...scores.filter(s => s.metric_code !== 'moisture')]
 }
 export function moistureScoringMessage(receipt: CompletedReceipt) {
-  if(receipt.normalized_score != null && receipt.used_for_scoring)return `수분 ${receipt.normalized_score}/${scoreMaximum(receipt)}${receipt.estimated_state_label?` · ${levelDescription(receipt)} 추정`:''} · 분석·추천 반영`
-  if (receipt.used_for_scoring) return `보정 수분 점수 ${receipt.calibrated_score}/100 · 추천 입력에 반영`
+  if (receipt.used_for_scoring) return '측정 결과를 분석과 추천에 반영했어요.'
   const messages: Record<string, string> = {
     resolution_limited: '미세 반응 · 출력 분해능에 비해 신호가 작아 추천 반영 보류',
     experimental_auxiliary: '상대 수분 지수 저장 · 추천 동점 후보의 보습 성분 보조 반영 가능',

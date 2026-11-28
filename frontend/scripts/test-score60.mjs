@@ -28,7 +28,6 @@ import React from 'react'
 import {renderToStaticMarkup} from 'react-dom/server'
 let cards=await fs.readFile(new URL('../src/components/MetricScores.tsx',import.meta.url),'utf8')
 cards=cards.replace("'../moisture/hydrationEstimate'",JSON.stringify(url))
-cards=cards.replace(/import \{ legacySkinIndex \} from .*\n/, 'const legacySkinIndex=()=>0\n')
 const reactUrl=new URL('../node_modules/react/index.js',import.meta.url).href
 cards=`import React from ${JSON.stringify(reactUrl)}\n`+cards
 const cardJs=ts.transpileModule(cards,{compilerOptions:{jsx:ts.JsxEmit.React,target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText
@@ -36,7 +35,12 @@ const {default:MetricScores}=await import(`data:text/javascript;base64,${Buffer.
 for(let score=0;score<=60;score++){
   const grade=classification60(score)
   const html=renderToStaticMarkup(React.createElement(MetricScores,{scores:[],moisture:{...grade,normalized_score:score,used_for_scoring:true,relative_percent:0,estimation_version:DISPLAY_VERSION}}))
-  assert(html.includes(`${score}<small>/ 60</small>`))
-  assert(html.includes(`${grade.moisture_level}/6단계`))
+  const category = score < 20 ? '개선 필요' : score < 50 ? '보통' : '양호'
+  assert(html.includes(`<strong>${category}</strong>`))
+  assert(!html.includes('/ 60') && !html.includes('/6단계'))
 }
-console.log(`score60: ${fixtures.responses.length} Python/JS fixtures, all 61 integer scores and rendered levels passed`)
+const renderMoisture = moisture => renderToStaticMarkup(React.createElement(MetricScores,{scores:[],moisture}))
+assert(renderMoisture({score_category:'양호',estimated_state:'low',used_for_scoring:true}).includes('<strong>양호</strong>'))
+assert(renderMoisture({score_category:'양호',resolution_limited:true}).includes('<strong>판정 불가</strong>'))
+assert(renderMoisture({normalized_score:50,used_for_scoring:false}).includes('<strong>판정 불가</strong>'))
+console.log(`score60: ${fixtures.responses.length} Python/JS fixtures, rendered categories for all 61 scores, and legacy or limited measurements passed`)

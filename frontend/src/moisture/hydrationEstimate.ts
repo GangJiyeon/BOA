@@ -62,3 +62,18 @@ export function scoreMaximum(info:ScaleInfo):number {
 export function levelDescription(info:ScaleInfo):string {
   return info.moisture_level!=null?`${info.moisture_level}/6단계 · ${info.moisture_level_label??''}`:info.estimated_state_label??''
 }
+
+const SENSOR_CATEGORY = { low: '개선 필요', normal: '보통', sufficient: '양호' } as const
+export type SensorMoistureInfo = {
+  estimated_state?: keyof typeof SENSOR_CATEGORY
+  score_category?: string | null
+  resolution_limited?: boolean
+}
+
+// Prefer the saved category; before saving, use the existing sensor estimate.
+export function sensorMoistureCategory(info: SensorMoistureInfo | null | undefined) {
+  if (!info || info.resolution_limited) return null
+  const saved = info.score_category
+  if (saved === '개선 필요' || saved === '보통' || saved === '양호') return saved
+  return info.estimated_state ? SENSOR_CATEGORY[info.estimated_state] : null
+}

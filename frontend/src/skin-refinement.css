@@ -53,27 +53,34 @@
 .moisture-question-heading { display: flex; align-items: center; gap: 10px; }
 .moisture-question-heading h3 { margin: 0; }
 .moisture-question-card > p { margin: 7px 0 0; word-break: keep-all; }
-.moisture-question-card .moisture-question { margin: 14px 0 0; min-width: 0; }
-.moisture-choices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.moisture-question-card .moisture-questionnaire {
+  container: moisture-form / inline-size;
+  display: grid; gap: 12px; margin: 16px 0 0; min-width: 0;
+}
+.moisture-question { display: grid; align-items: center; grid-template-columns: minmax(0, 1fr) minmax(0, 2.15fr); gap: 12px; }
+.moisture-question + .moisture-question { padding-top: 12px; border-top: 1px solid var(--line); }
+.moisture-question-label { display: flex; align-items: center; gap: 9px; font-size: .875rem; font-weight: 600; word-break: keep-all; }
+.moisture-question-label .step-number { width: 24px; height: 24px; }
+.moisture-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .moisture-choice {
-  display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 64px;
-  padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
-  background: #fafbf8; cursor: pointer; word-break: keep-all; overflow-wrap: anywhere;
+  display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 48px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px;
+  background: #fafbf8; cursor: pointer; font-size: .8125rem; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere;
 }
 .cosmetic-preview .moisture-choice input[type=radio] {
   width: 18px; height: 18px; flex: 0 0 18px; margin: 0; padding: 0; accent-color: var(--green);
 }
 .moisture-choice > span { min-width: 0; }
-.moisture-choice strong, .moisture-choice small { display: block; line-height: 1.4; }
-.moisture-choice strong { font-size: .875rem; }
-.moisture-choice small { margin-top: 3px; font-size: .75rem; color: var(--muted); }
 .moisture-choice:has(input:checked) { background: #eaf2eb; border-color: #70927e; }
 .moisture-choice:has(input:focus-visible) { outline: 2px solid var(--green); outline-offset: 2px; }
-.moisture-question:disabled .moisture-choice { cursor: default; opacity: .65; }
-@media (max-width: 1050px) { .moisture-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.moisture-questionnaire:disabled .moisture-choice { cursor: default; opacity: .65; }
+.moisture-question-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+.moisture-question-summary p { margin: 0; color: var(--muted); font-size: .8125rem; word-break: keep-all; }
+.moisture-question-summary button { flex-shrink: 0; }
+@container moisture-form (max-width: 760px) { .moisture-question { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
+@container moisture-form (max-width: 430px) { .moisture-choices { grid-template-columns: minmax(0, 1fr); gap: 6px; } }
 @media (max-width: 600px) {
   .cosmetic-preview .moisture-question-card { padding: 16px; }
-  .moisture-choice { gap: 8px; padding: 9px; }
 }
 .cosmetic-preview .moisture-submenu > p { margin: 6px 0; font-size: .875rem; }
 .cosmetic-preview .moisture-submenu .moisture-panel { margin: 12px 0 0; }
