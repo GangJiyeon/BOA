@@ -24,8 +24,8 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
  assert.equal(completed.length,0,'no early result');assert(document.querySelector('progress[aria-label="3초 측정 진행률"]'))
  host=captureStart+3000;await act(async()=>await new Promise(resolve=>setTimeout(resolve,35)))
  assert.equal(completed.length,1,'timer closes at 3s without waiting for another packet')
- assert(document.body.textContent.includes('측정 완료 · 수분 18/60'))
- assert.equal(document.querySelector('.moisture-reading strong').textContent,'18/ 60')
+ assert(document.querySelector('.moisture-reading [role="status"]').textContent.includes('측정 완료'))
+ assert.equal(document.querySelector('.moisture-reading strong').textContent,'개선 필요')
  assert.equal(document.querySelectorAll('.moisture-panel details').length,1)
  assert(!document.querySelector('.moisture-reading').textContent.includes('%'))
  assert(!document.body.textContent.includes('신호 안정화 대기'))
@@ -35,7 +35,7 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
  assert.equal(completed.length,1,'hold/release/recontact do not restart')
  await click('다시 측정');for(let i=0;i<25;i++)await act(async()=>send(2540));for(let i=0;i<31;i++)await act(async()=>send(2500))
  assert.equal(completed.length,2)
- await click('연결 해제');assert(document.body.textContent.includes('측정 완료 · 수분 18/60'))
+ await click('연결 해제');assert.equal(document.querySelector('.moisture-reading strong').textContent,'개선 필요')
  // Actual new sensor trace through the real BLE decoder, not a mocked summary.
  await act(async()=>root.render(null));await render({key:'actual-fixed'});await click('측정기 연결')
  const trace=JSON.parse(fs.readFileSync(path.join(__dirname,'../../fixtures/skin-audit-fine.json'),'utf8'))
@@ -46,7 +46,7 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
   v.setUint16(12,ref.baseline,true);v.setUint16(14,m.raw_value,true);v.setUint16(16,Math.floor(Math.max(0,ref.baseline-m.raw_value)*100/ref.baseline),true)
   measurement.value=v;await act(async()=>measurement.dispatchEvent(new dom.window.Event('characteristicvaluechanged')))
  }
- assert.equal(completed.length,before+1);assert(document.body.textContent.includes('측정 완료 · 수분 16/60'))
+ assert.equal(completed.length,before+1);assert.equal(document.querySelector('.moisture-reading strong').textContent,'개선 필요')
  assert.equal(completed.at(-1).window_end_uptime_ms-completed.at(-1).samples[0].uptime_ms,3000)
  // No post-completion recording or repeated callback.
  await act(async()=>root.render(null));let unexpected=0
@@ -68,13 +68,19 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
  // Full photo UI: measured score -> first photo -> stored analysis -> recommendation.
  await act(async()=>root.unmount());const flowRoot=createRoot(document.getElementById('root')),analyses=[]
  const flow=active=>act(async()=>flowRoot.render(React.createElement(CosmeticPreview,{active,onAnalysis:v=>analyses.push(v)})))
+ const questions=()=>[...document.querySelectorAll('.moisture-questionnaire [role="radiogroup"]')]
+ const answerQuestions=async answers=>{
+  const groups=questions()
+  for(const [i,answer] of answers.entries())await act(async()=>groups[i].querySelector(`input[value="${answer}"]`).click())
+ }
  await flow(true);assert(!document.querySelector('.moisture-panel'))
- await act(async()=>document.querySelector('input[name="moisture-answer"][value="10"]').click())
+ assert.deepEqual(questions().map(group=>group.querySelectorAll('input[type=radio]').length),[3,3,3])
+ await answerQuestions([2,2,1])
  await act(async()=>document.querySelector('.moisture-submenu > summary').click())
- await click('측정기 사용하기');assert(!document.querySelector('input[name="moisture-answer"]'))
+ await click('측정기 사용하기');assert.equal(questions().length,0)
  await click('측정기 연결');await act(async()=>send(2540,0));await click('기준값 보정')
  for(let i=0;i<25;i++)await act(async()=>send(2540));for(let i=0;i<31;i++)await act(async()=>send(2500))
- assert(document.body.textContent.includes('수분 18/60'))
+ assert.equal(document.querySelector('.moisture-link-status strong').textContent,'최근 측정 기록 · 개선 필요')
  const selectPhoto=async name=>{const input=document.querySelector('input[type=file]');Object.defineProperty(input,'files',{value:[new File(['image'],name,{type:'image/jpeg'})],configurable:true});await act(async()=>input.dispatchEvent(new dom.window.Event('change',{bubbles:true})))}
  const dryness=[...document.querySelectorAll('input[type=checkbox]')].find(e=>e.parentElement.textContent.includes('수분 부족이면 향료'));assert(dryness);await act(async()=>dryness.click())
  await selectPhoto('first.jpg');requests=[]
@@ -96,16 +102,34 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
  assert.equal(payload.moisture_measurement_id,body.result.measurement_id,'recommendation uses the persisted sensor classification');assert.equal(payload.moisture_analysis_id,77)
  assert.equal(payload.avoid_dryness_triggers,true,'dryness option survives photo analysis and recommendation refresh')
  await act(async()=>refreshed.resolve(new Response(JSON.stringify({...preview,snapshot_token:'new'}))))
- await flow(true);await selectPhoto('replacement.jpg');assert(!document.body.textContent.includes('최근 측정 기록 · 수분'))
+ const sensorCard=document.querySelector('.recommendation-results .score-card')
+ assert.equal(sensorCard.querySelector('strong').textContent,'개선 필요')
+ assert(sensorCard.textContent.includes('측정기') && !sensorCard.textContent.includes('/60'))
+ assert(document.querySelector('.moisture-link-status [role="status"]').textContent.includes('분석과 추천에 반영'))
+ await flow(true);await selectPhoto('replacement.jpg');assert(!document.querySelector('.moisture-link-status'))
  await click('문답으로 돌아가기');assert(!document.querySelector('.moisture-panel'))
- for(const [answer,category] of [[10,'개선 필요'],[35,'보통'],[55,'양호'],['',null]]) {
-  await act(async()=>document.querySelector(`input[name="moisture-answer"][value="${answer}"]`).click())
+ assert.deepEqual(questions().map(group=>Number(group.querySelector('input:checked').value)),[2,2,1])
+ const questionnaireCases=[
+  {answers:[2,2,1], index:10, category:'개선 필요', status:'건조한 편'},
+  {answers:[2,1,1], index:35, category:'보통', status:'보통'},
+  {answers:[1,1,1], index:35, category:'보통', status:'보통'},
+  {answers:[0,1,1], index:55, category:'양호', status:'건조함이 적은 편'},
+  {answers:[0,0,0], index:55, category:'양호', status:'건조함이 적은 편'},
+  {answers:[2,2,0], index:null, category:null, status:'상황마다 답이 달라요'},
+  {answers:[2,1], index:null, category:null, status:'2/3 응답'},
+  {answers:[], index:null, category:null, status:'답하지 않고도'},
+ ]
+ for(const [caseIndex,{answers,index,category,status}] of questionnaireCases.entries()) {
+  if(document.querySelector('.moisture-question-summary button'))await click('응답 지우기')
+  await answerQuestions(answers)
+  assert(document.querySelector('.moisture-question-summary [role="status"]').textContent.includes(status))
+  await selectPhoto(`questionnaire-${caseIndex}.jpg`)
   requests=[]
   await act(async()=>document.querySelector('form').dispatchEvent(new dom.window.Event('submit',{bubbles:true,cancelable:true})))
   assert.equal(requests.length,1)
   const form=requests[0].init.body
   assert.equal(form.get('moisture_source'),category?'manual':'none')
-  assert.equal(form.get('manual_moisture_index'),category?String(answer):null)
+  assert.equal(form.get('manual_moisture_index'),index===null?null:String(index))
   const scores=category?[{metric_code:'moisture',metric_name:'수분',score:42,category_name:category,higher_is_better:true},...photoScores]:photoScores
   await act(async()=>requests[0].resolve(new Response(JSON.stringify({id:78,logic_version:'photo_v1',moisture_source:category?'manual':'none',scores}))))
   assert.equal(requests.length,2,'only skin analysis and recommendation, no sensor result save')
@@ -116,6 +140,6 @@ const click=async name=>{const button=[...document.querySelectorAll('button')].f
   assert(!card.textContent.includes('/ 100'))
  }
  await act(async()=>flowRoot.unmount());assert.deepEqual(warnings,[])
- console.log('DOM: sensor timing and save, source switching, question values and skip, and photo recommendation paths passed')
+ console.log('DOM: sensor timing and save, source switching, questionnaire scoring bands, mixed and partial answers, and skip passed')
  dom.window.close();fs.rmSync(output,{recursive:true,force:true});process.exit(0)
 })().catch(e=>{console.error(e);process.exit(1)});

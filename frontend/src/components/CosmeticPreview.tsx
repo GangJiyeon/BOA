@@ -1,5 +1,5 @@
 import { showDevTools } from '../utils/uiFeatures'
-import { scoreMaximum } from '../moisture/hydrationEstimate'
+import { sensorMoistureCategory } from '../moisture/hydrationEstimate'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { getCosmeticPreview, type AnalysisMetricScore, type MetricCode, type PreviewRequest, type PreviewResponse, type ProductCategory } from '../api/cosmetics'
 import { ApiError } from '../api/client'
@@ -26,14 +26,26 @@ const metrics: { code: MetricCode; name: string; direction: string }[] = [
   { code: 'uniformity', name: '균일도', direction: '높을수록 피부 톤이 균일' },
 ]
 const initialScores = { moisture: 25, redness: 75, brightness: 30, trouble: 75, uniformity: 30 }
-// Use a representative value inside each existing 0–60 API band. It is not a measurement.
-const moistureChoices = [
-  { value: 10, label: '건조해요', detail: '자주 당기거나 건조해요' },
-  { value: 35, label: '보통이에요', detail: '당김 없이 대체로 편안해요' },
-  { value: 55, label: '촉촉해요', detail: '평소 촉촉하게 느껴져요' },
-  { value: null, label: '건너뛰기', detail: '잘 모르거나 입력하지 않을래요' },
+const moistureQuestions = [
+  {
+    id: 'cleansing',
+    title: '세안하고 30분쯤 지난 뒤 볼은 어떤가요?',
+    choices: ['당김이나 건조함이 뚜렷해요', '잠깐 당기지만 괜찮아져요', '거의 당기지 않아요'],
+  },
+  {
+    id: 'afternoon',
+    title: '점심 이후, 평소처럼 지낼 때 볼은 어떤가요?',
+    choices: ['건조해서 불편해요', '가끔 건조해요', '저녁까지 대체로 편안해요'],
+  },
+  {
+    id: 'moisturizer',
+    title: '평소 보습제를 바른 뒤 볼은 어떤가요?',
+    choices: ['몇 시간 안에 다시 건조해요', '시간이 지나면 조금 건조해요', '덧바르지 않아도 편안해요'],
+  },
 ] as const
-type MoistureAnswer = (typeof moistureChoices)[number]['value']
+const drynessPoints = [2, 1, 0] as const
+type MoistureAnswer = (typeof drynessPoints)[number]
+type MoistureAnswers = Partial<Record<(typeof moistureQuestions)[number]['id'], MoistureAnswer>>
 
 export default function CosmeticPreview({ onAnalysis, onRecommendation, active = true }: {
   active?: boolean
@@ -43,7 +55,17 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
   const [inputMode, setInputMode] = useState<'photo' | 'analysis' | 'development'>('photo')
   const [analysisJson, setAnalysisJson] = useState('')
   const [photo, setPhoto] = useState<File | null>(null)
-  const [moistureAnswer, setMoistureAnswer] = useState<MoistureAnswer>(null)
+  const [moistureAnswers, setMoistureAnswers] = useState<MoistureAnswers>({})
+  const answered = moistureQuestions.map(question => moistureAnswers[question.id]).filter(value => value !== undefined)
+  const questionnaireComplete = answered.length === moistureQuestions.length
+  const contradictoryAnswers = questionnaireComplete && answered.includes(2) && answered.includes(0)
+  const drynessTotal = answered.reduce<number>((sum, value) => sum + value, 0)
+  // Choose a representative value in each existing API band. It is not a sensor measurement.
+  const questionnaireMoisture = !questionnaireComplete || contradictoryAnswers ? null : drynessTotal >= 5 ? 10 : drynessTotal >= 3 ? 35 : 55
+  const questionnaireStatus = contradictoryAnswers ? '상황마다 답이 달라요. 이번 추천에서는 수분 항목을 제외해요.'
+    : questionnaireMoisture !== null ? `${questionnaireMoisture === 10 ? '건조한 편' : questionnaireMoisture === 35 ? '보통' : '건조함이 적은 편'} · 사진 분석을 시작하면 추천에 반영돼요.`
+    : answered.length > 0 ? `${answered.length}/3 응답 · 세 문항을 모두 답해야 추천에 반영돼요.`
+    : '답하지 않고도 사진 분석을 시작할 수 있어요.'
   const [moistureMethod, setMoistureMethod] = useState<'question' | 'sensor'>('question')
   const [analysis, setAnalysis] = useState<SkinAnalysis | null>(null)
   const [measurementScope, setMeasurementScope] = useState(0)
@@ -198,7 +220,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
       if (inputMode === 'photo') {
         if (!photo) throw new Error('정면 얼굴 사진을 선택해 주세요.')
         if (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.type)) throw new Error('JPG, PNG, WEBP 사진을 사용해 주세요.')
-        const moisture = usingSensor ? null : moistureAnswer
+        const moisture = usingSensor ? null : questionnaireMoisture
         setStage('analysis')
         const cached = cachedAnalysis.current
         const value = cached?.file === photo && cached.moisture === moisture ? cached.value
@@ -246,17 +268,32 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
         </div>
         {usingSensor ? <p>수분 측정기를 선택했어요. 측정하거나 문답으로 돌아가려면 수분 측정기 메뉴를 열어 주세요.</p>
           : <>
-            <p id="moisture-question-help">평소 볼 피부는 어떻게 느껴지나요? 응답은 제품 추천에 반영돼요.</p>
-            <fieldset className="moisture-question" disabled={loading} aria-describedby="moisture-question-help">
+            <p id="moisture-question-help">최근 일주일을 떠올려 답해 주세요. 지금 세안하거나 기다릴 필요는 없어요.</p>
+            <fieldset className="moisture-questionnaire" disabled={loading} aria-describedby="moisture-question-help">
               <legend className="sr-only">볼 피부 수분 상태</legend>
-              <div className="moisture-choices">
-                {moistureChoices.map(choice => <label className="moisture-choice" key={choice.label}>
-                  <input name="moisture-answer" type="radio" value={choice.value ?? ''} checked={moistureAnswer === choice.value}
-                    onChange={() => { clearResult(); setMoistureAnswer(choice.value) }} />
-                  <span><strong>{choice.label}</strong><small>{choice.detail}</small></span>
-                </label>)}
-              </div>
+              {moistureQuestions.map((question, index) => <div className="moisture-question" role="radiogroup"
+                aria-labelledby={`moisture-${question.id}-title`} key={question.id}>
+                <div className="moisture-question-label">
+                  <span className="step-number" aria-hidden="true">{index + 1}</span>
+                  <span id={`moisture-${question.id}-title`}>{question.title}</span>
+                </div>
+                <div className="moisture-choices">
+                  {question.choices.map((label, choiceIndex) => {
+                    const points = drynessPoints[choiceIndex]
+                    return <label className="moisture-choice" key={points}>
+                      <input name={`moisture-${question.id}`} type="radio" value={points} checked={moistureAnswers[question.id] === points}
+                        onChange={() => { clearResult(); setMoistureAnswers(previous => ({ ...previous, [question.id]: points })) }} />
+                      <span>{label}</span>
+                    </label>
+                  })}
+                </div>
+              </div>)}
             </fieldset>
+            <div className="moisture-question-summary">
+              <p role="status">{questionnaireStatus}</p>
+              {answered.length > 0 && <button type="button" className="text-button" disabled={loading}
+                onClick={() => { clearResult(); setMoistureAnswers({}) }}>응답 지우기</button>}
+            </div>
           </>}
       </section>}
       <form onSubmit={submit} className={inputMode === 'photo' && !!photo && !result ? 'has-floating-action' : undefined}>
@@ -293,7 +330,7 @@ export default function CosmeticPreview({ onAnalysis, onRecommendation, active =
               {usingSensor ? <>
                 <button type="button" className="secondary" onClick={() => selectMoistureMethod('question')}>문답으로 돌아가기</button>
                 {active && <MoisturePanel key={measurementScope} analysisId={analysis?.id ?? null} onComplete={moistureResult.complete} completedResult={moistureResult.draft} onRestart={moistureResult.clear} />}
-                {relativeMoisture && <div className="moisture-link-status" aria-label="수분 측정 연결 상태"><strong>최근 측정 기록 · {relativeMoisture.normalized_score != null ? `수분 ${relativeMoisture.normalized_score}/${scoreMaximum(relativeMoisture)}` : '센서 기록 확인'}</strong><p role="status">{
+                {relativeMoisture && <div className="moisture-link-status" aria-label="수분 측정 연결 상태"><strong>최근 측정 기록 · {sensorMoistureCategory(relativeMoisture) ?? '판정 불가'}</strong><p role="status">{
                   moistureResult.status === 'saved' && moistureResult.receipt ? moistureScoringMessage(moistureResult.receipt) :
                   moistureResult.status === 'saving' ? '현재 분석에 수분 결과 저장 중…' :
                   moistureResult.status === 'error' ? '측정 결과를 저장하지 못했어요.' :
